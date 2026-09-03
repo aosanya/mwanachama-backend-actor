@@ -1,10 +1,15 @@
 // Package mwanachamauser — pre-delivered schema definition.
 //
-// This file exposes [DefaultUserSchema], which returns the fixed
-// [schema.Schema] for mwanachama-backend-user. Wiring code in
-// mwanachama-backend-api-gateway seeds this schema per agency at startup via
-// SchemaManager.SetSchema (set s.AgencyID before calling; DefaultUserSchema
-// itself returns an agency-agnostic template).
+// This file exposes [DefaultUserSchema], which returns the
+// [schema.Schema] for one mounted instance of mwanachama-backend-user.
+// Wiring code in mwanachama-backend-api-gateway seeds this schema per agency
+// at startup via SchemaManager.SetSchema (set s.AgencyID before calling;
+// DefaultUserSchema itself returns an agency-agnostic template). The
+// gateway may mount this package more than once — e.g. "member" today,
+// with others possible later — each as its own instance with its own
+// Postgres table prefix; DefaultUserSchema takes that instance name so its
+// StorageCollection labels stay in step with the table prefix the gateway
+// wires alongside it (see the Storage paragraph below).
 //
 // The schema declares two TypeDefinitions:
 //   - Member — a person enrolled in the network (mutable)
@@ -32,22 +37,27 @@
 // default, not a settled decision.
 //
 // Storage: every entity lives in whatever Postgres tables the caller's
-// mwanachama-backend-shared/postgres.Backend is configured with — the gateway
-// wires this to postgres.DefaultTableNames("member_"), giving
-// member_entities / member_relationships / member_schemas_draft /
-// member_schemas_published, mirroring mwanachama-backend-taskmanager's
-// work_* convention exactly. TypeDefinition.StorageCollection below is
-// carried over purely as a label (see schema.TypeDefinition's doc) and has
-// no functional effect here.
+// mwanachama-backend-shared/postgres.Backend is configured with — the
+// gateway wires each instance to postgres.DefaultTableNames(instance+"_"),
+// e.g. "member" gives member_entities / member_relationships /
+// member_schemas_draft / member_schemas_published, mirroring
+// mwanachama-backend-taskmanager's work_* convention exactly.
+// TypeDefinition.StorageCollection below is carried over purely as a label
+// (see schema.TypeDefinition's doc), derived from the same instance name for
+// consistency, and has no functional effect here.
 package mwanachamauser
 
 import "github.com/aosanya/mwanachama-backend-shared/schema"
 
-// DefaultUserSchema returns the pre-delivered [schema.Schema] seeded by
-// mwanachama-backend-api-gateway on startup via SchemaManager.SetSchema. The
-// operation is idempotent — calling it multiple times with the same schema
-// ID is safe.
-func DefaultUserSchema() schema.Schema {
+// DefaultUserSchema returns the pre-delivered [schema.Schema] for one
+// mounted instance of this package, seeded by mwanachama-backend-api-gateway
+// on startup via SchemaManager.SetSchema. instance names the mount (e.g.
+// "member") and is used only to derive the two TypeDefinitions'
+// StorageCollection labels below — it has no bearing on schema.Schema.ID/Tag,
+// which stay fixed so every instance runs the same schema version. The
+// operation is idempotent — calling it multiple times for the same instance
+// is safe.
+func DefaultUserSchema(instance string) schema.Schema {
 	return schema.Schema{
 		ID:      "user-schema-v1",
 		Version: 1,
@@ -56,7 +66,7 @@ func DefaultUserSchema() schema.Schema {
 			{
 				Name:              "Member",
 				DisplayName:       "Member",
-				StorageCollection: "member_members",
+				StorageCollection: instance + "_members",
 				Properties: []schema.PropertyDefinition{
 					// display_name is the name the member gave for themselves.
 					{Name: "display_name", Type: schema.PropertyTypeString},
@@ -101,7 +111,7 @@ func DefaultUserSchema() schema.Schema {
 			{
 				Name:              "Group",
 				DisplayName:       "Group",
-				StorageCollection: "member_groups",
+				StorageCollection: instance + "_groups",
 				Properties: []schema.PropertyDefinition{
 					// name is the short human-readable label.
 					{Name: "name", Type: schema.PropertyTypeString, Required: true},

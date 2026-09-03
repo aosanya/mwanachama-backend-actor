@@ -26,8 +26,13 @@ did not settle).
   presenting it under an org-configurable label; this repo never hardcodes
   the word "Chapter" anywhere a type_id belongs), and `Registration` becomes
   the `registered_at` relationship, not a struct backed by a table.
-- `schema.go`'s `DefaultUserSchema()` declares two types, `Member` and
-  `Group`, connected by `registered_at` / `has_member`. Timestamps are
+- `schema.go`'s `DefaultUserSchema(instance)` declares two types, `Member`
+  and `Group`, connected by `registered_at` / `has_member`. `instance` names
+  the gateway's mounted copy (e.g. `"member"`) and only steers the two
+  types' `StorageCollection` labels, kept in step with whatever Postgres
+  table prefix the gateway wires alongside it — the gateway may mount this
+  package more than once, each with its own instance name/table prefix/route
+  prefix. Timestamps are
   strings (RFC 3339), matching `mwanachama-backend-taskmanager`'s own
   convention for `entitygraph`-stored entities.
 - **`Hierarchy` and `Level` did NOT move here.** DSN-1699 gap 1 was left

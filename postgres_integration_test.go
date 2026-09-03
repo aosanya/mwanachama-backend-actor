@@ -56,7 +56,7 @@ func newPostgresUserManager(t *testing.T, agencyID string) mwanachamauser.UserMa
 
 	backend := postgres.NewBackend(db, tables)
 
-	s := mwanachamauser.DefaultUserSchema()
+	s := mwanachamauser.DefaultUserSchema("useri")
 	s.AgencyID = agencyID
 	if err := backend.SetSchema(ctx, s); err != nil {
 		t.Fatalf("SetSchema: %v", err)
