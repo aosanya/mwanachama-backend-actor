@@ -1,0 +1,6 @@
+# mwanachama-backend-user (Go)
+
+Open tasks only — 🚀 In Progress · 📋 Not Started · ⏸️ Blocked.
+Everything else (completed rows, board context) is in [todo_done.md](todo_done.md).
+
+Nothing open — see [todo_done.md](todo_done.md) for the initial build.
