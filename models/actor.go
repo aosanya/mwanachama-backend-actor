@@ -13,6 +13,15 @@ type Actor struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"display_name"`
 	CreatedAt   string `json:"created_at"`
+	// LastUpdated is stamped on every write (create and every subsequent
+	// edit) — see gormstore's ActorRow.UpdatedAt, which this mirrors.
+	LastUpdated string `json:"last_updated"`
+	// Deleted marks a soft-deleted actor. Not `omitempty`: false is a real,
+	// meaningful answer, not an absent one. Nothing in this package sets it
+	// true yet — no delete method exists — but every read that lists rather
+	// than names one by id (ListActors) filters it out, so the column and
+	// the filter land together rather than the column sitting unused.
+	Deleted bool `json:"deleted"`
 
 	// IsAgentic marks an actor driven by a model rather than a person —
 	// DSN-1663. Not `omitempty` — see the gateway's member.Member doc for why.
