@@ -85,7 +85,13 @@ func syncUniqueAttributeIndexes(db *gorm.DB, table string, properties []models.P
 		var expr string
 		switch db.Dialector.Name() {
 		case "postgres":
-			expr = fmt.Sprintf("(attributes ->> '%s')", p.Name)
+			// Double-wrapped: Postgres requires an expression index's
+			// column-list entry to be its own parenthesized expression
+			// (a bare "(attributes ->> 'x')" parses as the column list
+			// itself, not as one expression inside it) — CREATE INDEX ...
+			// ON t ((attributes ->> 'x')). The extra parens are harmless
+			// where expr is reused in the WHERE clause below.
+			expr = fmt.Sprintf("((attributes ->> '%s'))", p.Name)
 		case "sqlite":
 			expr = fmt.Sprintf("(json_extract(attributes, '$.%s'))", p.Name)
 		default:
