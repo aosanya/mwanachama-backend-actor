@@ -2,7 +2,7 @@
 // [userManager]. Ported from mwanachama-backend-api-gateway's
 // internal/store/postgres/chapter_store.go and chapter_store_edit.go (the
 // Chapter-CRUD half only — Hierarchy/Level stay behind in the gateway, per
-// the DSN-1699 gap 1 default recorded in schema.go's package doc).
+// the DSN-1699 gap 1 default recorded in gormstore's GroupRow doc).
 package mwanachamaactor
 
 import (
@@ -12,107 +12,106 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aosanya/mwanachama-backend-shared/entitygraph"
+	"gorm.io/gorm"
+
+	"github.com/aosanya/mwanachama-backend-actor/gormstore"
+	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-// CreateGroup creates a new Group entity.
-func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
+// CreateGroup creates a new Group entity. Attributes is validated against
+// [models.DefaultGroupProperties] the same way CreateActor validates
+// against [models.DefaultActorProperties].
+func (m *userManager) CreateGroup(ctx context.Context, g models.Group) (models.Group, error) {
 	if g.Name == "" {
-		return Group{}, fmt.Errorf("%w: Group.Name is required", ErrInvalidGroup)
+		return models.Group{}, fmt.Errorf("%w: Group.Name is required", ErrInvalidGroup)
+	}
+	properties := models.DefaultGroupProperties()
+	if err := models.ValidateAttributes(properties, g.Attributes); err != nil {
+		return models.Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)
+	}
+	if err := m.checkUniqueAttributes(ctx, m.tables.Groups, properties, g.Attributes); err != nil {
+		return models.Group{}, err
 	}
 	if g.CreatedAt == "" {
-		g.CreatedAt = nowRFC3339()
+		g.CreatedAt = models.NowRFC3339()
 	}
-	created, err := m.dm.CreateEntity(ctx, entitygraph.CreateEntityRequest{
-		TypeID:     groupTypeID,
-		Properties: groupToProperties(g),
-	})
-	if err != nil {
-		return Group{}, fmt.Errorf("CreateGroup: %w", err)
+	row := gormstore.GroupToRow(g)
+	if err := m.db.WithContext(ctx).Table(m.tables.Groups).Create(&row).Error; err != nil {
+		return models.Group{}, fmt.Errorf("CreateGroup: %w", err)
 	}
-	return groupFromEntity(created), nil
+	return gormstore.GroupFromRow(row), nil
 }
 
 // GetGroup reads a single Group entity.
-func (m *userManager) GetGroup(ctx context.Context, id string) (Group, error) {
-	e, err := m.dm.GetEntity(ctx, id)
+func (m *userManager) GetGroup(ctx context.Context, id string) (models.Group, error) {
+	var row gormstore.GroupRow
+	err := m.db.WithContext(ctx).Table(m.tables.Groups).Where("id = ?", id).First(&row).Error
 	if err != nil {
-		if errors.Is(err, entitygraph.ErrEntityNotFound) {
-			return Group{}, ErrGroupNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Group{}, ErrGroupNotFound
 		}
-		return Group{}, fmt.Errorf("GetGroup: %w", err)
+		return models.Group{}, fmt.Errorf("GetGroup: %w", err)
 	}
-	if e.TypeID != groupTypeID {
-		return Group{}, ErrGroupNotFound
-	}
-	return groupFromEntity(e), nil
+	return gormstore.GroupFromRow(row), nil
 }
 
 // EditGroup writes name/node_type/anchor_level_override. Empty clears —
 // every field is written on every call, mirroring the gateway's
 // chapter.Repository.EditChapter contract exactly.
-func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Group, error) {
+func (m *userManager) EditGroup(ctx context.Context, id string, e models.GroupEdit) (models.Group, error) {
 	current, err := m.GetGroup(ctx, id)
 	if err != nil {
-		return Group{}, err
+		return models.Group{}, err
 	}
-	updated, err := m.dm.UpdateEntity(ctx, id, entitygraph.UpdateEntityRequest{
-		Properties: map[string]any{
+	err = m.db.WithContext(ctx).Table(m.tables.Groups).Where("id = ?", id).
+		Updates(map[string]any{
 			"name":                  e.Name,
 			"node_type":             e.NodeType,
 			"anchor_level_override": e.AnchorLevelOverrideID,
-		},
-	})
+			"updated_at":            models.NowRFC3339(),
+		}).Error
 	if err != nil {
-		if errors.Is(err, entitygraph.ErrEntityNotFound) {
-			return Group{}, ErrGroupNotFound
-		}
-		return Group{}, fmt.Errorf("EditGroup: %w", err)
+		return models.Group{}, fmt.Errorf("EditGroup: %w", err)
 	}
-	out := groupFromEntity(updated)
-	out.CreatedAt = current.CreatedAt
-	out.HierarchyID = current.HierarchyID
-	out.LevelID = current.LevelID
-	out.ParentID = current.ParentID
-	out.Discoverable = current.Discoverable
-	return out, nil
+	current.Name = e.Name
+	current.NodeType = e.NodeType
+	current.AnchorLevelOverrideID = e.AnchorLevelOverrideID
+	return current, nil
 }
 
 // MoveGroup re-parents a group, refusing the three moves that cannot mean
 // anything — mirrors the gateway's chapter.Repository.MoveChapter.
 //
 // The subtree/cycle check is a Go walk over ListGroups rather than a
-// recursive CTE: entitygraph.DataManager exposes no arbitrary-SQL escape
-// hatch, so the Postgres store's WITH RECURSIVE query has no equivalent
-// here. For an org-sized tree (hundreds, not millions, of groups) an O(n)
-// walk per move is not a performance concern; if it ever becomes one, the
-// gateway adapter is a more natural place to add a materialized-path
-// property than this package.
-func (m *userManager) MoveGroup(ctx context.Context, id, newParentID string) (Group, error) {
+// recursive CTE — see gormstore's GroupRow doc for why ParentID stays a
+// plain indexed column rather than a GORM-managed association; a
+// hand-written recursive CTE would work fine against the real FK-less
+// column, but is out of scope for this storage swap.
+func (m *userManager) MoveGroup(ctx context.Context, id, newParentID string) (models.Group, error) {
 	if newParentID == id {
-		return Group{}, ErrParentIsSelf
+		return models.Group{}, ErrParentIsSelf
 	}
 	current, err := m.GetGroup(ctx, id)
 	if err != nil {
-		return Group{}, err
+		return models.Group{}, err
 	}
 	if current.ParentID == "" {
-		return Group{}, ErrRootCannotMove
+		return models.Group{}, ErrRootCannotMove
 	}
 	if newParentID != "" {
 		if _, err := m.GetGroup(ctx, newParentID); err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
-				return Group{}, ErrParentNotFound
+				return models.Group{}, ErrParentNotFound
 			}
-			return Group{}, err
+			return models.Group{}, err
 		}
 	}
 
 	all, err := m.ListGroups(ctx, "")
 	if err != nil {
-		return Group{}, fmt.Errorf("MoveGroup: %w", err)
+		return models.Group{}, fmt.Errorf("MoveGroup: %w", err)
 	}
-	byID := make(map[string]Group, len(all))
+	byID := make(map[string]models.Group, len(all))
 	for _, g := range all {
 		byID[g.ID] = g
 	}
@@ -121,31 +120,28 @@ func (m *userManager) MoveGroup(ctx context.Context, id, newParentID string) (Gr
 	seen := map[string]bool{}
 	for cur, ok := byID[newParentID]; ok && !seen[cur.ID]; cur, ok = byID[cur.ParentID] {
 		if cur.ID == id {
-			return Group{}, ErrParentInSubtree
+			return models.Group{}, ErrParentInSubtree
 		}
 		seen[cur.ID] = true
 	}
 
-	updated, err := m.dm.UpdateEntity(ctx, id, entitygraph.UpdateEntityRequest{
-		Properties: map[string]any{"parent_id": newParentID},
-	})
+	err = m.db.WithContext(ctx).Table(m.tables.Groups).Where("id = ?", id).
+		Updates(map[string]any{"parent_id": gormstore.StringToNullable(newParentID), "updated_at": models.NowRFC3339()}).Error
 	if err != nil {
-		if errors.Is(err, entitygraph.ErrEntityNotFound) {
-			return Group{}, ErrGroupNotFound
-		}
-		return Group{}, fmt.Errorf("MoveGroup: %w", err)
+		return models.Group{}, fmt.Errorf("MoveGroup: %w", err)
 	}
-	return groupFromEntity(updated), nil
+	current.ParentID = newParentID
+	return current, nil
 }
 
 // ListGroupChildren returns the direct children of a group (empty parentID
 // returns the roots), id order.
-func (m *userManager) ListGroupChildren(ctx context.Context, parentID string) ([]Group, error) {
+func (m *userManager) ListGroupChildren(ctx context.Context, parentID string) ([]models.Group, error) {
 	all, err := m.ListGroups(ctx, "")
 	if err != nil {
 		return nil, fmt.Errorf("ListGroupChildren: %w", err)
 	}
-	out := []Group{}
+	out := []models.Group{}
 	for _, g := range all {
 		if g.ParentID == parentID {
 			out = append(out, g)
@@ -158,21 +154,18 @@ func (m *userManager) ListGroupChildren(ctx context.Context, parentID string) ([
 // ListGroups returns every group, optionally filtered to one hierarchy,
 // created_at-then-id order (matching the gateway Postgres store's ORDER BY
 // created_at, id).
-func (m *userManager) ListGroups(ctx context.Context, hierarchyID string) ([]Group, error) {
-	props := map[string]any{}
+func (m *userManager) ListGroups(ctx context.Context, hierarchyID string) ([]models.Group, error) {
+	q := m.db.WithContext(ctx).Table(m.tables.Groups)
 	if hierarchyID != "" {
-		props["hierarchy_id"] = hierarchyID
+		q = q.Where("hierarchy_id = ?", hierarchyID)
 	}
-	entities, err := m.dm.ListEntities(ctx, entitygraph.EntityFilter{
-		TypeID:     groupTypeID,
-		Properties: props,
-	})
-	if err != nil {
+	var rows []gormstore.GroupRow
+	if err := q.Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("ListGroups: %w", err)
 	}
-	out := make([]Group, 0, len(entities))
-	for _, e := range entities {
-		out = append(out, groupFromEntity(e))
+	out := make([]models.Group, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, gormstore.GroupFromRow(r))
 	}
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].CreatedAt != out[j].CreatedAt {
@@ -185,13 +178,13 @@ func (m *userManager) ListGroups(ctx context.Context, hierarchyID string) ([]Gro
 
 // ListDiscoverableGroups returns groups flagged discoverable, optionally
 // name-filtered, id order.
-func (m *userManager) ListDiscoverableGroups(ctx context.Context, query string) ([]Group, error) {
+func (m *userManager) ListDiscoverableGroups(ctx context.Context, query string) ([]models.Group, error) {
 	all, err := m.ListGroups(ctx, "")
 	if err != nil {
 		return nil, fmt.Errorf("ListDiscoverableGroups: %w", err)
 	}
 	q := strings.ToLower(query)
-	out := []Group{}
+	out := []models.Group{}
 	for _, g := range all {
 		if !g.Discoverable {
 			continue

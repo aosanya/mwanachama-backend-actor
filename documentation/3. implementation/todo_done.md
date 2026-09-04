@@ -24,3 +24,22 @@ now `DefaultUserSchema("useri")`). See the gateway's
 `documentation/2. design/todo.md` row DSN-1700 for the full account,
 including the gateway-side `UserInstance` declaration list and the route
 move this made possible.
+
+## Member → Actor rename — 2026-09-04
+
+Renamed the `Member` type and every derived identifier to `Actor`
+throughout this repo — `UserManager`'s `CreateMember`/`GetMember`/
+`GetMembers`/`SetMemberDisplayName`/`ListMembers`/`ListGroupsForMember`/
+`ListMembersForGroup` become `CreateActor`/`GetActor`/`GetActors`/
+`SetActorDisplayName`/`ListActors`/`ListGroupsForActor`/
+`ListActorsForGroup`; `Registration.MemberID` → `.ActorID`
+(`json:"actor_id"`); `RelHasMember` → `RelHasActor` (`"has_actor"`);
+`ErrMemberNotFound`/`ErrInvalidMember` → `ErrActorNotFound`/
+`ErrInvalidActor`; the schema's `TypeDefinition.Name`/`DisplayName` "Member"
+→ "Actor"; `member_impl.go` → `actor_impl.go`, `member_test.go` →
+`actor_test.go`. Scoped to this repo only — the gateway's own `member`
+domain, HTTP routes, and Postgres tables (and the `instance` string it
+mounts this package under, e.g. `"member"`) are unaffected and keep the
+word "member"; the gateway's existing `internal/store/entitygraph` adapters
+that call into this package's API will need matching updates on the
+gateway side to keep compiling.

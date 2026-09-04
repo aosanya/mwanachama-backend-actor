@@ -1,4 +1,4 @@
-// member_impl.go — Member CRUD implementation for [userManager]. Ported
+// actor_impl.go — Actor CRUD implementation for [userManager]. Ported
 // from mwanachama-backend-api-gateway's internal/store/postgres/member_store.go
 // and internal/store/memory/member_store.go (the identity half; the
 // registration half is in registration_impl.go, mirroring the gateway's own
@@ -11,94 +11,94 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/aosanya/mwanachama-backend-shared/entitygraph"
+	"gorm.io/gorm"
+
+	"github.com/aosanya/mwanachama-backend-actor/gormstore"
+	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-// CreateMember creates a Member entity.
-func (m *userManager) CreateMember(ctx context.Context, mem Member) (Member, error) {
-	if mem.CreatedAt == "" {
-		mem.CreatedAt = nowRFC3339()
+// CreateActor creates an Actor entity. Attributes is validated against
+// [models.DefaultActorProperties] first — a Required property missing or
+// blank, a value of the wrong Range, or a Unique property already held by
+// another actor all fail the call before any row is written.
+func (m *userManager) CreateActor(ctx context.Context, act models.Actor) (models.Actor, error) {
+	properties := models.DefaultActorProperties()
+	if err := models.ValidateAttributes(properties, act.Attributes); err != nil {
+		return models.Actor{}, fmt.Errorf("%w: %v", ErrInvalidActor, err)
 	}
-	created, err := m.dm.CreateEntity(ctx, entitygraph.CreateEntityRequest{
-		TypeID:     memberTypeID,
-		Properties: memberToProperties(mem),
-	})
-	if err != nil {
-		return Member{}, fmt.Errorf("CreateMember: %w", err)
+	if err := m.checkUniqueAttributes(ctx, m.tables.Actors, properties, act.Attributes); err != nil {
+		return models.Actor{}, err
 	}
-	return memberFromEntity(created), nil
+	if act.CreatedAt == "" {
+		act.CreatedAt = models.NowRFC3339()
+	}
+	row := gormstore.ActorToRow(act)
+	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Create(&row).Error; err != nil {
+		return models.Actor{}, fmt.Errorf("CreateActor: %w", err)
+	}
+	return gormstore.ActorFromRow(row), nil
 }
 
-// GetMember reads a single Member entity.
-func (m *userManager) GetMember(ctx context.Context, id string) (Member, error) {
-	e, err := m.dm.GetEntity(ctx, id)
+// GetActor reads a single Actor entity.
+func (m *userManager) GetActor(ctx context.Context, id string) (models.Actor, error) {
+	var row gormstore.ActorRow
+	err := m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).First(&row).Error
 	if err != nil {
-		if errors.Is(err, entitygraph.ErrEntityNotFound) {
-			return Member{}, ErrMemberNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Actor{}, ErrActorNotFound
 		}
-		return Member{}, fmt.Errorf("GetMember: %w", err)
+		return models.Actor{}, fmt.Errorf("GetActor: %w", err)
 	}
-	if e.TypeID != memberTypeID {
-		return Member{}, ErrMemberNotFound
-	}
-	return memberFromEntity(e), nil
+	return gormstore.ActorFromRow(row), nil
 }
 
-// GetMembers returns the Members for the given ids, sorted by id. Ids with
-// no member are skipped rather than erroring.
-func (m *userManager) GetMembers(ctx context.Context, ids []string) ([]Member, error) {
-	out := []Member{}
+// GetActors returns the Actors for the given ids, sorted by id. Ids with
+// no actor are skipped rather than erroring.
+func (m *userManager) GetActors(ctx context.Context, ids []string) ([]models.Actor, error) {
+	out := []models.Actor{}
 	seen := map[string]bool{}
 	for _, id := range ids {
 		if seen[id] {
 			continue
 		}
 		seen[id] = true
-		mem, err := m.GetMember(ctx, id)
+		act, err := m.GetActor(ctx, id)
 		if err != nil {
-			if errors.Is(err, ErrMemberNotFound) {
+			if errors.Is(err, ErrActorNotFound) {
 				continue
 			}
-			return nil, fmt.Errorf("GetMembers: %w", err)
+			return nil, fmt.Errorf("GetActors: %w", err)
 		}
-		out = append(out, mem)
+		out = append(out, act)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
 }
 
-// SetMemberDisplayName records the name a member gave for themselves.
-func (m *userManager) SetMemberDisplayName(ctx context.Context, id, displayName string) (Member, error) {
-	current, err := m.GetMember(ctx, id)
+// SetActorDisplayName records the name an actor gave for themselves.
+func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName string) (models.Actor, error) {
+	current, err := m.GetActor(ctx, id)
 	if err != nil {
-		return Member{}, err
+		return models.Actor{}, err
 	}
-	updated, err := m.dm.UpdateEntity(ctx, id, entitygraph.UpdateEntityRequest{
-		Properties: map[string]any{"display_name": displayName},
-	})
+	err = m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).
+		Updates(map[string]any{"display_name": displayName, "updated_at": models.NowRFC3339()}).Error
 	if err != nil {
-		if errors.Is(err, entitygraph.ErrEntityNotFound) {
-			return Member{}, ErrMemberNotFound
-		}
-		return Member{}, fmt.Errorf("SetMemberDisplayName: %w", err)
+		return models.Actor{}, fmt.Errorf("SetActorDisplayName: %w", err)
 	}
-	out := memberFromEntity(updated)
-	out.CreatedAt = current.CreatedAt
-	return out, nil
+	current.DisplayName = displayName
+	return current, nil
 }
 
-// ListMembers returns every non-deleted Member, id order.
-func (m *userManager) ListMembers(ctx context.Context) ([]Member, error) {
-	entities, err := m.dm.ListEntities(ctx, entitygraph.EntityFilter{
-		TypeID: memberTypeID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("ListMembers: %w", err)
+// ListActors returns every non-deleted Actor, id order.
+func (m *userManager) ListActors(ctx context.Context) ([]models.Actor, error) {
+	var rows []gormstore.ActorRow
+	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Order("id").Find(&rows).Error; err != nil {
+		return nil, fmt.Errorf("ListActors: %w", err)
 	}
-	out := make([]Member, 0, len(entities))
-	for _, e := range entities {
-		out = append(out, memberFromEntity(e))
+	out := make([]models.Actor, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, gormstore.ActorFromRow(r))
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
 }

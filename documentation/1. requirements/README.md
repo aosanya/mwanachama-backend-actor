@@ -1,6 +1,6 @@
 # Requirements
 
-Member/Group management for the Mwanachama network — who is enrolled, and
+Actor/Group management for the Mwanachama network — who is enrolled, and
 the org structure (chapters/wards/etc., generically "Group") they enrol
 into. Extracted from `mwanachama-backend-api-gateway`'s `internal/domain/member`
 and `internal/domain/chapter` packages onto the entity-graph pattern; see

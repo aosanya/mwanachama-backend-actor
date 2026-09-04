@@ -2,17 +2,22 @@ package mwanachamaactor
 
 import "errors"
 
-// ErrMemberNotFound is returned when a Member id has no record.
-var ErrMemberNotFound = errors.New("mwanachamaactor: member not found")
+// ErrActorNotFound is returned when an Actor id has no record.
+var ErrActorNotFound = errors.New("mwanachamaactor: actor not found")
 
 // ErrGroupNotFound is returned when a Group id has no record.
 var ErrGroupNotFound = errors.New("mwanachamaactor: group not found")
 
-// ErrInvalidMember is returned when a Member write is missing a required field.
-var ErrInvalidMember = errors.New("mwanachamaactor: invalid member")
+// ErrInvalidActor is returned when an Actor write is missing a required field.
+var ErrInvalidActor = errors.New("mwanachamaactor: invalid actor")
 
 // ErrInvalidGroup is returned when a Group write is missing a required field.
 var ErrInvalidGroup = errors.New("mwanachamaactor: invalid group")
+
+// ErrDuplicateAttribute is returned when a write's Attributes value for a
+// [models.Property] marked Unique already appears on another row of the
+// same model — see attributes.go's checkUniqueAttributes.
+var ErrDuplicateAttribute = errors.New("mwanachamaactor: attribute value already in use")
 
 // ErrRootCannotMove — the root group has no parent, so there is nothing to
 // move it under. Mirrors the gateway's chapter.ErrRootCannotMove.

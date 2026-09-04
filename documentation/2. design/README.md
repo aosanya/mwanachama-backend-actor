@@ -1,13 +1,13 @@
 # Design
 
-The Member/Group graph schema (see `../../schema.go`'s `DefaultUserSchema`)
+The Actor/Group graph schema (see `../../schema.go`'s `DefaultUserSchema`)
 and how it maps onto `mwanachama-backend-shared`'s entity-graph store.
 
 ## Topology
 
 ```
-Member ──registered_at──► Group   (properties: is_home, joined_at)
-Group  ──has_member──────► Member (inverse of registered_at)
+Actor ──registered_at──► Group   (properties: is_home, joined_at)
+Group  ──has_actor──────► Actor (inverse of registered_at)
 ```
 
 ## Decisions carried in from DSN-1698
