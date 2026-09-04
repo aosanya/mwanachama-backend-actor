@@ -5,14 +5,30 @@ package models
 // the gormstore package's ActorGroupAssignmentRow), identified by the
 // (ActorID, GroupID) pair rather than an edge label.
 //
-// IsHome is a plain boolean field with NO exclusivity semantics —
-// DSN-1698 decision 8 drops "one home chapter per member" outright, not
-// relocated. Nothing in this package enforces at-most-one-home.
+// **No IsHome or JoinedAt fields, 2026-09-04.** Both were dedicated
+// columns; neither is one any more. CreatedAt now carries JoinedAt's old
+// role — the moment this assignment first existed — and AssignGroup
+// preserves it across a re-assign the same way it used to preserve
+// JoinedAt (see AssignGroup's doc). A caller that still wants a "home"
+// flag, or an explicit historical join date an import track needs to
+// backdate, writes it into Attributes like any other organization-declared
+// property — nothing here validates or interprets an "is_home" key
+// specially, unlike Phone/Email, which are built into
+// DefaultActorProperties. DSN-1698 decision 8's "no exclusivity" holds
+// exactly as before: nothing in this package enforces at-most-one-home
+// regardless of where the flag lives.
 type ActorGroupAssignment struct {
-	ActorID  string `json:"actor_id"`
-	GroupID  string `json:"group_id"`
-	IsHome   bool   `json:"is_home"`
-	JoinedAt string `json:"joined_at"`
+	ActorID string `json:"actor_id"`
+	GroupID string `json:"group_id"`
+	// CreatedAt is set once, on the assignment's first AssignGroup call,
+	// and preserved across every subsequent re-assign of the same pair.
+	CreatedAt string `json:"created_at"`
+	// LastUpdated is stamped on every AssignGroup call, create or update.
+	LastUpdated string `json:"last_updated"`
+	// Deleted marks a soft-deleted assignment. Not `omitempty` — see
+	// Actor's identical field for why. Unused today: Deregister hard-deletes
+	// the row rather than setting this.
+	Deleted bool `json:"deleted"`
 
 	// Attributes is an open prop:value map for organization-declared
 	// assignment properties, validated against

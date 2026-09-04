@@ -21,7 +21,7 @@ func TestAssignGroup(t *testing.T) {
 	group := newGroup(t, um, "h1")
 	handler := routes.AssignGroup(um)
 
-	body := `{"group_id":"` + group.ID + `","is_home":true}`
+	body := `{"group_id":"` + group.ID + `","attributes":{"is_home":true}}`
 	req := withPathValue(httptest.NewRequest(http.MethodPost, "/actors/"+actor.ID+"/assignments", strings.NewReader(body)), "actorID", actor.ID)
 	rec := httptest.NewRecorder()
 	handler(rec, req)
@@ -31,7 +31,8 @@ func TestAssignGroup(t *testing.T) {
 	}
 	var out models.ActorGroupAssignment
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
-	if out.ActorID != actor.ID || out.GroupID != group.ID || !out.IsHome {
+	isHome, _ := out.Attributes["is_home"].(bool)
+	if out.ActorID != actor.ID || out.GroupID != group.ID || !isHome {
 		t.Fatalf("unexpected assignment: %+v", out)
 	}
 }
@@ -127,7 +128,7 @@ func TestHomeCounts(t *testing.T) {
 		t.Fatalf("seed actor: %v", err)
 	}
 	group := newGroup(t, um, "h1")
-	if _, err := um.AssignGroup(context.Background(), models.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID, IsHome: true}); err != nil {
+	if _, err := um.AssignGroup(context.Background(), models.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID, Attributes: map[string]any{"is_home": true}}); err != nil {
 		t.Fatalf("seed assignment: %v", err)
 	}
 	handler := routes.HomeCounts(um)

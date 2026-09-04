@@ -25,6 +25,7 @@ type ActorRow struct {
 	Attributes datatypes.JSONMap
 	CreatedAt  string
 	UpdatedAt  string
+	Deleted    bool
 }
 
 // BeforeCreate mints an id via uuid.NewString() when the caller left one
@@ -50,6 +51,7 @@ func ActorToRow(a models.Actor) ActorRow {
 		Attributes:  attrs,
 		CreatedAt:   a.CreatedAt,
 		UpdatedAt:   models.NowRFC3339(),
+		Deleted:     a.Deleted,
 	}
 }
 
@@ -60,6 +62,8 @@ func ActorFromRow(r ActorRow) models.Actor {
 		DisplayName: r.DisplayName,
 		IsAgentic:   r.IsAgentic,
 		CreatedAt:   r.CreatedAt,
+		LastUpdated: r.UpdatedAt,
+		Deleted:     r.Deleted,
 	}
 	if len(r.Attributes) > 0 {
 		a.Attributes = map[string]any(r.Attributes)

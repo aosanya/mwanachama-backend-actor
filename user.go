@@ -70,10 +70,11 @@ type UserManager interface {
 
 	// AssignGroup enrols an actor at a group by writing (or updating) the
 	// registered_at edge. Idempotent on (actorID, groupID): a second call
-	// updates IsHome in place and preserves the original JoinedAt — mirrors
-	// DEV-1319. Unlike the gateway's pre-DSN-1698 behaviour, registering a
-	// new home group does NOT clear any other registration's home flag —
-	// decision 8 drops that exclusivity outright.
+	// updates Attributes in place and preserves the original CreatedAt —
+	// mirrors DEV-1319. Unlike the gateway's pre-DSN-1698 behaviour,
+	// registering a new home group does NOT clear any other registration's
+	// home flag, wherever a caller keeps one — decision 8 drops that
+	// exclusivity outright.
 	AssignGroup(ctx context.Context, r models.ActorGroupAssignment) (models.ActorGroupAssignment, error)
 
 	// Deregister removes an actor's registered_at edge to a group. Returns
@@ -94,7 +95,9 @@ type UserManager interface {
 	ListActorsForGroup(ctx context.Context, groupID string) ([]models.ActorGroupAssignment, error)
 
 	// HomeCounts returns how many actors call each group home, keyed by
-	// group id. Groups with nobody are absent rather than zero.
+	// group id, reading the caller-declared Attributes["is_home"] JSON path
+	// (there is no dedicated column — see models.ActorGroupAssignment's
+	// doc). Groups with nobody are absent rather than zero.
 	HomeCounts(ctx context.Context) (map[string]int, error)
 }
 

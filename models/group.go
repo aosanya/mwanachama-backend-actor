@@ -21,6 +21,13 @@ type Group struct {
 	AnchorLevelOverrideID string `json:"anchor_level_override,omitempty"`
 	NodeType              string `json:"node_type,omitempty"`
 	CreatedAt             string `json:"created_at"`
+	// LastUpdated is stamped on every write — see gormstore's
+	// GroupRow.UpdatedAt, which this mirrors.
+	LastUpdated string `json:"last_updated"`
+	// Deleted marks a soft-deleted group. Not `omitempty` — see Actor's
+	// identical field for why. No delete method sets it yet; ListGroups
+	// filters it out regardless, so the column and the filter land together.
+	Deleted bool `json:"deleted"`
 
 	// Attributes is an open prop:value map for organization-declared group
 	// properties, validated against DefaultGroupProperties the same way

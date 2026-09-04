@@ -12,13 +12,15 @@ import (
 // and forced the root package's AssignGroup into a delete-then-recreate
 // workaround.
 //
-// IsHome carries NO exclusivity — DSN-1698 decision 8 drops "one home group
-// per actor" outright, not relocated. Nothing here enforces it.
+// No IsHome/JoinedAt columns, 2026-09-04 — see models.ActorGroupAssignment's
+// doc for where that fact lives now (CreatedAt, or Attributes for anything
+// more specific).
 type ActorGroupAssignmentRow struct {
-	ActorID  string `gorm:"primaryKey"`
-	GroupID  string `gorm:"primaryKey"`
-	IsHome   bool
-	JoinedAt string
+	ActorID   string `gorm:"primaryKey"`
+	GroupID   string `gorm:"primaryKey"`
+	CreatedAt string
+	UpdatedAt string
+	Deleted   bool
 	// Attributes is the organization-declared assignment property blob,
 	// stored as native JSONB the same way ActorRow's and GroupRow's
 	// Attributes are. Added 2026-09-04.
@@ -35,8 +37,9 @@ func ActorGroupAssignmentToRow(r models.ActorGroupAssignment) ActorGroupAssignme
 	return ActorGroupAssignmentRow{
 		ActorID:    r.ActorID,
 		GroupID:    r.GroupID,
-		IsHome:     r.IsHome,
-		JoinedAt:   r.JoinedAt,
+		CreatedAt:  r.CreatedAt,
+		UpdatedAt:  r.LastUpdated,
+		Deleted:    r.Deleted,
 		Attributes: attrs,
 	}
 }
@@ -45,10 +48,11 @@ func ActorGroupAssignmentToRow(r models.ActorGroupAssignment) ActorGroupAssignme
 // ActorGroupAssignment.
 func ActorGroupAssignmentFromRow(r ActorGroupAssignmentRow) models.ActorGroupAssignment {
 	a := models.ActorGroupAssignment{
-		ActorID:  r.ActorID,
-		GroupID:  r.GroupID,
-		IsHome:   r.IsHome,
-		JoinedAt: r.JoinedAt,
+		ActorID:     r.ActorID,
+		GroupID:     r.GroupID,
+		CreatedAt:   r.CreatedAt,
+		LastUpdated: r.UpdatedAt,
+		Deleted:     r.Deleted,
 	}
 	if len(r.Attributes) > 0 {
 		a.Attributes = map[string]any(r.Attributes)

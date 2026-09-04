@@ -63,12 +63,13 @@ func (m *userManager) EditGroup(ctx context.Context, id string, e models.GroupEd
 	if err != nil {
 		return models.Group{}, err
 	}
+	now := models.NowRFC3339()
 	err = m.db.WithContext(ctx).Table(m.tables.Groups).Where("id = ?", id).
 		Updates(map[string]any{
 			"name":                  e.Name,
 			"node_type":             e.NodeType,
 			"anchor_level_override": e.AnchorLevelOverrideID,
-			"updated_at":            models.NowRFC3339(),
+			"updated_at":            now,
 		}).Error
 	if err != nil {
 		return models.Group{}, fmt.Errorf("EditGroup: %w", err)
@@ -76,6 +77,7 @@ func (m *userManager) EditGroup(ctx context.Context, id string, e models.GroupEd
 	current.Name = e.Name
 	current.NodeType = e.NodeType
 	current.AnchorLevelOverrideID = e.AnchorLevelOverrideID
+	current.LastUpdated = now
 	return current, nil
 }
 
@@ -125,12 +127,14 @@ func (m *userManager) MoveGroup(ctx context.Context, id, newParentID string) (mo
 		seen[cur.ID] = true
 	}
 
+	now := models.NowRFC3339()
 	err = m.db.WithContext(ctx).Table(m.tables.Groups).Where("id = ?", id).
-		Updates(map[string]any{"parent_id": gormstore.StringToNullable(newParentID), "updated_at": models.NowRFC3339()}).Error
+		Updates(map[string]any{"parent_id": gormstore.StringToNullable(newParentID), "updated_at": now}).Error
 	if err != nil {
 		return models.Group{}, fmt.Errorf("MoveGroup: %w", err)
 	}
 	current.ParentID = newParentID
+	current.LastUpdated = now
 	return current, nil
 }
 
@@ -151,11 +155,11 @@ func (m *userManager) ListGroupChildren(ctx context.Context, parentID string) ([
 	return out, nil
 }
 
-// ListGroups returns every group, optionally filtered to one hierarchy,
-// created_at-then-id order (matching the gateway Postgres store's ORDER BY
-// created_at, id).
+// ListGroups returns every non-deleted group, optionally filtered to one
+// hierarchy, created_at-then-id order (matching the gateway Postgres
+// store's ORDER BY created_at, id).
 func (m *userManager) ListGroups(ctx context.Context, hierarchyID string) ([]models.Group, error) {
-	q := m.db.WithContext(ctx).Table(m.tables.Groups)
+	q := m.db.WithContext(ctx).Table(m.tables.Groups).Where("deleted = ?", false)
 	if hierarchyID != "" {
 		q = q.Where("hierarchy_id = ?", hierarchyID)
 	}

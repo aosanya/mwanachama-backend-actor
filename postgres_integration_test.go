@@ -132,7 +132,7 @@ func TestPostgres_GroupAndActorGroupAssignment_RoundTrip(t *testing.T) {
 		t.Fatalf("CreateActor: %v", err)
 	}
 	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
-		ActorID: a.ID, GroupID: child.ID, IsHome: true,
+		ActorID: a.ID, GroupID: child.ID, Attributes: map[string]any{"is_home": true},
 	}); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
@@ -157,7 +157,8 @@ func TestPostgres_GroupAndActorGroupAssignment_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Deregister: %v", err)
 	}
-	if !found || !gone.IsHome {
+	isHome, _ := gone.Attributes["is_home"].(bool)
+	if !found || !isHome {
 		t.Errorf("Deregister result = found=%v gone=%+v", found, gone)
 	}
 }

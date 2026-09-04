@@ -41,6 +41,7 @@ type GroupRow struct {
 	Attributes datatypes.JSONMap
 	CreatedAt  string
 	UpdatedAt  string
+	Deleted    bool
 }
 
 func (r *GroupRow) BeforeCreate(_ *gorm.DB) error {
@@ -68,6 +69,7 @@ func GroupToRow(g models.Group) GroupRow {
 		Attributes:            attrs,
 		CreatedAt:             g.CreatedAt,
 		UpdatedAt:             models.NowRFC3339(),
+		Deleted:               g.Deleted,
 	}
 }
 
@@ -83,6 +85,8 @@ func GroupFromRow(r GroupRow) models.Group {
 		AnchorLevelOverrideID: r.AnchorLevelOverrideID,
 		NodeType:              r.NodeType,
 		CreatedAt:             r.CreatedAt,
+		LastUpdated:           r.UpdatedAt,
+		Deleted:               r.Deleted,
 	}
 	if len(r.Attributes) > 0 {
 		g.Attributes = map[string]any(r.Attributes)

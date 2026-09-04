@@ -81,19 +81,21 @@ func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName s
 	if err != nil {
 		return models.Actor{}, err
 	}
+	now := models.NowRFC3339()
 	err = m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).
-		Updates(map[string]any{"display_name": displayName, "updated_at": models.NowRFC3339()}).Error
+		Updates(map[string]any{"display_name": displayName, "updated_at": now}).Error
 	if err != nil {
 		return models.Actor{}, fmt.Errorf("SetActorDisplayName: %w", err)
 	}
 	current.DisplayName = displayName
+	current.LastUpdated = now
 	return current, nil
 }
 
 // ListActors returns every non-deleted Actor, id order.
 func (m *userManager) ListActors(ctx context.Context) ([]models.Actor, error) {
 	var rows []gormstore.ActorRow
-	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Order("id").Find(&rows).Error; err != nil {
+	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Where("deleted = ?", false).Order("id").Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("ListActors: %w", err)
 	}
 	out := make([]models.Actor, 0, len(rows))

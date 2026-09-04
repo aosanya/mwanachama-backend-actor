@@ -6,9 +6,14 @@
 // DSN-1698 decision 4: ActorGroupAssignment is an Actor -> Group
 // relationship, now a real row in m.tables.ActorGroupAssignments keyed by
 // the composite primary key (actor_id, group_id) — see gormstore's
-// ActorGroupAssignmentRow doc. Decision 8: "one home group per actor" is
-// dropped entirely — AssignGroup below does NOT clear any other
-// assignment's IsHome flag.
+// ActorGroupAssignmentRow doc.
+//
+// **No IsHome/JoinedAt columns, 2026-09-04** — see models.ActorGroupAssignment's
+// doc. CreatedAt now plays JoinedAt's old role (the moment this assignment
+// first existed) and AssignGroup preserves it across a re-assign the same
+// way it used to preserve JoinedAt. Decision 8's "no exclusivity" is
+// unaffected either way: nothing here enforces at-most-one-home regardless
+// of where (or whether) a caller keeps that flag.
 //
 // AssignGroup keeps the same read-then-write shape entitygraph forced on it
 // (no UpdateRelationship there), rather than switching to a GORM ON
@@ -22,6 +27,7 @@ import (
 	"fmt"
 	"sort"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/aosanya/mwanachama-backend-actor/gormstore"
@@ -43,11 +49,14 @@ func (m *userManager) findAssignmentRow(ctx context.Context, actorID, groupID st
 	return row, true, nil
 }
 
-// AssignGroup enrols an actor at a group (upsert on (actorID, groupID)). See
-// the package doc above for why IsHome carries no exclusivity. Attributes is
-// validated against [models.DefaultActorGroupAssignmentProperties] first —
-// mirrors CreateActor/CreateGroup's validation, though a Unique-property
-// collision is only checked when a new row is being created (see the
+// AssignGroup enrols an actor at a group (upsert on (actorID, groupID)).
+// CreatedAt is set once, on the first assignment of this pair, and
+// preserved across every later re-assign — mirrors the old JoinedAt
+// preserve-on-update behavior. LastUpdated is stamped on every call.
+// Attributes is validated against
+// [models.DefaultActorGroupAssignmentProperties] first — mirrors
+// CreateActor/CreateGroup's validation, though a Unique-property collision
+// is only checked when a new row is being created (see the
 // checkUniqueAttributes call below), not on an update of an existing
 // assignment's own row.
 func (m *userManager) AssignGroup(ctx context.Context, r models.ActorGroupAssignment) (models.ActorGroupAssignment, error) {
@@ -60,18 +69,18 @@ func (m *userManager) AssignGroup(ctx context.Context, r models.ActorGroupAssign
 	if err != nil {
 		return models.ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
 	}
-	if found && r.JoinedAt == "" {
-		r.JoinedAt = existing.JoinedAt
+	if found {
+		r.CreatedAt = existing.CreatedAt
+	} else if r.CreatedAt == "" {
+		r.CreatedAt = models.NowRFC3339()
 	}
-	if r.JoinedAt == "" {
-		r.JoinedAt = models.NowRFC3339()
-	}
+	r.LastUpdated = models.NowRFC3339()
 
 	row := gormstore.ActorGroupAssignmentToRow(r)
 	if found {
 		err = m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).
 			Where("actor_id = ? AND group_id = ?", r.ActorID, r.GroupID).
-			Updates(map[string]any{"is_home": r.IsHome, "joined_at": r.JoinedAt, "attributes": row.Attributes}).Error
+			Updates(map[string]any{"updated_at": row.UpdatedAt, "attributes": row.Attributes}).Error
 	} else {
 		// An assignment references an actor and a group by id, but this
 		// table carries no FK to either (see gormstore's
@@ -102,8 +111,7 @@ func (m *userManager) AssignGroup(ctx context.Context, r models.ActorGroupAssign
 // No act-log row is written here — see UserManager.Deregister's doc. The
 // caller (the gateway adapter) is responsible for composing and writing
 // whatever record its own domain wants of the removal, using the returned
-// ActorGroupAssignment (which carries IsHome — the one fact about a
-// departure that is unrecoverable once the row is gone).
+// ActorGroupAssignment.
 func (m *userManager) Deregister(ctx context.Context, actorID, groupID string) (models.ActorGroupAssignment, bool, error) {
 	row, found, err := m.findAssignmentRow(ctx, actorID, groupID)
 	if err != nil {
@@ -121,8 +129,9 @@ func (m *userManager) Deregister(ctx context.Context, actorID, groupID string) (
 	return reg, true, nil
 }
 
-// ListGroupsForActor returns every registration an actor holds, joined_at-
-// then-group-id order (matching the gateway's ORDER BY joined_at, chapter_id).
+// ListGroupsForActor returns every registration an actor holds, created_at-
+// then-group-id order (matching the gateway's ORDER BY joined_at,
+// chapter_id — created_at now plays that role, see the package doc).
 func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([]models.ActorGroupAssignment, error) {
 	var rows []gormstore.ActorGroupAssignmentRow
 	err := m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).Where("actor_id = ?", actorID).Find(&rows).Error
@@ -134,16 +143,17 @@ func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([
 		out = append(out, gormstore.ActorGroupAssignmentFromRow(r))
 	}
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].JoinedAt != out[j].JoinedAt {
-			return out[i].JoinedAt < out[j].JoinedAt
+		if out[i].CreatedAt != out[j].CreatedAt {
+			return out[i].CreatedAt < out[j].CreatedAt
 		}
 		return out[i].GroupID < out[j].GroupID
 	})
 	return out, nil
 }
 
-// ListActorsForGroup returns every actor registered at a group, joined_at-
-// then-actor-id order (matching the gateway's ORDER BY joined_at, member_id).
+// ListActorsForGroup returns every actor registered at a group, created_at-
+// then-actor-id order (matching the gateway's ORDER BY joined_at,
+// member_id — created_at now plays that role).
 func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([]models.ActorGroupAssignment, error) {
 	var rows []gormstore.ActorGroupAssignmentRow
 	err := m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).Where("group_id = ?", groupID).Find(&rows).Error
@@ -155,22 +165,26 @@ func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([
 		out = append(out, gormstore.ActorGroupAssignmentFromRow(r))
 	}
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].JoinedAt != out[j].JoinedAt {
-			return out[i].JoinedAt < out[j].JoinedAt
+		if out[i].CreatedAt != out[j].CreatedAt {
+			return out[i].CreatedAt < out[j].CreatedAt
 		}
 		return out[i].ActorID < out[j].ActorID
 	})
 	return out, nil
 }
 
-// HomeCounts tallies actors by home group. `is_home` only, not merely
-// "registered at" — an actor registered at three groups may call more than
-// one of them home now that decision 8 drops exclusivity, but the count
-// still means "actors who marked this their home", not "actors registered
-// here", matching the gateway's own HomeCounts contract.
+// HomeCounts tallies actors by home group. Since "home" is no longer a
+// dedicated column (see the package doc), this reads the caller-declared
+// `Attributes["is_home"]` JSON path rather than a boolean column — a group
+// is counted for an actor only when that actor's own assignment row set
+// is_home=true in Attributes; this package itself attaches no meaning to
+// the key otherwise, and a deployment that never sets it gets an empty map
+// back, not an error. Groups with nobody are absent rather than zero.
 func (m *userManager) HomeCounts(ctx context.Context) (map[string]int, error) {
 	var rows []gormstore.ActorGroupAssignmentRow
-	err := m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).Where("is_home = ?", true).Find(&rows).Error
+	err := m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).
+		Where(datatypes.JSONQuery("attributes").Equals(true, "is_home")).
+		Find(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("HomeCounts: %w", err)
 	}

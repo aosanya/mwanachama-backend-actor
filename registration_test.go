@@ -33,12 +33,12 @@ func TestRegister_RoundTrips(t *testing.T) {
 	g := mustGroup(t, mgr, "Ward A")
 
 	reg, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
-		ActorID: a.ID, GroupID: g.ID, IsHome: true,
+		ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true},
 	})
 	if err != nil {
 		t.Fatalf("Register: %v", err)
 	}
-	if !reg.IsHome || reg.JoinedAt == "" {
+	if reg.CreatedAt == "" || reg.LastUpdated == "" {
 		t.Errorf("Register result = %+v", reg)
 	}
 
@@ -62,10 +62,11 @@ func TestRegister_MissingActor(t *testing.T) {
 }
 
 // TestRegister_NoHomeExclusivity is the DSN-1698 decision-8 parity check:
-// registering a SECOND home group must NOT clear the first one's IsHome
-// flag. This replaces the old "one home chapter per member" DB-conflict
-// assertion the gateway's pre-cutover tests made — see this repo's
-// documentation/2. design/README.md and the gateway board's DSN-1698 note.
+// registering a SECOND home group must NOT clear the first one's
+// Attributes["is_home"]. This replaces the old "one home chapter per
+// member" DB-conflict assertion the gateway's pre-cutover tests made — see
+// this repo's documentation/2. design/README.md and the gateway board's
+// DSN-1698 note.
 func TestRegister_NoHomeExclusivity(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
@@ -73,10 +74,11 @@ func TestRegister_NoHomeExclusivity(t *testing.T) {
 	g1 := mustGroup(t, mgr, "Ward A")
 	g2 := mustGroup(t, mgr, "Ward B")
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g1.ID, IsHome: true}); err != nil {
+	home := map[string]any{"is_home": true}
+	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g1.ID, Attributes: home}); err != nil {
 		t.Fatalf("Register g1: %v", err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g2.ID, IsHome: true}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g2.ID, Attributes: home}); err != nil {
 		t.Fatalf("Register g2: %v", err)
 	}
 
@@ -86,7 +88,7 @@ func TestRegister_NoHomeExclusivity(t *testing.T) {
 	}
 	homeCount := 0
 	for _, r := range regs {
-		if r.IsHome {
+		if isHome, _ := r.Attributes["is_home"].(bool); isHome {
 			homeCount++
 		}
 	}
@@ -95,29 +97,27 @@ func TestRegister_NoHomeExclusivity(t *testing.T) {
 	}
 }
 
-func TestRegister_ReRegisterPreservesJoinedAt(t *testing.T) {
+func TestRegister_ReRegisterPreservesCreatedAt(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	a := mustActor(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	first, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
-		ActorID: a.ID, GroupID: g.ID, IsHome: false, JoinedAt: "2020-01-01T00:00:00Z",
-	})
+	first, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID})
 	if err != nil {
 		t.Fatalf("first Register: %v", err)
 	}
 	second, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
-		ActorID: a.ID, GroupID: g.ID, IsHome: true,
+		ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true},
 	})
 	if err != nil {
 		t.Fatalf("second Register: %v", err)
 	}
-	if second.JoinedAt != first.JoinedAt {
-		t.Errorf("JoinedAt changed on re-register: %q -> %q", first.JoinedAt, second.JoinedAt)
+	if second.CreatedAt != first.CreatedAt {
+		t.Errorf("CreatedAt changed on re-register: %q -> %q", first.CreatedAt, second.CreatedAt)
 	}
-	if !second.IsHome {
-		t.Error("expected IsHome updated to true")
+	if isHome, _ := second.Attributes["is_home"].(bool); !isHome {
+		t.Error("expected is_home updated to true")
 	}
 
 	regs, err := mgr.ListGroupsForActor(ctx, a.ID)
@@ -135,7 +135,7 @@ func TestDeregister_RemovesEdgeAndReturnsPriorState(t *testing.T) {
 	a := mustActor(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID, IsHome: true}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true}}); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 
@@ -146,8 +146,8 @@ func TestDeregister_RemovesEdgeAndReturnsPriorState(t *testing.T) {
 	if !found {
 		t.Fatal("expected found=true")
 	}
-	if !gone.IsHome {
-		t.Error("expected the removed ActorGroupAssignment to carry IsHome=true")
+	if isHome, _ := gone.Attributes["is_home"].(bool); !isHome {
+		t.Error("expected the removed ActorGroupAssignment to carry Attributes[\"is_home\"]=true")
 	}
 
 	regs, err := mgr.ListGroupsForActor(ctx, a.ID)
@@ -206,13 +206,15 @@ func TestHomeCounts_OnlyCountsHome(t *testing.T) {
 	a2 := mustActor(t, mgr, "Baraka")
 	a3 := mustActor(t, mgr, "Chiku")
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a1.ID, GroupID: g1.ID, IsHome: true}); err != nil {
+	home := map[string]any{"is_home": true}
+	notHome := map[string]any{"is_home": false}
+	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a1.ID, GroupID: g1.ID, Attributes: home}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a2.ID, GroupID: g1.ID, IsHome: false}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a2.ID, GroupID: g1.ID, Attributes: notHome}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a3.ID, GroupID: g2.ID, IsHome: true}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a3.ID, GroupID: g2.ID, Attributes: home}); err != nil {
 		t.Fatal(err)
 	}
 
