@@ -9,7 +9,7 @@
 // business logic against fakeDataManager; this file's job is narrower —
 // prove the real Postgres wiring (schema activation, jsonb property
 // round-trips, relationship storage) works end-to-end.
-package mwanachamauser_test
+package mwanachamaactor_test
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/aosanya/mwanachama-backend-shared/postgres"
-	mwanachamauser "github.com/aosanya/mwanachama-backend-user"
+	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 )
 
 func applyDDL(ctx context.Context, db *sql.DB, script string) error {
@@ -30,7 +30,7 @@ func applyDDL(ctx context.Context, db *sql.DB, script string) error {
 // member-prefixed tables, seeds+activates DefaultUserSchema, and returns a
 // ready-to-use UserManager. Skips the calling test if POSTGRES_URL is unset.
 // Tables are dropped on cleanup.
-func newPostgresUserManager(t *testing.T) mwanachamauser.UserManager {
+func newPostgresUserManager(t *testing.T) mwanachamaactor.UserManager {
 	t.Helper()
 	dsn := os.Getenv("POSTGRES_URL")
 	if dsn == "" {
@@ -56,7 +56,7 @@ func newPostgresUserManager(t *testing.T) mwanachamauser.UserManager {
 
 	backend := postgres.NewBackend(db, tables)
 
-	s := mwanachamauser.DefaultUserSchema("useri")
+	s := mwanachamaactor.DefaultUserSchema("useri")
 	if err := backend.SetSchema(ctx, s); err != nil {
 		t.Fatalf("SetSchema: %v", err)
 	}
@@ -67,7 +67,7 @@ func newPostgresUserManager(t *testing.T) mwanachamauser.UserManager {
 		t.Fatalf("Activate: %v", err)
 	}
 
-	mgr, err := mwanachamauser.NewUserManager(backend)
+	mgr, err := mwanachamaactor.NewUserManager(backend)
 	if err != nil {
 		t.Fatalf("NewUserManager: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestPostgres_MemberCRUD_RoundTrip(t *testing.T) {
 	mgr := newPostgresUserManager(t)
 	ctx := context.Background()
 
-	created, err := mgr.CreateMember(ctx, mwanachamauser.Member{
+	created, err := mgr.CreateMember(ctx, mwanachamaactor.Member{
 		DisplayName: "Postgres round-trip",
 		Email:       "pg@example.com",
 		Attributes:  map[string]any{"persona": "trader"},
@@ -114,11 +114,11 @@ func TestPostgres_GroupAndRegistration_RoundTrip(t *testing.T) {
 	mgr := newPostgresUserManager(t)
 	ctx := context.Background()
 
-	root, err := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root", Discoverable: true})
+	root, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Root", Discoverable: true})
 	if err != nil {
 		t.Fatalf("CreateGroup(root): %v", err)
 	}
-	child, err := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
+	child, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Child", ParentID: root.ID})
 	if err != nil {
 		t.Fatalf("CreateGroup(child): %v", err)
 	}
@@ -131,11 +131,11 @@ func TestPostgres_GroupAndRegistration_RoundTrip(t *testing.T) {
 		t.Errorf("ListGroupChildren = %+v", kids)
 	}
 
-	m, err := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "Member"})
+	m, err := mgr.CreateMember(ctx, mwanachamaactor.Member{DisplayName: "Member"})
 	if err != nil {
 		t.Fatalf("CreateMember: %v", err)
 	}
-	if _, err := mgr.Register(ctx, mwanachamauser.Registration{
+	if _, err := mgr.Register(ctx, mwanachamaactor.Registration{
 		MemberID: m.ID, GroupID: child.ID, IsHome: true,
 	}); err != nil {
 		t.Fatalf("Register: %v", err)

@@ -1,7 +1,7 @@
-// Package mwanachamauser — pre-delivered schema definition.
+// Package mwanachamaactor — pre-delivered schema definition.
 //
 // This file exposes [DefaultUserSchema], which returns the
-// [schema.Schema] for one mounted instance of mwanachama-backend-user.
+// [schema.Schema] for one mounted instance of mwanachama-backend-actor.
 // Wiring code in mwanachama-backend-api-gateway seeds this schema at startup
 // via SchemaManager.SetSchema — one deployment per agency (single-tenant),
 // so no agency scoping is threaded through the schema itself. The gateway
@@ -45,7 +45,7 @@
 // TypeDefinition.StorageCollection below is carried over purely as a label
 // (see schema.TypeDefinition's doc), derived from the same instance name for
 // consistency, and has no functional effect here.
-package mwanachamauser
+package mwanachamaactor
 
 import "github.com/aosanya/mwanachama-backend-shared/schema"
 

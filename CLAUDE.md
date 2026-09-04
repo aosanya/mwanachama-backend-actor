@@ -2,14 +2,14 @@
 
 Guidance for Claude Code working in this repository.
 
-## Project: mwanachama-backend-user
+## Project: mwanachama-backend-actor
 
 Extraction of `mwanachama-backend-api-gateway`'s `member` domain (and
 `chapter`, renamed `Group`) onto the `mwanachama-backend-taskmanager`
 pattern: domain logic AND storage both delegated to
 `mwanachama-backend-shared/entitygraph.DataManager`, imported directly by
 the gateway process — no separate service, no gRPC, no proto. Module path
-`github.com/aosanya/mwanachama-backend-user`.
+`github.com/aosanya/mwanachama-backend-actor`.
 
 Decided in a dev-research session, 2026-09-03. Full decision record and the
 Q&A trail: `mwanachama-backend-api-gateway/documentation/2. design/todo.md`,

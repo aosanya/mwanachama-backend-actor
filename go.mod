@@ -1,4 +1,4 @@
-module github.com/aosanya/mwanachama-backend-user
+module github.com/aosanya/mwanachama-backend-actor
 
 go 1.24.0
 

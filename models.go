@@ -1,4 +1,4 @@
-// Package mwanachamauser provides Member/Group lifecycle management,
+// Package mwanachamaactor provides Member/Group lifecycle management,
 // extracted from mwanachama-backend-api-gateway's internal/domain/member and
 // internal/domain/chapter packages onto the mwanachama-backend-taskmanager
 // pattern: domain logic AND storage both delegated to a
@@ -18,7 +18,7 @@
 // Ported from mwanachama-backend-api-gateway's internal/domain/member and
 // internal/domain/chapter packages. See this repo's CLAUDE.md for what
 // changed along the way.
-package mwanachamauser
+package mwanachamaactor
 
 import "time"
 

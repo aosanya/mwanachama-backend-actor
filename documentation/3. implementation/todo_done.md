@@ -1,4 +1,4 @@
-# mwanachama-backend-user — completed work
+# mwanachama-backend-actor — completed work
 
 ## Initial build — 2026-09-03
 

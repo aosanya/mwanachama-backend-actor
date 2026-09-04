@@ -1,4 +1,4 @@
-# mwanachama-backend-user — documentation
+# mwanachama-backend-actor — documentation
 
 ## Layout
 

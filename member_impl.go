@@ -3,7 +3,7 @@
 // and internal/store/memory/member_store.go (the identity half; the
 // registration half is in registration_impl.go, mirroring the gateway's own
 // member_store.go / member_registration_store.go split).
-package mwanachamauser
+package mwanachamaactor
 
 import (
 	"context"

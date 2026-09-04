@@ -1,16 +1,16 @@
-package mwanachamauser_test
+package mwanachamaactor_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	mwanachamauser "github.com/aosanya/mwanachama-backend-user"
+	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 )
 
-func newTestManager(t *testing.T) mwanachamauser.UserManager {
+func newTestManager(t *testing.T) mwanachamaactor.UserManager {
 	t.Helper()
-	mgr, err := mwanachamauser.NewUserManager(newFakeDataManager())
+	mgr, err := mwanachamaactor.NewUserManager(newFakeDataManager())
 	if err != nil {
 		t.Fatalf("NewUserManager: %v", err)
 	}
@@ -18,7 +18,7 @@ func newTestManager(t *testing.T) mwanachamauser.UserManager {
 }
 
 func TestNewUserManager_NilDataManager(t *testing.T) {
-	if _, err := mwanachamauser.NewUserManager(nil); err == nil {
+	if _, err := mwanachamaactor.NewUserManager(nil); err == nil {
 		t.Fatal("expected error for nil DataManager")
 	}
 }
@@ -27,7 +27,7 @@ func TestCreateMember_MintsIDAndCreatedAt(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	m, err := mgr.CreateMember(ctx, mwanachamauser.Member{
+	m, err := mgr.CreateMember(ctx, mwanachamaactor.Member{
 		DisplayName: "Amina",
 		Email:       "amina@example.com",
 	})
@@ -52,7 +52,7 @@ func TestCreateMember_WithAttributes_RoundTrips(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	m, err := mgr.CreateMember(ctx, mwanachamauser.Member{
+	m, err := mgr.CreateMember(ctx, mwanachamaactor.Member{
 		DisplayName: "Agentic One",
 		IsAgentic:   true,
 		Attributes:  map[string]any{"persona": "farmer"},
@@ -74,7 +74,7 @@ func TestCreateMember_WithAttributes_RoundTrips(t *testing.T) {
 
 func TestGetMember_NotFound(t *testing.T) {
 	mgr := newTestManager(t)
-	if _, err := mgr.GetMember(context.Background(), "nope"); !errors.Is(err, mwanachamauser.ErrMemberNotFound) {
+	if _, err := mgr.GetMember(context.Background(), "nope"); !errors.Is(err, mwanachamaactor.ErrMemberNotFound) {
 		t.Fatalf("GetMember err = %v, want ErrMemberNotFound", err)
 	}
 }
@@ -83,8 +83,8 @@ func TestGetMembers_SkipsMissing_SortsByID(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	a, _ := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "A"})
-	b, _ := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "B"})
+	a, _ := mgr.CreateMember(ctx, mwanachamaactor.Member{DisplayName: "A"})
+	b, _ := mgr.CreateMember(ctx, mwanachamaactor.Member{DisplayName: "B"})
 
 	out, err := mgr.GetMembers(ctx, []string{b.ID, "missing", a.ID, a.ID})
 	if err != nil {
@@ -103,7 +103,7 @@ func TestSetMemberDisplayName(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	m, _ := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "Old"})
+	m, _ := mgr.CreateMember(ctx, mwanachamaactor.Member{DisplayName: "Old"})
 	updated, err := mgr.SetMemberDisplayName(ctx, m.ID, "New")
 	if err != nil {
 		t.Fatalf("SetMemberDisplayName: %v", err)
@@ -118,7 +118,7 @@ func TestSetMemberDisplayName(t *testing.T) {
 
 func TestSetMemberDisplayName_NotFound(t *testing.T) {
 	mgr := newTestManager(t)
-	if _, err := mgr.SetMemberDisplayName(context.Background(), "nope", "x"); !errors.Is(err, mwanachamauser.ErrMemberNotFound) {
+	if _, err := mgr.SetMemberDisplayName(context.Background(), "nope", "x"); !errors.Is(err, mwanachamaactor.ErrMemberNotFound) {
 		t.Fatalf("err = %v, want ErrMemberNotFound", err)
 	}
 }
@@ -128,7 +128,7 @@ func TestListMembers_SortedByID(t *testing.T) {
 	ctx := context.Background()
 
 	for _, name := range []string{"Zeta", "Alpha", "Mid"} {
-		if _, err := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: name}); err != nil {
+		if _, err := mgr.CreateMember(ctx, mwanachamaactor.Member{DisplayName: name}); err != nil {
 			t.Fatalf("CreateMember: %v", err)
 		}
 	}

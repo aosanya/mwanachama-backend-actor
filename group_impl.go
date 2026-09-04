@@ -3,7 +3,7 @@
 // internal/store/postgres/chapter_store.go and chapter_store_edit.go (the
 // Chapter-CRUD half only — Hierarchy/Level stay behind in the gateway, per
 // the DSN-1699 gap 1 default recorded in schema.go's package doc).
-package mwanachamauser
+package mwanachamaactor
 
 import (
 	"context"

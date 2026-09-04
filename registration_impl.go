@@ -12,7 +12,7 @@
 // mwanachama-backend-shared/entitygraph/entitygraph.go) — a re-registration
 // is therefore implemented as delete-then-recreate, preserving the original
 // JoinedAt (DEV-1319: a join date describes the first join).
-package mwanachamauser
+package mwanachamaactor
 
 import (
 	"context"
