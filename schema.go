@@ -2,10 +2,10 @@
 //
 // This file exposes [DefaultUserSchema], which returns the
 // [schema.Schema] for one mounted instance of mwanachama-backend-user.
-// Wiring code in mwanachama-backend-api-gateway seeds this schema per agency
-// at startup via SchemaManager.SetSchema (set s.AgencyID before calling;
-// DefaultUserSchema itself returns an agency-agnostic template). The
-// gateway may mount this package more than once — e.g. "member" today,
+// Wiring code in mwanachama-backend-api-gateway seeds this schema at startup
+// via SchemaManager.SetSchema — one deployment per agency (single-tenant),
+// so no agency scoping is threaded through the schema itself. The gateway
+// may mount this package more than once — e.g. "member" today,
 // with others possible later — each as its own instance with its own
 // Postgres table prefix; DefaultUserSchema takes that instance name so its
 // StorageCollection labels stay in step with the table prefix the gateway

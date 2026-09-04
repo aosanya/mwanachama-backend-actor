@@ -14,13 +14,12 @@ import (
 	"github.com/aosanya/mwanachama-backend-shared/entitygraph"
 )
 
-// CreateMember creates a Member entity in the agency graph.
-func (m *userManager) CreateMember(ctx context.Context, agencyID string, mem Member) (Member, error) {
+// CreateMember creates a Member entity.
+func (m *userManager) CreateMember(ctx context.Context, mem Member) (Member, error) {
 	if mem.CreatedAt == "" {
 		mem.CreatedAt = nowRFC3339()
 	}
 	created, err := m.dm.CreateEntity(ctx, entitygraph.CreateEntityRequest{
-		AgencyID:   agencyID,
 		TypeID:     memberTypeID,
 		Properties: memberToProperties(mem),
 	})
@@ -31,8 +30,8 @@ func (m *userManager) CreateMember(ctx context.Context, agencyID string, mem Mem
 }
 
 // GetMember reads a single Member entity.
-func (m *userManager) GetMember(ctx context.Context, agencyID, id string) (Member, error) {
-	e, err := m.dm.GetEntity(ctx, agencyID, id)
+func (m *userManager) GetMember(ctx context.Context, id string) (Member, error) {
+	e, err := m.dm.GetEntity(ctx, id)
 	if err != nil {
 		if errors.Is(err, entitygraph.ErrEntityNotFound) {
 			return Member{}, ErrMemberNotFound
@@ -47,7 +46,7 @@ func (m *userManager) GetMember(ctx context.Context, agencyID, id string) (Membe
 
 // GetMembers returns the Members for the given ids, sorted by id. Ids with
 // no member are skipped rather than erroring.
-func (m *userManager) GetMembers(ctx context.Context, agencyID string, ids []string) ([]Member, error) {
+func (m *userManager) GetMembers(ctx context.Context, ids []string) ([]Member, error) {
 	out := []Member{}
 	seen := map[string]bool{}
 	for _, id := range ids {
@@ -55,7 +54,7 @@ func (m *userManager) GetMembers(ctx context.Context, agencyID string, ids []str
 			continue
 		}
 		seen[id] = true
-		mem, err := m.GetMember(ctx, agencyID, id)
+		mem, err := m.GetMember(ctx, id)
 		if err != nil {
 			if errors.Is(err, ErrMemberNotFound) {
 				continue
@@ -69,12 +68,12 @@ func (m *userManager) GetMembers(ctx context.Context, agencyID string, ids []str
 }
 
 // SetMemberDisplayName records the name a member gave for themselves.
-func (m *userManager) SetMemberDisplayName(ctx context.Context, agencyID, id, displayName string) (Member, error) {
-	current, err := m.GetMember(ctx, agencyID, id)
+func (m *userManager) SetMemberDisplayName(ctx context.Context, id, displayName string) (Member, error) {
+	current, err := m.GetMember(ctx, id)
 	if err != nil {
 		return Member{}, err
 	}
-	updated, err := m.dm.UpdateEntity(ctx, agencyID, id, entitygraph.UpdateEntityRequest{
+	updated, err := m.dm.UpdateEntity(ctx, id, entitygraph.UpdateEntityRequest{
 		Properties: map[string]any{"display_name": displayName},
 	})
 	if err != nil {
@@ -88,11 +87,10 @@ func (m *userManager) SetMemberDisplayName(ctx context.Context, agencyID, id, di
 	return out, nil
 }
 
-// ListMembers returns every non-deleted Member in the agency, id order.
-func (m *userManager) ListMembers(ctx context.Context, agencyID string) ([]Member, error) {
+// ListMembers returns every non-deleted Member, id order.
+func (m *userManager) ListMembers(ctx context.Context) ([]Member, error) {
 	entities, err := m.dm.ListEntities(ctx, entitygraph.EntityFilter{
-		AgencyID: agencyID,
-		TypeID:   memberTypeID,
+		TypeID: memberTypeID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ListMembers: %w", err)

@@ -25,12 +25,11 @@ import (
 
 // findRegistrationEdge returns the registered_at edge from memberID to
 // groupID, if one exists.
-func (m *userManager) findRegistrationEdge(ctx context.Context, agencyID, memberID, groupID string) (entitygraph.Relationship, bool, error) {
+func (m *userManager) findRegistrationEdge(ctx context.Context, memberID, groupID string) (entitygraph.Relationship, bool, error) {
 	edges, err := m.dm.ListRelationships(ctx, entitygraph.RelationshipFilter{
-		AgencyID: agencyID,
-		FromID:   memberID,
-		ToID:     groupID,
-		Name:     RelRegisteredAt,
+		FromID: memberID,
+		ToID:   groupID,
+		Name:   RelRegisteredAt,
 	})
 	if err != nil {
 		return entitygraph.Relationship{}, false, err
@@ -44,13 +43,13 @@ func (m *userManager) findRegistrationEdge(ctx context.Context, agencyID, member
 // Register enrols a member at a group (upsert on (memberID, groupID)). See
 // the package doc above for why re-registration is delete-then-recreate, and
 // the file doc for why IsHome carries no exclusivity.
-func (m *userManager) Register(ctx context.Context, agencyID string, r Registration) (Registration, error) {
-	existing, found, err := m.findRegistrationEdge(ctx, agencyID, r.MemberID, r.GroupID)
+func (m *userManager) Register(ctx context.Context, r Registration) (Registration, error) {
+	existing, found, err := m.findRegistrationEdge(ctx, r.MemberID, r.GroupID)
 	if err != nil {
 		return Registration{}, fmt.Errorf("Register: %w", err)
 	}
 	if found {
-		if err := m.dm.DeleteRelationship(ctx, agencyID, existing.ID); err != nil && !errors.Is(err, entitygraph.ErrRelationshipNotFound) {
+		if err := m.dm.DeleteRelationship(ctx, existing.ID); err != nil && !errors.Is(err, entitygraph.ErrRelationshipNotFound) {
 			return Registration{}, fmt.Errorf("Register: replace: %w", err)
 		}
 		if r.JoinedAt == "" {
@@ -62,10 +61,9 @@ func (m *userManager) Register(ctx context.Context, agencyID string, r Registrat
 	}
 
 	_, err = m.dm.CreateRelationship(ctx, entitygraph.CreateRelationshipRequest{
-		AgencyID: agencyID,
-		Name:     RelRegisteredAt,
-		FromID:   r.MemberID,
-		ToID:     r.GroupID,
+		Name:   RelRegisteredAt,
+		FromID: r.MemberID,
+		ToID:   r.GroupID,
 		Properties: map[string]any{
 			"is_home":   r.IsHome,
 			"joined_at": r.JoinedAt,
@@ -88,8 +86,8 @@ func (m *userManager) Register(ctx context.Context, agencyID string, r Registrat
 // whatever record its own domain wants of the removal, using the returned
 // Registration (which carries IsHome — the one fact about a departure that
 // is unrecoverable once the edge is gone).
-func (m *userManager) Deregister(ctx context.Context, agencyID, memberID, groupID string) (Registration, bool, error) {
-	edge, found, err := m.findRegistrationEdge(ctx, agencyID, memberID, groupID)
+func (m *userManager) Deregister(ctx context.Context, memberID, groupID string) (Registration, bool, error) {
+	edge, found, err := m.findRegistrationEdge(ctx, memberID, groupID)
 	if err != nil {
 		return Registration{}, false, fmt.Errorf("Deregister: %w", err)
 	}
@@ -97,7 +95,7 @@ func (m *userManager) Deregister(ctx context.Context, agencyID, memberID, groupI
 		return Registration{}, false, nil
 	}
 	reg := registrationFromEdge(edge)
-	if err := m.dm.DeleteRelationship(ctx, agencyID, edge.ID); err != nil {
+	if err := m.dm.DeleteRelationship(ctx, edge.ID); err != nil {
 		if errors.Is(err, entitygraph.ErrRelationshipNotFound) {
 			return Registration{}, false, nil
 		}
@@ -108,11 +106,10 @@ func (m *userManager) Deregister(ctx context.Context, agencyID, memberID, groupI
 
 // ListGroupsForMember returns every registration a member holds, joined_at-
 // then-group-id order (matching the gateway's ORDER BY joined_at, chapter_id).
-func (m *userManager) ListGroupsForMember(ctx context.Context, agencyID, memberID string) ([]Registration, error) {
+func (m *userManager) ListGroupsForMember(ctx context.Context, memberID string) ([]Registration, error) {
 	edges, err := m.dm.ListRelationships(ctx, entitygraph.RelationshipFilter{
-		AgencyID: agencyID,
-		FromID:   memberID,
-		Name:     RelRegisteredAt,
+		FromID: memberID,
+		Name:   RelRegisteredAt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ListGroupsForMember: %w", err)
@@ -132,11 +129,10 @@ func (m *userManager) ListGroupsForMember(ctx context.Context, agencyID, memberI
 
 // ListMembersForGroup returns every member registered at a group, joined_at-
 // then-member-id order (matching the gateway's ORDER BY joined_at, member_id).
-func (m *userManager) ListMembersForGroup(ctx context.Context, agencyID, groupID string) ([]Registration, error) {
+func (m *userManager) ListMembersForGroup(ctx context.Context, groupID string) ([]Registration, error) {
 	edges, err := m.dm.ListRelationships(ctx, entitygraph.RelationshipFilter{
-		AgencyID: agencyID,
-		ToID:     groupID,
-		Name:     RelRegisteredAt,
+		ToID: groupID,
+		Name: RelRegisteredAt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ListMembersForGroup: %w", err)
@@ -159,10 +155,9 @@ func (m *userManager) ListMembersForGroup(ctx context.Context, agencyID, groupID
 // one of them home now that decision 8 drops exclusivity, but the count
 // still means "members who marked this their home", not "members registered
 // here", matching the gateway's own HomeCounts contract.
-func (m *userManager) HomeCounts(ctx context.Context, agencyID string) (map[string]int, error) {
+func (m *userManager) HomeCounts(ctx context.Context) (map[string]int, error) {
 	edges, err := m.dm.ListRelationships(ctx, entitygraph.RelationshipFilter{
-		AgencyID: agencyID,
-		Name:     RelRegisteredAt,
+		Name: RelRegisteredAt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("HomeCounts: %w", err)

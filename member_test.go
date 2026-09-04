@@ -8,8 +8,6 @@ import (
 	mwanachamauser "github.com/aosanya/mwanachama-backend-user"
 )
 
-const testAgency = "test-agency"
-
 func newTestManager(t *testing.T) mwanachamauser.UserManager {
 	t.Helper()
 	mgr, err := mwanachamauser.NewUserManager(newFakeDataManager())
@@ -29,7 +27,7 @@ func TestCreateMember_MintsIDAndCreatedAt(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	m, err := mgr.CreateMember(ctx, testAgency, mwanachamauser.Member{
+	m, err := mgr.CreateMember(ctx, mwanachamauser.Member{
 		DisplayName: "Amina",
 		Email:       "amina@example.com",
 	})
@@ -54,7 +52,7 @@ func TestCreateMember_WithAttributes_RoundTrips(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	m, err := mgr.CreateMember(ctx, testAgency, mwanachamauser.Member{
+	m, err := mgr.CreateMember(ctx, mwanachamauser.Member{
 		DisplayName: "Agentic One",
 		IsAgentic:   true,
 		Attributes:  map[string]any{"persona": "farmer"},
@@ -62,7 +60,7 @@ func TestCreateMember_WithAttributes_RoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateMember: %v", err)
 	}
-	got, err := mgr.GetMember(ctx, testAgency, m.ID)
+	got, err := mgr.GetMember(ctx, m.ID)
 	if err != nil {
 		t.Fatalf("GetMember: %v", err)
 	}
@@ -76,7 +74,7 @@ func TestCreateMember_WithAttributes_RoundTrips(t *testing.T) {
 
 func TestGetMember_NotFound(t *testing.T) {
 	mgr := newTestManager(t)
-	if _, err := mgr.GetMember(context.Background(), testAgency, "nope"); !errors.Is(err, mwanachamauser.ErrMemberNotFound) {
+	if _, err := mgr.GetMember(context.Background(), "nope"); !errors.Is(err, mwanachamauser.ErrMemberNotFound) {
 		t.Fatalf("GetMember err = %v, want ErrMemberNotFound", err)
 	}
 }
@@ -85,10 +83,10 @@ func TestGetMembers_SkipsMissing_SortsByID(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	a, _ := mgr.CreateMember(ctx, testAgency, mwanachamauser.Member{DisplayName: "A"})
-	b, _ := mgr.CreateMember(ctx, testAgency, mwanachamauser.Member{DisplayName: "B"})
+	a, _ := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "A"})
+	b, _ := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "B"})
 
-	out, err := mgr.GetMembers(ctx, testAgency, []string{b.ID, "missing", a.ID, a.ID})
+	out, err := mgr.GetMembers(ctx, []string{b.ID, "missing", a.ID, a.ID})
 	if err != nil {
 		t.Fatalf("GetMembers: %v", err)
 	}
@@ -105,8 +103,8 @@ func TestSetMemberDisplayName(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	m, _ := mgr.CreateMember(ctx, testAgency, mwanachamauser.Member{DisplayName: "Old"})
-	updated, err := mgr.SetMemberDisplayName(ctx, testAgency, m.ID, "New")
+	m, _ := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "Old"})
+	updated, err := mgr.SetMemberDisplayName(ctx, m.ID, "New")
 	if err != nil {
 		t.Fatalf("SetMemberDisplayName: %v", err)
 	}
@@ -120,7 +118,7 @@ func TestSetMemberDisplayName(t *testing.T) {
 
 func TestSetMemberDisplayName_NotFound(t *testing.T) {
 	mgr := newTestManager(t)
-	if _, err := mgr.SetMemberDisplayName(context.Background(), testAgency, "nope", "x"); !errors.Is(err, mwanachamauser.ErrMemberNotFound) {
+	if _, err := mgr.SetMemberDisplayName(context.Background(), "nope", "x"); !errors.Is(err, mwanachamauser.ErrMemberNotFound) {
 		t.Fatalf("err = %v, want ErrMemberNotFound", err)
 	}
 }
@@ -130,11 +128,11 @@ func TestListMembers_SortedByID(t *testing.T) {
 	ctx := context.Background()
 
 	for _, name := range []string{"Zeta", "Alpha", "Mid"} {
-		if _, err := mgr.CreateMember(ctx, testAgency, mwanachamauser.Member{DisplayName: name}); err != nil {
+		if _, err := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: name}); err != nil {
 			t.Fatalf("CreateMember: %v", err)
 		}
 	}
-	out, err := mgr.ListMembers(ctx, testAgency)
+	out, err := mgr.ListMembers(ctx)
 	if err != nil {
 		t.Fatalf("ListMembers: %v", err)
 	}
@@ -145,24 +143,5 @@ func TestListMembers_SortedByID(t *testing.T) {
 		if out[i-1].ID > out[i].ID {
 			t.Fatalf("ListMembers not sorted by id: %v", out)
 		}
-	}
-}
-
-func TestListMembers_ScopedByAgency(t *testing.T) {
-	mgr := newTestManager(t)
-	ctx := context.Background()
-
-	if _, err := mgr.CreateMember(ctx, "agency-a", mwanachamauser.Member{DisplayName: "A"}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := mgr.CreateMember(ctx, "agency-b", mwanachamauser.Member{DisplayName: "B"}); err != nil {
-		t.Fatal(err)
-	}
-	out, err := mgr.ListMembers(ctx, "agency-a")
-	if err != nil {
-		t.Fatalf("ListMembers: %v", err)
-	}
-	if len(out) != 1 {
-		t.Fatalf("len(out) = %d, want 1 (agency-scoped)", len(out))
 	}
 }

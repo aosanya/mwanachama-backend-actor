@@ -16,7 +16,7 @@ import (
 )
 
 // CreateGroup creates a new Group entity.
-func (m *userManager) CreateGroup(ctx context.Context, agencyID string, g Group) (Group, error) {
+func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if g.Name == "" {
 		return Group{}, fmt.Errorf("%w: Group.Name is required", ErrInvalidGroup)
 	}
@@ -24,7 +24,6 @@ func (m *userManager) CreateGroup(ctx context.Context, agencyID string, g Group)
 		g.CreatedAt = nowRFC3339()
 	}
 	created, err := m.dm.CreateEntity(ctx, entitygraph.CreateEntityRequest{
-		AgencyID:   agencyID,
 		TypeID:     groupTypeID,
 		Properties: groupToProperties(g),
 	})
@@ -35,8 +34,8 @@ func (m *userManager) CreateGroup(ctx context.Context, agencyID string, g Group)
 }
 
 // GetGroup reads a single Group entity.
-func (m *userManager) GetGroup(ctx context.Context, agencyID, id string) (Group, error) {
-	e, err := m.dm.GetEntity(ctx, agencyID, id)
+func (m *userManager) GetGroup(ctx context.Context, id string) (Group, error) {
+	e, err := m.dm.GetEntity(ctx, id)
 	if err != nil {
 		if errors.Is(err, entitygraph.ErrEntityNotFound) {
 			return Group{}, ErrGroupNotFound
@@ -52,12 +51,12 @@ func (m *userManager) GetGroup(ctx context.Context, agencyID, id string) (Group,
 // EditGroup writes name/node_type/anchor_level_override. Empty clears —
 // every field is written on every call, mirroring the gateway's
 // chapter.Repository.EditChapter contract exactly.
-func (m *userManager) EditGroup(ctx context.Context, agencyID, id string, e GroupEdit) (Group, error) {
-	current, err := m.GetGroup(ctx, agencyID, id)
+func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Group, error) {
+	current, err := m.GetGroup(ctx, id)
 	if err != nil {
 		return Group{}, err
 	}
-	updated, err := m.dm.UpdateEntity(ctx, agencyID, id, entitygraph.UpdateEntityRequest{
+	updated, err := m.dm.UpdateEntity(ctx, id, entitygraph.UpdateEntityRequest{
 		Properties: map[string]any{
 			"name":                  e.Name,
 			"node_type":             e.NodeType,
@@ -89,11 +88,11 @@ func (m *userManager) EditGroup(ctx context.Context, agencyID, id string, e Grou
 // walk per move is not a performance concern; if it ever becomes one, the
 // gateway adapter is a more natural place to add a materialized-path
 // property than this package.
-func (m *userManager) MoveGroup(ctx context.Context, agencyID, id, newParentID string) (Group, error) {
+func (m *userManager) MoveGroup(ctx context.Context, id, newParentID string) (Group, error) {
 	if newParentID == id {
 		return Group{}, ErrParentIsSelf
 	}
-	current, err := m.GetGroup(ctx, agencyID, id)
+	current, err := m.GetGroup(ctx, id)
 	if err != nil {
 		return Group{}, err
 	}
@@ -101,7 +100,7 @@ func (m *userManager) MoveGroup(ctx context.Context, agencyID, id, newParentID s
 		return Group{}, ErrRootCannotMove
 	}
 	if newParentID != "" {
-		if _, err := m.GetGroup(ctx, agencyID, newParentID); err != nil {
+		if _, err := m.GetGroup(ctx, newParentID); err != nil {
 			if errors.Is(err, ErrGroupNotFound) {
 				return Group{}, ErrParentNotFound
 			}
@@ -109,7 +108,7 @@ func (m *userManager) MoveGroup(ctx context.Context, agencyID, id, newParentID s
 		}
 	}
 
-	all, err := m.ListGroups(ctx, agencyID, "")
+	all, err := m.ListGroups(ctx, "")
 	if err != nil {
 		return Group{}, fmt.Errorf("MoveGroup: %w", err)
 	}
@@ -127,7 +126,7 @@ func (m *userManager) MoveGroup(ctx context.Context, agencyID, id, newParentID s
 		seen[cur.ID] = true
 	}
 
-	updated, err := m.dm.UpdateEntity(ctx, agencyID, id, entitygraph.UpdateEntityRequest{
+	updated, err := m.dm.UpdateEntity(ctx, id, entitygraph.UpdateEntityRequest{
 		Properties: map[string]any{"parent_id": newParentID},
 	})
 	if err != nil {
@@ -141,8 +140,8 @@ func (m *userManager) MoveGroup(ctx context.Context, agencyID, id, newParentID s
 
 // ListGroupChildren returns the direct children of a group (empty parentID
 // returns the roots), id order.
-func (m *userManager) ListGroupChildren(ctx context.Context, agencyID, parentID string) ([]Group, error) {
-	all, err := m.ListGroups(ctx, agencyID, "")
+func (m *userManager) ListGroupChildren(ctx context.Context, parentID string) ([]Group, error) {
+	all, err := m.ListGroups(ctx, "")
 	if err != nil {
 		return nil, fmt.Errorf("ListGroupChildren: %w", err)
 	}
@@ -156,16 +155,15 @@ func (m *userManager) ListGroupChildren(ctx context.Context, agencyID, parentID 
 	return out, nil
 }
 
-// ListGroups returns every group in the agency, optionally filtered to one
-// hierarchy, created_at-then-id order (matching the gateway Postgres store's
-// ORDER BY created_at, id).
-func (m *userManager) ListGroups(ctx context.Context, agencyID, hierarchyID string) ([]Group, error) {
+// ListGroups returns every group, optionally filtered to one hierarchy,
+// created_at-then-id order (matching the gateway Postgres store's ORDER BY
+// created_at, id).
+func (m *userManager) ListGroups(ctx context.Context, hierarchyID string) ([]Group, error) {
 	props := map[string]any{}
 	if hierarchyID != "" {
 		props["hierarchy_id"] = hierarchyID
 	}
 	entities, err := m.dm.ListEntities(ctx, entitygraph.EntityFilter{
-		AgencyID:   agencyID,
 		TypeID:     groupTypeID,
 		Properties: props,
 	})
@@ -187,8 +185,8 @@ func (m *userManager) ListGroups(ctx context.Context, agencyID, hierarchyID stri
 
 // ListDiscoverableGroups returns groups flagged discoverable, optionally
 // name-filtered, id order.
-func (m *userManager) ListDiscoverableGroups(ctx context.Context, agencyID, query string) ([]Group, error) {
-	all, err := m.ListGroups(ctx, agencyID, "")
+func (m *userManager) ListDiscoverableGroups(ctx context.Context, query string) ([]Group, error) {
+	all, err := m.ListGroups(ctx, "")
 	if err != nil {
 		return nil, fmt.Errorf("ListDiscoverableGroups: %w", err)
 	}

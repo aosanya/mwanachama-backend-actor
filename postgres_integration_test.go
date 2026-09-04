@@ -27,10 +27,10 @@ func applyDDL(ctx context.Context, db *sql.DB, script string) error {
 }
 
 // newPostgresUserManager opens POSTGRES_URL, creates a scratch set of
-// member-prefixed tables, seeds+activates DefaultUserSchema for agencyID,
-// and returns a ready-to-use UserManager. Skips the calling test if
-// POSTGRES_URL is unset. Tables are dropped on cleanup.
-func newPostgresUserManager(t *testing.T, agencyID string) mwanachamauser.UserManager {
+// member-prefixed tables, seeds+activates DefaultUserSchema, and returns a
+// ready-to-use UserManager. Skips the calling test if POSTGRES_URL is unset.
+// Tables are dropped on cleanup.
+func newPostgresUserManager(t *testing.T) mwanachamauser.UserManager {
 	t.Helper()
 	dsn := os.Getenv("POSTGRES_URL")
 	if dsn == "" {
@@ -57,14 +57,13 @@ func newPostgresUserManager(t *testing.T, agencyID string) mwanachamauser.UserMa
 	backend := postgres.NewBackend(db, tables)
 
 	s := mwanachamauser.DefaultUserSchema("useri")
-	s.AgencyID = agencyID
 	if err := backend.SetSchema(ctx, s); err != nil {
 		t.Fatalf("SetSchema: %v", err)
 	}
-	if err := backend.Publish(ctx, agencyID); err != nil {
+	if err := backend.Publish(ctx); err != nil {
 		t.Fatalf("Publish: %v", err)
 	}
-	if err := backend.Activate(ctx, agencyID, 1); err != nil {
+	if err := backend.Activate(ctx, 1); err != nil {
 		t.Fatalf("Activate: %v", err)
 	}
 
@@ -76,11 +75,10 @@ func newPostgresUserManager(t *testing.T, agencyID string) mwanachamauser.UserMa
 }
 
 func TestPostgres_MemberCRUD_RoundTrip(t *testing.T) {
-	const agencyID = "pg-agency-member"
-	mgr := newPostgresUserManager(t, agencyID)
+	mgr := newPostgresUserManager(t)
 	ctx := context.Background()
 
-	created, err := mgr.CreateMember(ctx, agencyID, mwanachamauser.Member{
+	created, err := mgr.CreateMember(ctx, mwanachamauser.Member{
 		DisplayName: "Postgres round-trip",
 		Email:       "pg@example.com",
 		Attributes:  map[string]any{"persona": "trader"},
@@ -89,7 +87,7 @@ func TestPostgres_MemberCRUD_RoundTrip(t *testing.T) {
 		t.Fatalf("CreateMember: %v", err)
 	}
 
-	got, err := mgr.GetMember(ctx, agencyID, created.ID)
+	got, err := mgr.GetMember(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("GetMember: %v", err)
 	}
@@ -100,10 +98,10 @@ func TestPostgres_MemberCRUD_RoundTrip(t *testing.T) {
 		t.Errorf("Attributes = %v, want persona=trader (jsonb round-trip)", got.Attributes)
 	}
 
-	if _, err := mgr.SetMemberDisplayName(ctx, agencyID, created.ID, "Renamed"); err != nil {
+	if _, err := mgr.SetMemberDisplayName(ctx, created.ID, "Renamed"); err != nil {
 		t.Fatalf("SetMemberDisplayName: %v", err)
 	}
-	list, err := mgr.ListMembers(ctx, agencyID)
+	list, err := mgr.ListMembers(ctx)
 	if err != nil {
 		t.Fatalf("ListMembers: %v", err)
 	}
@@ -113,20 +111,19 @@ func TestPostgres_MemberCRUD_RoundTrip(t *testing.T) {
 }
 
 func TestPostgres_GroupAndRegistration_RoundTrip(t *testing.T) {
-	const agencyID = "pg-agency-group"
-	mgr := newPostgresUserManager(t, agencyID)
+	mgr := newPostgresUserManager(t)
 	ctx := context.Background()
 
-	root, err := mgr.CreateGroup(ctx, agencyID, mwanachamauser.Group{Name: "Root", Discoverable: true})
+	root, err := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root", Discoverable: true})
 	if err != nil {
 		t.Fatalf("CreateGroup(root): %v", err)
 	}
-	child, err := mgr.CreateGroup(ctx, agencyID, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
+	child, err := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
 	if err != nil {
 		t.Fatalf("CreateGroup(child): %v", err)
 	}
 
-	kids, err := mgr.ListGroupChildren(ctx, agencyID, root.ID)
+	kids, err := mgr.ListGroupChildren(ctx, root.ID)
 	if err != nil {
 		t.Fatalf("ListGroupChildren: %v", err)
 	}
@@ -134,17 +131,17 @@ func TestPostgres_GroupAndRegistration_RoundTrip(t *testing.T) {
 		t.Errorf("ListGroupChildren = %+v", kids)
 	}
 
-	m, err := mgr.CreateMember(ctx, agencyID, mwanachamauser.Member{DisplayName: "Member"})
+	m, err := mgr.CreateMember(ctx, mwanachamauser.Member{DisplayName: "Member"})
 	if err != nil {
 		t.Fatalf("CreateMember: %v", err)
 	}
-	if _, err := mgr.Register(ctx, agencyID, mwanachamauser.Registration{
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{
 		MemberID: m.ID, GroupID: child.ID, IsHome: true,
 	}); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 
-	regs, err := mgr.ListGroupsForMember(ctx, agencyID, m.ID)
+	regs, err := mgr.ListGroupsForMember(ctx, m.ID)
 	if err != nil {
 		t.Fatalf("ListGroupsForMember: %v", err)
 	}
@@ -152,7 +149,7 @@ func TestPostgres_GroupAndRegistration_RoundTrip(t *testing.T) {
 		t.Errorf("ListGroupsForMember = %+v", regs)
 	}
 
-	counts, err := mgr.HomeCounts(ctx, agencyID)
+	counts, err := mgr.HomeCounts(ctx)
 	if err != nil {
 		t.Fatalf("HomeCounts: %v", err)
 	}
@@ -160,7 +157,7 @@ func TestPostgres_GroupAndRegistration_RoundTrip(t *testing.T) {
 		t.Errorf("HomeCounts[child] = %d, want 1", counts[child.ID])
 	}
 
-	gone, found, err := mgr.Deregister(ctx, agencyID, m.ID, child.ID)
+	gone, found, err := mgr.Deregister(ctx, m.ID, child.ID)
 	if err != nil {
 		t.Fatalf("Deregister: %v", err)
 	}

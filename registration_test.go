@@ -9,7 +9,7 @@ import (
 
 func mustMember(t *testing.T, mgr mwanachamauser.UserManager, name string) mwanachamauser.Member {
 	t.Helper()
-	m, err := mgr.CreateMember(context.Background(), testAgency, mwanachamauser.Member{DisplayName: name})
+	m, err := mgr.CreateMember(context.Background(), mwanachamauser.Member{DisplayName: name})
 	if err != nil {
 		t.Fatalf("CreateMember: %v", err)
 	}
@@ -18,7 +18,7 @@ func mustMember(t *testing.T, mgr mwanachamauser.UserManager, name string) mwana
 
 func mustGroup(t *testing.T, mgr mwanachamauser.UserManager, name string) mwanachamauser.Group {
 	t.Helper()
-	g, err := mgr.CreateGroup(context.Background(), testAgency, mwanachamauser.Group{Name: name})
+	g, err := mgr.CreateGroup(context.Background(), mwanachamauser.Group{Name: name})
 	if err != nil {
 		t.Fatalf("CreateGroup: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestRegister_RoundTrips(t *testing.T) {
 	m := mustMember(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	reg, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{
+	reg, err := mgr.Register(ctx, mwanachamauser.Registration{
 		MemberID: m.ID, GroupID: g.ID, IsHome: true,
 	})
 	if err != nil {
@@ -41,7 +41,7 @@ func TestRegister_RoundTrips(t *testing.T) {
 		t.Errorf("Register result = %+v", reg)
 	}
 
-	regs, err := mgr.ListGroupsForMember(ctx, testAgency, m.ID)
+	regs, err := mgr.ListGroupsForMember(ctx, m.ID)
 	if err != nil {
 		t.Fatalf("ListGroupsForMember: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestRegister_MissingMember(t *testing.T) {
 	ctx := context.Background()
 	g := mustGroup(t, mgr, "Ward A")
 
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: "nope", GroupID: g.ID}); err == nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: "nope", GroupID: g.ID}); err == nil {
 		t.Fatal("expected an error registering a nonexistent member")
 	}
 }
@@ -72,14 +72,14 @@ func TestRegister_NoHomeExclusivity(t *testing.T) {
 	g1 := mustGroup(t, mgr, "Ward A")
 	g2 := mustGroup(t, mgr, "Ward B")
 
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m.ID, GroupID: g1.ID, IsHome: true}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m.ID, GroupID: g1.ID, IsHome: true}); err != nil {
 		t.Fatalf("Register g1: %v", err)
 	}
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m.ID, GroupID: g2.ID, IsHome: true}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m.ID, GroupID: g2.ID, IsHome: true}); err != nil {
 		t.Fatalf("Register g2: %v", err)
 	}
 
-	regs, err := mgr.ListGroupsForMember(ctx, testAgency, m.ID)
+	regs, err := mgr.ListGroupsForMember(ctx, m.ID)
 	if err != nil {
 		t.Fatalf("ListGroupsForMember: %v", err)
 	}
@@ -100,13 +100,13 @@ func TestRegister_ReRegisterPreservesJoinedAt(t *testing.T) {
 	m := mustMember(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	first, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{
+	first, err := mgr.Register(ctx, mwanachamauser.Registration{
 		MemberID: m.ID, GroupID: g.ID, IsHome: false, JoinedAt: "2020-01-01T00:00:00Z",
 	})
 	if err != nil {
 		t.Fatalf("first Register: %v", err)
 	}
-	second, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{
+	second, err := mgr.Register(ctx, mwanachamauser.Registration{
 		MemberID: m.ID, GroupID: g.ID, IsHome: true,
 	})
 	if err != nil {
@@ -119,7 +119,7 @@ func TestRegister_ReRegisterPreservesJoinedAt(t *testing.T) {
 		t.Error("expected IsHome updated to true")
 	}
 
-	regs, err := mgr.ListGroupsForMember(ctx, testAgency, m.ID)
+	regs, err := mgr.ListGroupsForMember(ctx, m.ID)
 	if err != nil {
 		t.Fatalf("ListGroupsForMember: %v", err)
 	}
@@ -134,11 +134,11 @@ func TestDeregister_RemovesEdgeAndReturnsPriorState(t *testing.T) {
 	m := mustMember(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m.ID, GroupID: g.ID, IsHome: true}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m.ID, GroupID: g.ID, IsHome: true}); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 
-	gone, found, err := mgr.Deregister(ctx, testAgency, m.ID, g.ID)
+	gone, found, err := mgr.Deregister(ctx, m.ID, g.ID)
 	if err != nil {
 		t.Fatalf("Deregister: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestDeregister_RemovesEdgeAndReturnsPriorState(t *testing.T) {
 		t.Error("expected the removed Registration to carry IsHome=true")
 	}
 
-	regs, err := mgr.ListGroupsForMember(ctx, testAgency, m.ID)
+	regs, err := mgr.ListGroupsForMember(ctx, m.ID)
 	if err != nil {
 		t.Fatalf("ListGroupsForMember: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestDeregister_IdempotentNoOp(t *testing.T) {
 	m := mustMember(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	_, found, err := mgr.Deregister(ctx, testAgency, m.ID, g.ID)
+	_, found, err := mgr.Deregister(ctx, m.ID, g.ID)
 	if err != nil {
 		t.Fatalf("Deregister on never-registered pair: %v", err)
 	}
@@ -180,14 +180,14 @@ func TestListMembersForGroup(t *testing.T) {
 	m1 := mustMember(t, mgr, "Amina")
 	m2 := mustMember(t, mgr, "Baraka")
 
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m1.ID, GroupID: g.ID}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m1.ID, GroupID: g.ID}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m2.ID, GroupID: g.ID}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m2.ID, GroupID: g.ID}); err != nil {
 		t.Fatal(err)
 	}
 
-	regs, err := mgr.ListMembersForGroup(ctx, testAgency, g.ID)
+	regs, err := mgr.ListMembersForGroup(ctx, g.ID)
 	if err != nil {
 		t.Fatalf("ListMembersForGroup: %v", err)
 	}
@@ -205,17 +205,17 @@ func TestHomeCounts_OnlyCountsHome(t *testing.T) {
 	m2 := mustMember(t, mgr, "Baraka")
 	m3 := mustMember(t, mgr, "Chiku")
 
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m1.ID, GroupID: g1.ID, IsHome: true}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m1.ID, GroupID: g1.ID, IsHome: true}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m2.ID, GroupID: g1.ID, IsHome: false}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m2.ID, GroupID: g1.ID, IsHome: false}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.Register(ctx, testAgency, mwanachamauser.Registration{MemberID: m3.ID, GroupID: g2.ID, IsHome: true}); err != nil {
+	if _, err := mgr.Register(ctx, mwanachamauser.Registration{MemberID: m3.ID, GroupID: g2.ID, IsHome: true}); err != nil {
 		t.Fatal(err)
 	}
 
-	counts, err := mgr.HomeCounts(ctx, testAgency)
+	counts, err := mgr.HomeCounts(ctx)
 	if err != nil {
 		t.Fatalf("HomeCounts: %v", err)
 	}

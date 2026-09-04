@@ -10,7 +10,7 @@ import (
 
 func TestCreateGroup_RequiresName(t *testing.T) {
 	mgr := newTestManager(t)
-	if _, err := mgr.CreateGroup(context.Background(), testAgency, mwanachamauser.Group{}); !errors.Is(err, mwanachamauser.ErrInvalidGroup) {
+	if _, err := mgr.CreateGroup(context.Background(), mwanachamauser.Group{}); !errors.Is(err, mwanachamauser.ErrInvalidGroup) {
 		t.Fatalf("err = %v, want ErrInvalidGroup", err)
 	}
 }
@@ -19,7 +19,7 @@ func TestCreateGroup_RoundTrips(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	g, err := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{
+	g, err := mgr.CreateGroup(ctx, mwanachamauser.Group{
 		Name:         "National Council",
 		HierarchyID:  "hier-1",
 		LevelID:      "lvl-1",
@@ -31,7 +31,7 @@ func TestCreateGroup_RoundTrips(t *testing.T) {
 	if g.ID == "" {
 		t.Error("expected minted ID")
 	}
-	got, err := mgr.GetGroup(ctx, testAgency, g.ID)
+	got, err := mgr.GetGroup(ctx, g.ID)
 	if err != nil {
 		t.Fatalf("GetGroup: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestCreateGroup_RoundTrips(t *testing.T) {
 
 func TestGetGroup_NotFound(t *testing.T) {
 	mgr := newTestManager(t)
-	if _, err := mgr.GetGroup(context.Background(), testAgency, "nope"); !errors.Is(err, mwanachamauser.ErrGroupNotFound) {
+	if _, err := mgr.GetGroup(context.Background(), "nope"); !errors.Is(err, mwanachamauser.ErrGroupNotFound) {
 		t.Fatalf("err = %v, want ErrGroupNotFound", err)
 	}
 }
@@ -51,8 +51,8 @@ func TestEditGroup_EmptyClears(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	g, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Ward A"})
-	edited, err := mgr.EditGroup(ctx, testAgency, g.ID, mwanachamauser.GroupEdit{
+	g, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Ward A"})
+	edited, err := mgr.EditGroup(ctx, g.ID, mwanachamauser.GroupEdit{
 		Name:     "Ward A Renamed",
 		NodeType: "committee",
 	})
@@ -65,7 +65,7 @@ func TestEditGroup_EmptyClears(t *testing.T) {
 
 	// Second edit with empty fields clears them — mirrors the gateway's
 	// EditChapter contract exactly (every field written on every call).
-	cleared, err := mgr.EditGroup(ctx, testAgency, g.ID, mwanachamauser.GroupEdit{Name: "Ward A"})
+	cleared, err := mgr.EditGroup(ctx, g.ID, mwanachamauser.GroupEdit{Name: "Ward A"})
 	if err != nil {
 		t.Fatalf("EditGroup (clear): %v", err)
 	}
@@ -78,10 +78,10 @@ func TestMoveGroup_RootCannotMove(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Root"})
-	child, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
+	root, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root"})
+	child, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
 
-	if _, err := mgr.MoveGroup(ctx, testAgency, root.ID, child.ID); !errors.Is(err, mwanachamauser.ErrRootCannotMove) {
+	if _, err := mgr.MoveGroup(ctx, root.ID, child.ID); !errors.Is(err, mwanachamauser.ErrRootCannotMove) {
 		t.Fatalf("err = %v, want ErrRootCannotMove", err)
 	}
 }
@@ -90,10 +90,10 @@ func TestMoveGroup_ParentIsSelf(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Root"})
-	child, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
+	root, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root"})
+	child, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Child", ParentID: root.ID})
 
-	if _, err := mgr.MoveGroup(ctx, testAgency, child.ID, child.ID); !errors.Is(err, mwanachamauser.ErrParentIsSelf) {
+	if _, err := mgr.MoveGroup(ctx, child.ID, child.ID); !errors.Is(err, mwanachamauser.ErrParentIsSelf) {
 		t.Fatalf("err = %v, want ErrParentIsSelf", err)
 	}
 }
@@ -102,12 +102,12 @@ func TestMoveGroup_ParentInSubtree(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Root"})
-	mid, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Mid", ParentID: root.ID})
-	leaf, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Leaf", ParentID: mid.ID})
+	root, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root"})
+	mid, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Mid", ParentID: root.ID})
+	leaf, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Leaf", ParentID: mid.ID})
 
 	// Moving mid beneath its own descendant leaf must be refused.
-	if _, err := mgr.MoveGroup(ctx, testAgency, mid.ID, leaf.ID); !errors.Is(err, mwanachamauser.ErrParentInSubtree) {
+	if _, err := mgr.MoveGroup(ctx, mid.ID, leaf.ID); !errors.Is(err, mwanachamauser.ErrParentInSubtree) {
 		t.Fatalf("err = %v, want ErrParentInSubtree", err)
 	}
 }
@@ -116,11 +116,11 @@ func TestMoveGroup_Succeeds(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Root"})
-	a, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "A", ParentID: root.ID})
-	b, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "B", ParentID: root.ID})
+	root, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root"})
+	a, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "A", ParentID: root.ID})
+	b, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "B", ParentID: root.ID})
 
-	moved, err := mgr.MoveGroup(ctx, testAgency, a.ID, b.ID)
+	moved, err := mgr.MoveGroup(ctx, a.ID, b.ID)
 	if err != nil {
 		t.Fatalf("MoveGroup: %v", err)
 	}
@@ -133,11 +133,11 @@ func TestListGroupChildren_EmptyParentReturnsRoots(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root1, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Root1"})
-	root2, _ := mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Root2"})
-	_, _ = mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Child", ParentID: root1.ID})
+	root1, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root1"})
+	root2, _ := mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Root2"})
+	_, _ = mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Child", ParentID: root1.ID})
 
-	roots, err := mgr.ListGroupChildren(ctx, testAgency, "")
+	roots, err := mgr.ListGroupChildren(ctx, "")
 	if err != nil {
 		t.Fatalf("ListGroupChildren: %v", err)
 	}
@@ -156,11 +156,11 @@ func TestListDiscoverableGroups_FiltersByFlagAndQuery(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	_, _ = mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Kibera Ward", Discoverable: true})
-	_, _ = mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Hidden Ward", Discoverable: false})
-	_, _ = mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "Nairobi Central", Discoverable: true})
+	_, _ = mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Kibera Ward", Discoverable: true})
+	_, _ = mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Hidden Ward", Discoverable: false})
+	_, _ = mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "Nairobi Central", Discoverable: true})
 
-	all, err := mgr.ListDiscoverableGroups(ctx, testAgency, "")
+	all, err := mgr.ListDiscoverableGroups(ctx, "")
 	if err != nil {
 		t.Fatalf("ListDiscoverableGroups: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestListDiscoverableGroups_FiltersByFlagAndQuery(t *testing.T) {
 		t.Fatalf("len(all) = %d, want 2", len(all))
 	}
 
-	filtered, err := mgr.ListDiscoverableGroups(ctx, testAgency, "kibera")
+	filtered, err := mgr.ListDiscoverableGroups(ctx, "kibera")
 	if err != nil {
 		t.Fatalf("ListDiscoverableGroups(kibera): %v", err)
 	}
@@ -181,10 +181,10 @@ func TestListGroups_FilteredByHierarchy(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	_, _ = mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "A", HierarchyID: "h1"})
-	_, _ = mgr.CreateGroup(ctx, testAgency, mwanachamauser.Group{Name: "B", HierarchyID: "h2"})
+	_, _ = mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "A", HierarchyID: "h1"})
+	_, _ = mgr.CreateGroup(ctx, mwanachamauser.Group{Name: "B", HierarchyID: "h2"})
 
-	out, err := mgr.ListGroups(ctx, testAgency, "h1")
+	out, err := mgr.ListGroups(ctx, "h1")
 	if err != nil {
 		t.Fatalf("ListGroups: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestListGroups_FilteredByHierarchy(t *testing.T) {
 		t.Errorf("out = %v, want just A", out)
 	}
 
-	all, err := mgr.ListGroups(ctx, testAgency, "")
+	all, err := mgr.ListGroups(ctx, "")
 	if err != nil {
 		t.Fatalf("ListGroups(all): %v", err)
 	}
