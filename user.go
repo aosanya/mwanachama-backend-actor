@@ -99,6 +99,68 @@ type UserManager interface {
 	// (there is no dedicated column — see models.ActorGroupAssignment's
 	// doc). Groups with nobody are absent rather than zero.
 	HomeCounts(ctx context.Context) (map[string]int, error)
+
+	// CreateRoleKind creates a new position with a capability set. Assigns a
+	// server-generated ID when k.ID is empty.
+	CreateRoleKind(ctx context.Context, k models.RoleKind) (models.RoleKind, error)
+	// ListRoleKinds returns every role kind, id order.
+	ListRoleKinds(ctx context.Context) ([]models.RoleKind, error)
+	// GetRoleKind retrieves a single RoleKind by id. Returns
+	// [ErrRoleKindNotFound] if no matching kind exists.
+	GetRoleKind(ctx context.Context, id string) (models.RoleKind, error)
+	// RetireRoleKind ends a role kind, stamping the current time into
+	// RetiredAt and actorID into RetiredBy. Returns
+	// [ErrKindHasLiveAssignments] when any active assignment still names the
+	// kind. Retiring an already-retired kind is idempotent: the original
+	// stamp is preserved. actorID is the mounting process's caller, resolved
+	// from its own session — this package never reads one from a request
+	// body.
+	//
+	// **Does not write any audit-log row.** That composition belongs to
+	// whatever domain the mounting process keeps for it (the gateway's
+	// custody domain, today) — see Deregister's doc for why this package
+	// never depends on one.
+	RetireRoleKind(ctx context.Context, kindID, actorID string) (models.RoleKind, error)
+	// UnretireRoleKind reverses a retirement, clearing both ending fields
+	// together. Un-retiring a live kind is idempotent. Takes no actor: unlike
+	// RetireRoleKind, nothing here stores who reversed it — a caller that
+	// wants that composes it the same way it composes RetireRoleKind's log
+	// row.
+	UnretireRoleKind(ctx context.Context, kindID string) (models.RoleKind, error)
+
+	// GrantRole assigns a role kind to an actor at a group. Returns
+	// [ErrKindRetired] when the kind is retired, [ErrRoleKindNotFound] when
+	// it does not exist.
+	//
+	// **Does not write any audit-log row** — same reason as RetireRoleKind.
+	GrantRole(ctx context.Context, a models.ActorRoleAssignment) (models.ActorRoleAssignment, error)
+	// GetRoleAssignment returns one assignment by id, active or not.
+	GetRoleAssignment(ctx context.Context, id string) (models.ActorRoleAssignment, error)
+	// RevokeRole deactivates an assignment (an operator removing the
+	// holder). Re-revoking an already-ended seat is a no-op.
+	RevokeRole(ctx context.Context, assignmentID string) error
+	// StepDownRole deactivates an assignment at the holder's own request.
+	// Same idempotence as RevokeRole.
+	StepDownRole(ctx context.Context, assignmentID string) error
+	// EndRoleOnEviction deactivates an assignment because an operator ended
+	// the holder's membership at the seat's group.
+	EndRoleOnEviction(ctx context.Context, assignmentID string) error
+	// EndRoleOnDeparture deactivates an assignment because the holder ended
+	// their own membership at the seat's group.
+	EndRoleOnDeparture(ctx context.Context, assignmentID string) error
+	// ListRoleAssignmentsForGroup returns assignments at a group (active
+	// only when activeOnly is true), (granted_at, id) order.
+	ListRoleAssignmentsForGroup(ctx context.Context, groupID string, activeOnly bool) ([]models.ActorRoleAssignment, error)
+	// ListRoleAssignmentsForActor returns every assignment an actor holds,
+	// across every group (active only when activeOnly is true), (granted_at,
+	// id) order.
+	ListRoleAssignmentsForActor(ctx context.Context, actorID string, activeOnly bool) ([]models.ActorRoleAssignment, error)
+
+	// GroupDashboard returns the roles-with-members view at a group plus
+	// rollup counts — DEV-1660, a read model over RoleKind/ActorRoleAssignment
+	// and Actor/Group data that only became intra-repo once role landed
+	// here. Returns [ErrGroupNotFound] if the group does not exist.
+	GroupDashboard(ctx context.Context, groupID string) (models.GroupDashboard, error)
 }
 
 // userManager is the concrete implementation of [UserManager].

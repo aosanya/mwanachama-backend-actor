@@ -84,11 +84,11 @@ func TestActorGroupAssignmentRoutes_HonoursGroupOverride(t *testing.T) {
 	})
 }
 
-func TestRoutes_ConcatenatesAllThreeAndSharesNames(t *testing.T) {
+func TestRoutes_ConcatenatesAllFourAndSharesNames(t *testing.T) {
 	um := newTestManager(t)
 	all := routes.Routes(um, stubHierarchy{}, routes.ResourceNames{Group: "chapters"})
 
-	want := 3 + 4 + 5 // GroupRoutes + ActorRoutes + ActorGroupAssignmentRoutes
+	want := 3 + 4 + 5 + 4 // GroupRoutes + ActorRoutes + ActorGroupAssignmentRoutes + RoleRoutes
 	if len(all) != want {
 		t.Fatalf("got %d routes, want %d", len(all), want)
 	}

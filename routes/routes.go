@@ -48,6 +48,13 @@ type ResourceNames struct {
 	// under Actor or Group (e.g. "/actors/{actorID}/assignments"). Default
 	// "assignments".
 	Assignment string
+	// RoleKind names the RoleKind resource segment. Default "role-kinds".
+	RoleKind string
+	// RoleAssignment names the ActorRoleAssignment resource segment. Default
+	// "role-assignments" — deliberately not sharing Assignment's name/default
+	// above, which is ActorGroupAssignment's own segment and nests under
+	// Actor/Group rather than standing at the root the way this one does.
+	RoleAssignment string
 }
 
 // withDefaults fills in every empty field's default noun.
@@ -60,6 +67,12 @@ func (n ResourceNames) withDefaults() ResourceNames {
 	}
 	if n.Assignment == "" {
 		n.Assignment = "assignments"
+	}
+	if n.RoleKind == "" {
+		n.RoleKind = "role-kinds"
+	}
+	if n.RoleAssignment == "" {
+		n.RoleAssignment = "role-assignments"
 	}
 	return n
 }
@@ -127,16 +140,18 @@ func ActorGroupAssignmentRoutes(um mwanachamaactor.UserManager, names ResourceNa
 }
 
 // Routes is every address this package answers today: GroupRoutes,
-// ActorRoutes and ActorGroupAssignmentRoutes concatenated, sharing one
-// ResourceNames so the three stay consistent (e.g. Group's "chapters"
-// override is honoured in ActorGroupAssignmentRoutes' /{groupID}/assignments
-// path too). A mounting process that wants all of it in one loop uses this;
-// one that wants to wrap Group's writes differently from Actor's (the
+// ActorRoutes, ActorGroupAssignmentRoutes and RoleRoutes concatenated,
+// sharing one ResourceNames so all four stay consistent (e.g. Group's
+// "chapters" override is honoured in ActorGroupAssignmentRoutes'
+// /{groupID}/assignments path too). A mounting process that wants all of it
+// in one loop uses this; one that wants to wrap Group's writes differently
+// from Actor's (the
 // gateway does, today — CapStructureWrite is Group-specific) calls the
-// three functions above separately instead.
+// four functions above separately instead.
 func Routes(um mwanachamaactor.UserManager, hc HierarchyChecker, names ResourceNames) []Route {
 	out := GroupRoutes(um, hc, names)
 	out = append(out, ActorRoutes(um, names)...)
 	out = append(out, ActorGroupAssignmentRoutes(um, names)...)
+	out = append(out, RoleRoutes(um, names)...)
 	return out
 }

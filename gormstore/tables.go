@@ -17,6 +17,11 @@ type TableNames struct {
 	Actors                string
 	Groups                string
 	ActorGroupAssignments string
+	// RoleKinds and ActorRoleAssignments are DEV-1659's addition — role kinds
+	// and their seats, folded in alongside ActorGroupAssignment per
+	// todo_actor_absorb.md.
+	RoleKinds           string
+	ActorRoleAssignments string
 }
 
 // DefaultTableNames builds the conventional table set for one mounted
@@ -35,6 +40,8 @@ func DefaultTableNames(instance string) TableNames {
 		Actors:                instance + "_actors",
 		Groups:                instance + "_groups",
 		ActorGroupAssignments: instance + "_actor_group_assignments",
+		RoleKinds:             instance + "_role_kinds",
+		ActorRoleAssignments:  instance + "_actor_role_assignments",
 	}
 }
 
@@ -59,6 +66,12 @@ func Migrate(db *gorm.DB, t TableNames) error {
 		return err
 	}
 	if err := syncUniqueAttributeIndexes(db, t.ActorGroupAssignments, models.DefaultActorGroupAssignmentProperties()); err != nil {
+		return err
+	}
+	if err := db.Table(t.RoleKinds).AutoMigrate(&RoleKindRow{}); err != nil {
+		return err
+	}
+	if err := db.Table(t.ActorRoleAssignments).AutoMigrate(&ActorRoleAssignmentRow{}); err != nil {
 		return err
 	}
 	return nil

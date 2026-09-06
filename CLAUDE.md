@@ -164,6 +164,45 @@ updated in a follow-up change — not done here, by explicit scope decision.
   database. If a future caller needs an `Attributes` *update* path (there
   is none yet — only Create validates), it must run the same two checks.
 
+**`role` and `dashboard` folded in, 2026-09-06 (DEV-1659/DEV-1660/DEV-1661,
+todo_actor_absorb.md).** The gateway's `internal/domain/role` (role kinds +
+assignments) and `internal/domain/dashboard` (the roles-with-members view +
+rollup counts) ported the same way `member`/`chapter` did: `models.RoleKind`/
+`models.ActorRoleAssignment` (renamed `MemberID`→`ActorID`, `ChapterID`→
+`GroupID`, mirroring `ActorGroupAssignment`'s own rename) and
+`models.RoleWithMembers`/`models.GroupDashboard`, GORM rows in `gormstore/`,
+new methods on the same `UserManager` interface rather than a second
+interface — `CreateRoleKind`/`ListRoleKinds`/`GetRoleKind`/`RetireRoleKind`/
+`UnretireRoleKind`/`GrantRole`/`GetRoleAssignment`/`RevokeRole`/
+`StepDownRole`/`EndRoleOnEviction`/`EndRoleOnDeparture`/
+`ListRoleAssignmentsForGroup`/`ListRoleAssignmentsForActor`/`GroupDashboard`.
+`routes/role.go` adds the four plain shells (`CreateRoleKind`/`ListRoleKinds`/
+`GetRoleKind`/`GetRoleAssignment`) to `Routes()`.
+
+**No act-log writing here either, same reason as Deregister's.** DEV-1658
+(landed in the gateway *before* this port, precisely so this port would not
+carry the dependency) moved the gateway's `role`/`member` act-log
+composition — `GrantAct`/`RevokeAct`/`StepDownAct`/`RetirementEvent`/
+`EndOfMembershipAct` — into `internal/api/http`, the gateway's own layer.
+`RetireRoleKind` still takes an `actorID` because `RetiredBy` is a genuine
+domain field, not audit dressing; every other role method that used to take
+an actor purely to write a custody row (`UnretireRoleKind`, `GrantRole`,
+`RevokeRole`, `StepDownRole`) takes none now.
+
+**`GroupDashboard`'s wire shape is not the gateway's**, same as `Group`'s:
+`GroupID`/`actor_ids` where the gateway's `GET /v1/chapters/{chapterID}/
+dashboard` says `chapter_id`/`member_ids`. Translating between the two is
+the gateway's job at cutover (DEV-1662, not done here), the same job it
+already does presenting `Group` as "chapter" everywhere a client sees one.
+
+**`RetireRoleKind`'s transaction carries no explicit row lock.** The
+gateway's Postgres store took one (`SELECT ... FOR UPDATE`) so a grant and a
+retirement racing on the same kind couldn't both land in the state G229
+refuses; no method in this repo takes an explicit lock anywhere else
+(`AssignGroup`'s upsert has the identical shape of race), so this port
+matches that existing risk posture rather than introducing the first
+lock — a known gap, not a silent regression.
+
 ## Conventions
 
 - Task status lives on

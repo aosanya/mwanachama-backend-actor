@@ -32,3 +32,17 @@ var ErrParentInSubtree = errors.New("mwanachamaactor: a group cannot be moved be
 
 // ErrParentNotFound — MoveGroup's newParentID names no Group.
 var ErrParentNotFound = errors.New("mwanachamaactor: parent group not found")
+
+// ErrRoleKindNotFound is returned when a role kind id has no record.
+var ErrRoleKindNotFound = errors.New("mwanachamaactor: role kind not found")
+
+// ErrAssignmentNotFound is returned when a role assignment id has no record.
+var ErrAssignmentNotFound = errors.New("mwanachamaactor: role assignment not found")
+
+// ErrKindHasLiveAssignments refuses a retirement while somebody still holds
+// the kind — G229, ported unchanged from the gateway's role.ErrKindHasLiveAssignments.
+var ErrKindHasLiveAssignments = errors.New("mwanachamaactor: role kind still has live assignments")
+
+// ErrKindRetired refuses a grant that names a role kind which has been
+// retired — DEV-1201, ported unchanged from the gateway's role.ErrKindRetired.
+var ErrKindRetired = errors.New("mwanachamaactor: role kind is retired — un-retire it before granting a seat")
