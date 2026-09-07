@@ -23,8 +23,8 @@ import (
 // retirement are checked explicitly, in the same transaction as the insert,
 // for the reason RetireRoleKind's does: a retirement and a grant racing on
 // the same kind must not both land in the state G229 refuses.
-func (m *userManager) GrantRole(ctx context.Context, a models.ActorRoleAssignment) (models.ActorRoleAssignment, error) {
-	var out models.ActorRoleAssignment
+func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (ActorRoleAssignment, error) {
+	var out ActorRoleAssignment
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var kindRow gormstore.RoleKindRow
 		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", a.KindID).First(&kindRow).Error; err != nil {
@@ -36,7 +36,7 @@ func (m *userManager) GrantRole(ctx context.Context, a models.ActorRoleAssignmen
 		if kindRow.RetiredAt != "" {
 			return ErrKindRetired
 		}
-		a.GrantedAt = models.NowRFC3339()
+		a.GrantedAt = NowRFC3339()
 		a.Active = true
 		a.EndedAt, a.EndedReason = "", ""
 		row := gormstore.ActorRoleAssignmentToRow(a)
@@ -47,16 +47,16 @@ func (m *userManager) GrantRole(ctx context.Context, a models.ActorRoleAssignmen
 		return nil
 	})
 	if err != nil {
-		return models.ActorRoleAssignment{}, fmt.Errorf("GrantRole: %w", err)
+		return ActorRoleAssignment{}, fmt.Errorf("GrantRole: %w", err)
 	}
 	return out, nil
 }
 
 // GetRoleAssignment returns one assignment by id, active or not.
-func (m *userManager) GetRoleAssignment(ctx context.Context, id string) (models.ActorRoleAssignment, error) {
+func (m *userManager) GetRoleAssignment(ctx context.Context, id string) (ActorRoleAssignment, error) {
 	row, err := m.findRoleAssignmentRow(ctx, id)
 	if err != nil {
-		return models.ActorRoleAssignment{}, err
+		return ActorRoleAssignment{}, err
 	}
 	return gormstore.ActorRoleAssignmentFromRow(row), nil
 }
@@ -75,24 +75,24 @@ func (m *userManager) findRoleAssignmentRow(ctx context.Context, id string) (gor
 
 // RevokeRole deactivates an assignment (an operator removing the holder).
 func (m *userManager) RevokeRole(ctx context.Context, assignmentID string) error {
-	return m.deactivateRole(ctx, assignmentID, models.EndedByRevocation)
+	return m.deactivateRole(ctx, assignmentID, EndedByRevocation)
 }
 
 // StepDownRole deactivates an assignment at the holder's own request.
 func (m *userManager) StepDownRole(ctx context.Context, assignmentID string) error {
-	return m.deactivateRole(ctx, assignmentID, models.EndedByResignation)
+	return m.deactivateRole(ctx, assignmentID, EndedByResignation)
 }
 
 // EndRoleOnEviction deactivates an assignment because an operator ended the
 // holder's membership at the seat's group.
 func (m *userManager) EndRoleOnEviction(ctx context.Context, assignmentID string) error {
-	return m.deactivateRole(ctx, assignmentID, models.EndedByEviction)
+	return m.deactivateRole(ctx, assignmentID, EndedByEviction)
 }
 
 // EndRoleOnDeparture deactivates an assignment because the holder ended
 // their own membership at the seat's group.
 func (m *userManager) EndRoleOnDeparture(ctx context.Context, assignmentID string) error {
-	return m.deactivateRole(ctx, assignmentID, models.EndedByDeparture)
+	return m.deactivateRole(ctx, assignmentID, EndedByDeparture)
 }
 
 // deactivateRole is the one path every ender takes, so a future fifth one
@@ -107,7 +107,7 @@ func (m *userManager) EndRoleOnDeparture(ctx context.Context, assignmentID strin
 func (m *userManager) deactivateRole(ctx context.Context, id string, reason models.EndReason) error {
 	res := m.db.WithContext(ctx).Table(m.tables.ActorRoleAssignments).
 		Where("id = ? AND active", id).
-		Updates(map[string]any{"active": false, "ended_at": models.NowRFC3339(), "ended_reason": string(reason)})
+		Updates(map[string]any{"active": false, "ended_at": NowRFC3339(), "ended_reason": string(reason)})
 	if res.Error != nil {
 		return fmt.Errorf("deactivateRole: %w", res.Error)
 	}
@@ -121,17 +121,17 @@ func (m *userManager) deactivateRole(ctx context.Context, id string, reason mode
 
 // ListRoleAssignmentsForGroup returns assignments at a group, (granted_at,
 // id) order.
-func (m *userManager) ListRoleAssignmentsForGroup(ctx context.Context, groupID string, activeOnly bool) ([]models.ActorRoleAssignment, error) {
+func (m *userManager) ListRoleAssignmentsForGroup(ctx context.Context, groupID string, activeOnly bool) ([]ActorRoleAssignment, error) {
 	return m.listRoleAssignments(ctx, "group_id = ?", groupID, activeOnly)
 }
 
 // ListRoleAssignmentsForActor returns every assignment an actor holds,
 // across every group, (granted_at, id) order.
-func (m *userManager) ListRoleAssignmentsForActor(ctx context.Context, actorID string, activeOnly bool) ([]models.ActorRoleAssignment, error) {
+func (m *userManager) ListRoleAssignmentsForActor(ctx context.Context, actorID string, activeOnly bool) ([]ActorRoleAssignment, error) {
 	return m.listRoleAssignments(ctx, "actor_id = ?", actorID, activeOnly)
 }
 
-func (m *userManager) listRoleAssignments(ctx context.Context, whereCol string, whereArg string, activeOnly bool) ([]models.ActorRoleAssignment, error) {
+func (m *userManager) listRoleAssignments(ctx context.Context, whereCol string, whereArg string, activeOnly bool) ([]ActorRoleAssignment, error) {
 	q := m.db.WithContext(ctx).Table(m.tables.ActorRoleAssignments).Where(whereCol, whereArg)
 	if activeOnly {
 		q = q.Where("active")
@@ -140,7 +140,7 @@ func (m *userManager) listRoleAssignments(ctx context.Context, whereCol string, 
 	if err := q.Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("listRoleAssignments: %w", err)
 	}
-	out := make([]models.ActorRoleAssignment, 0, len(rows))
+	out := make([]ActorRoleAssignment, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, gormstore.ActorRoleAssignmentFromRow(r))
 	}

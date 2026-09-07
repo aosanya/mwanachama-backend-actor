@@ -18,7 +18,6 @@ import (
 	"gorm.io/gorm"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 	"github.com/aosanya/mwanachama-backend-shared/postgres"
 )
 
@@ -68,7 +67,7 @@ func TestPostgres_ActorCRUD_RoundTrip(t *testing.T) {
 	mgr := newPostgresUserManager(t)
 	ctx := context.Background()
 
-	created, err := mgr.CreateActor(ctx, models.Actor{
+	created, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "Postgres round-trip",
 		Attributes:  map[string]any{"email": "pg@example.com", "persona": "trader"},
 	})
@@ -87,7 +86,7 @@ func TestPostgres_ActorCRUD_RoundTrip(t *testing.T) {
 		t.Errorf("Attributes = %v, want persona=trader (jsonb round-trip)", got.Attributes)
 	}
 
-	if _, err := mgr.CreateActor(ctx, models.Actor{
+	if _, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "Postgres duplicate email",
 		Attributes:  map[string]any{"email": "pg@example.com"},
 	}); !errors.Is(err, mwanachamaactor.ErrDuplicateAttribute) {
@@ -110,11 +109,11 @@ func TestPostgres_GroupAndActorGroupAssignment_RoundTrip(t *testing.T) {
 	mgr := newPostgresUserManager(t)
 	ctx := context.Background()
 
-	root, err := mgr.CreateGroup(ctx, models.Group{Name: "Root", Discoverable: true})
+	root, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Root", Discoverable: true})
 	if err != nil {
 		t.Fatalf("CreateGroup(root): %v", err)
 	}
-	child, err := mgr.CreateGroup(ctx, models.Group{Name: "Child", ParentID: root.ID})
+	child, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Child", ParentID: root.ID})
 	if err != nil {
 		t.Fatalf("CreateGroup(child): %v", err)
 	}
@@ -127,11 +126,11 @@ func TestPostgres_GroupAndActorGroupAssignment_RoundTrip(t *testing.T) {
 		t.Errorf("ListGroupChildren = %+v", kids)
 	}
 
-	a, err := mgr.CreateActor(ctx, models.Actor{DisplayName: "Actor"})
+	a, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Actor"})
 	if err != nil {
 		t.Fatalf("CreateActor: %v", err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{
 		ActorID: a.ID, GroupID: child.ID, Attributes: map[string]any{"is_home": true},
 	}); err != nil {
 		t.Fatalf("Register: %v", err)

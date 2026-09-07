@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 // roleStatusFor maps this package's role-kind/role-assignment error
@@ -52,7 +51,7 @@ func writeRoleErr(w http.ResponseWriter, err error) {
 // own policy (the gateway's own createRoleKind keeps CapRoleKindWrite).
 func CreateRoleKind(um mwanachamaactor.UserManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var in models.RoleKind
+		var in mwanachamaactor.RoleKind
 		if err := readJSON(r, &in); err != nil {
 			writeErr(w, http.StatusBadRequest, err.Error())
 			return

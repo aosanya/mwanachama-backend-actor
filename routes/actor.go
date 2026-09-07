@@ -11,7 +11,6 @@ import (
 	"net/http"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 // actorStatusFor maps this package's Actor error sentinels to a status
@@ -44,7 +43,7 @@ func writeActorErr(w http.ResponseWriter, err error) {
 // a caller may act, is the row valid".
 func CreateActor(um mwanachamaactor.UserManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var in models.Actor
+		var in mwanachamaactor.Actor
 		if err := readJSON(r, &in); err != nil {
 			writeErr(w, http.StatusBadRequest, err.Error())
 			return

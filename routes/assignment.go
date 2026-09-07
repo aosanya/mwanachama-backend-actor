@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 // assignmentStatusFor maps this package's ActorGroupAssignment error
@@ -47,7 +46,7 @@ func writeAssignmentErr(w http.ResponseWriter, err error) {
 // assignBody is the wire shape for AssignGroup — every field
 // ActorGroupAssignment carries except ActorID, which the path supplies.
 // There is no dedicated is_home/joined_at key: neither is a column any
-// more (see models.ActorGroupAssignment's doc) — a caller that wants
+// more (see mwanachamaactor.ActorGroupAssignment's doc) — a caller that wants
 // either sends it as an ordinary Attributes entry, e.g.
 // {"attributes":{"is_home":true}}, the same way it would send any other
 // organization-declared property.
@@ -72,7 +71,7 @@ func AssignGroup(um mwanachamaactor.UserManager) http.HandlerFunc {
 			writeErr(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		in := models.ActorGroupAssignment{
+		in := mwanachamaactor.ActorGroupAssignment{
 			ActorID:    r.PathValue("actorID"),
 			GroupID:    body.GroupID,
 			Attributes: body.Attributes,

@@ -12,7 +12,6 @@ import (
 	"gorm.io/gorm"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 	"github.com/aosanya/mwanachama-backend-actor/routes"
 )
 
@@ -62,7 +61,7 @@ func TestCreateGroup(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.Group
+	var out mwanachamaactor.Group
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
@@ -84,7 +83,7 @@ func TestCreateGroup_DiscoverableExplicitFalse(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.Group
+	var out mwanachamaactor.Group
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.Discoverable {
 		t.Fatalf("expected discoverable=false to be honoured, got %+v", out)
@@ -119,9 +118,9 @@ func TestCreateGroup_MissingHierarchyID(t *testing.T) {
 	}
 }
 
-func newGroup(t *testing.T, um mwanachamaactor.UserManager, hierarchyID string) models.Group {
+func newGroup(t *testing.T, um mwanachamaactor.UserManager, hierarchyID string) mwanachamaactor.Group {
 	t.Helper()
-	g, err := um.CreateGroup(context.Background(), models.Group{HierarchyID: hierarchyID, Name: "seed"})
+	g, err := um.CreateGroup(context.Background(), mwanachamaactor.Group{HierarchyID: hierarchyID, Name: "seed"})
 	if err != nil {
 		t.Fatalf("seed CreateGroup: %v", err)
 	}
@@ -147,7 +146,7 @@ func TestEditGroup(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.Group
+	var out mwanachamaactor.Group
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.Name != "Renamed Ward" || out.AnchorLevelOverrideID != "l2" {
 		t.Fatalf("unexpected group: %+v", out)
@@ -188,7 +187,7 @@ func TestEditGroup_NotFound(t *testing.T) {
 func TestMoveGroup(t *testing.T) {
 	um := newTestManager(t)
 	root := newGroup(t, um, "h1")
-	child, err := um.CreateGroup(context.Background(), models.Group{HierarchyID: "h1", Name: "child", ParentID: root.ID})
+	child, err := um.CreateGroup(context.Background(), mwanachamaactor.Group{HierarchyID: "h1", Name: "child", ParentID: root.ID})
 	if err != nil {
 		t.Fatalf("seed child: %v", err)
 	}
@@ -202,7 +201,7 @@ func TestMoveGroup(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.Group
+	var out mwanachamaactor.Group
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.ParentID != newParent.ID {
 		t.Fatalf("unexpected group: %+v", out)
@@ -226,7 +225,7 @@ func TestEditGroup_NameRequired(t *testing.T) {
 func TestMoveGroup_EmptyParentRefused(t *testing.T) {
 	um := newTestManager(t)
 	root := newGroup(t, um, "h1")
-	child, err := um.CreateGroup(context.Background(), models.Group{HierarchyID: "h1", Name: "child", ParentID: root.ID})
+	child, err := um.CreateGroup(context.Background(), mwanachamaactor.Group{HierarchyID: "h1", Name: "child", ParentID: root.ID})
 	if err != nil {
 		t.Fatalf("seed child: %v", err)
 	}

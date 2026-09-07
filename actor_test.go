@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 func TestCreateActor_MintsIDAndCreatedAt(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	a, err := mgr.CreateActor(ctx, models.Actor{
+	a, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "Amina",
 		Attributes:  map[string]any{"email": "amina@example.com"},
 	})
@@ -38,7 +37,7 @@ func TestCreateActor_WithAttributes_RoundTrips(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	a, err := mgr.CreateActor(ctx, models.Actor{
+	a, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "Agentic One",
 		IsAgentic:   true,
 		Attributes:  map[string]any{"persona": "farmer"},
@@ -62,7 +61,7 @@ func TestCreateActor_RejectsWrongRangeAttribute(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	_, err := mgr.CreateActor(ctx, models.Actor{
+	_, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "Bad Phone",
 		Attributes:  map[string]any{"phone": 254712345678}, // phone is RangeText, not a number
 	})
@@ -75,14 +74,14 @@ func TestCreateActor_RejectsDuplicateUniqueAttribute(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	if _, err := mgr.CreateActor(ctx, models.Actor{
+	if _, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "First",
 		Attributes:  map[string]any{"phone": "254712345678"},
 	}); err != nil {
 		t.Fatalf("CreateActor(first): %v", err)
 	}
 
-	_, err := mgr.CreateActor(ctx, models.Actor{
+	_, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{
 		DisplayName: "Second",
 		Attributes:  map[string]any{"phone": "254712345678"},
 	})
@@ -97,7 +96,7 @@ func TestCreateActor_NoPhoneOrEmailIsNotRequired(t *testing.T) {
 
 	// Mirrors the gateway's registerDevice, which mints a member before any
 	// phone number is given, and agentic actors, which are forbidden one.
-	a, err := mgr.CreateActor(ctx, models.Actor{DisplayName: "No Contact Info"})
+	a, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "No Contact Info"})
 	if err != nil {
 		t.Fatalf("CreateActor: %v", err)
 	}
@@ -117,8 +116,8 @@ func TestGetActors_SkipsMissing_SortsByID(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	a, _ := mgr.CreateActor(ctx, models.Actor{DisplayName: "A"})
-	b, _ := mgr.CreateActor(ctx, models.Actor{DisplayName: "B"})
+	a, _ := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "A"})
+	b, _ := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "B"})
 
 	out, err := mgr.GetActors(ctx, []string{b.ID, "missing", a.ID, a.ID})
 	if err != nil {
@@ -137,7 +136,7 @@ func TestSetActorDisplayName(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	a, _ := mgr.CreateActor(ctx, models.Actor{DisplayName: "Old"})
+	a, _ := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Old"})
 	updated, err := mgr.SetActorDisplayName(ctx, a.ID, "New")
 	if err != nil {
 		t.Fatalf("SetActorDisplayName: %v", err)
@@ -162,7 +161,7 @@ func TestListActors_SortedByID(t *testing.T) {
 	ctx := context.Background()
 
 	for _, name := range []string{"Zeta", "Alpha", "Mid"} {
-		if _, err := mgr.CreateActor(ctx, models.Actor{DisplayName: name}); err != nil {
+		if _, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: name}); err != nil {
 			t.Fatalf("CreateActor: %v", err)
 		}
 	}

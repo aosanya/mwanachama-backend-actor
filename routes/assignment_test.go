@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aosanya/mwanachama-backend-actor/models"
+	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 	"github.com/aosanya/mwanachama-backend-actor/routes"
 )
 
 func TestAssignGroup(t *testing.T) {
 	um := newTestManager(t)
-	actor, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	actor, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed actor: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestAssignGroup(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.ActorGroupAssignment
+	var out mwanachamaactor.ActorGroupAssignment
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	isHome, _ := out.Attributes["is_home"].(bool)
 	if out.ActorID != actor.ID || out.GroupID != group.ID || !isHome {
@@ -53,7 +53,7 @@ func TestAssignGroup_UnknownActor(t *testing.T) {
 
 func TestDeregister_Idempotent(t *testing.T) {
 	um := newTestManager(t)
-	actor, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	actor, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed actor: %v", err)
 	}
@@ -71,12 +71,12 @@ func TestDeregister_Idempotent(t *testing.T) {
 
 func TestListGroupsForActor(t *testing.T) {
 	um := newTestManager(t)
-	actor, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	actor, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed actor: %v", err)
 	}
 	group := newGroup(t, um, "h1")
-	if _, err := um.AssignGroup(context.Background(), models.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID}); err != nil {
+	if _, err := um.AssignGroup(context.Background(), mwanachamaactor.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID}); err != nil {
 		t.Fatalf("seed assignment: %v", err)
 	}
 	handler := routes.ListGroupsForActor(um)
@@ -88,7 +88,7 @@ func TestListGroupsForActor(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out []models.ActorGroupAssignment
+	var out []mwanachamaactor.ActorGroupAssignment
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if len(out) != 1 || out[0].GroupID != group.ID {
 		t.Fatalf("unexpected assignments: %+v", out)
@@ -97,12 +97,12 @@ func TestListGroupsForActor(t *testing.T) {
 
 func TestListActorsForGroup(t *testing.T) {
 	um := newTestManager(t)
-	actor, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	actor, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed actor: %v", err)
 	}
 	group := newGroup(t, um, "h1")
-	if _, err := um.AssignGroup(context.Background(), models.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID}); err != nil {
+	if _, err := um.AssignGroup(context.Background(), mwanachamaactor.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID}); err != nil {
 		t.Fatalf("seed assignment: %v", err)
 	}
 	handler := routes.ListActorsForGroup(um)
@@ -114,7 +114,7 @@ func TestListActorsForGroup(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out []models.ActorGroupAssignment
+	var out []mwanachamaactor.ActorGroupAssignment
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if len(out) != 1 || out[0].ActorID != actor.ID {
 		t.Fatalf("unexpected assignments: %+v", out)
@@ -123,12 +123,12 @@ func TestListActorsForGroup(t *testing.T) {
 
 func TestHomeCounts(t *testing.T) {
 	um := newTestManager(t)
-	actor, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	actor, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed actor: %v", err)
 	}
 	group := newGroup(t, um, "h1")
-	if _, err := um.AssignGroup(context.Background(), models.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID, Attributes: map[string]any{"is_home": true}}); err != nil {
+	if _, err := um.AssignGroup(context.Background(), mwanachamaactor.ActorGroupAssignment{ActorID: actor.ID, GroupID: group.ID, Attributes: map[string]any{"is_home": true}}); err != nil {
 		t.Fatalf("seed assignment: %v", err)
 	}
 	handler := routes.HomeCounts(um)

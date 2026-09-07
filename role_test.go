@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 func TestRoleKindLifecycle(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	k, err := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator", Capabilities: []string{"post_chat"}})
+	k, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator", Capabilities: []string{"post_chat"}})
 	if err != nil {
 		t.Fatalf("CreateRoleKind: %v", err)
 	}
@@ -36,7 +35,7 @@ func TestRoleKindLifecycle(t *testing.T) {
 		t.Fatalf("expected ErrRoleKindNotFound, got %v", err)
 	}
 
-	noCaps, err := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "nocaps"})
+	noCaps, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "nocaps"})
 	if err != nil {
 		t.Fatalf("CreateRoleKind(nocaps): %v", err)
 	}
@@ -57,8 +56,8 @@ func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	k, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator"})
-	a, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
+	k, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	a, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
 	if err != nil {
 		t.Fatalf("GrantRole: %v", err)
 	}
@@ -88,7 +87,7 @@ func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 	}
 
 	// Grant onto a retired kind is refused (DEV-1201).
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID}); !errors.Is(err, mwanachamaactor.ErrKindRetired) {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID}); !errors.Is(err, mwanachamaactor.ErrKindRetired) {
 		t.Fatalf("expected ErrKindRetired, got %v", err)
 	}
 
@@ -99,7 +98,7 @@ func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 	if back.RetiredAt != "" || back.RetiredBy != "" {
 		t.Fatalf("unretire left an ending behind: %+v", back)
 	}
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID}); err != nil {
 		t.Fatalf("grant after unretire: %v", err)
 	}
 }
@@ -108,16 +107,16 @@ func TestRoleGrantRevokeStepDownAndListing(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	k, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator"})
-	a1, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
+	k, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	a1, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
 	if err != nil {
 		t.Fatalf("grant a1: %v", err)
 	}
 	if !a1.Active || a1.GrantedAt == "" {
 		t.Fatalf("expected grant to be active with stamped granted_at, got %+v", a1)
 	}
-	a2, _ := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID})
-	_, _ = mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-3", GroupID: "g-other", KindID: k.ID})
+	a2, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID})
+	_, _ = mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-3", GroupID: "g-other", KindID: k.ID})
 
 	live, err := mgr.ListRoleAssignmentsForGroup(ctx, "g-1", true)
 	if err != nil {
@@ -147,14 +146,14 @@ func TestRoleGrantRevokeStepDownAndListing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetRoleAssignment a1: %v", err)
 	}
-	if ended1.EndedReason != models.EndedByRevocation {
+	if ended1.EndedReason != mwanachamaactor.EndedByRevocation {
 		t.Errorf("a1 ended reason = %q, want revoked", ended1.EndedReason)
 	}
 	ended2, err := mgr.GetRoleAssignment(ctx, a2.ID)
 	if err != nil {
 		t.Fatalf("GetRoleAssignment a2: %v", err)
 	}
-	if ended2.EndedReason != models.EndedByResignation {
+	if ended2.EndedReason != mwanachamaactor.EndedByResignation {
 		t.Errorf("a2 ended reason = %q, want resigned", ended2.EndedReason)
 	}
 
@@ -167,7 +166,7 @@ func TestRoleGrantRevokeStepDownAndListing(t *testing.T) {
 		t.Fatalf("re-revoke of a stepped-down seat should be a no-op, got %v", err)
 	}
 	still, _ := mgr.GetRoleAssignment(ctx, a2.ID)
-	if still.EndedReason != models.EndedByResignation {
+	if still.EndedReason != mwanachamaactor.EndedByResignation {
 		t.Fatalf("a later revoke rewrote the reason: %q", still.EndedReason)
 	}
 }
@@ -176,15 +175,15 @@ func TestRoleAssignmentsForActorAcrossGroups(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	k1, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator"})
-	k2, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Organizer"})
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k1.ID}); err != nil {
+	k1, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	k2, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Organizer"})
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k1.ID}); err != nil {
 		t.Fatalf("grant 1: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-2", KindID: k2.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-2", KindID: k2.ID}); err != nil {
 		t.Fatalf("grant 2: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k1.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k1.ID}); err != nil {
 		t.Fatalf("grant 3: %v", err)
 	}
 
@@ -201,9 +200,9 @@ func TestEndOnEvictionAndDeparture(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	k, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator"})
-	a1, _ := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
-	a2, _ := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID})
+	k, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	a1, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
+	a2, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID})
 
 	if err := mgr.EndRoleOnEviction(ctx, a1.ID); err != nil {
 		t.Fatalf("EndRoleOnEviction: %v", err)
@@ -212,11 +211,11 @@ func TestEndOnEvictionAndDeparture(t *testing.T) {
 		t.Fatalf("EndRoleOnDeparture: %v", err)
 	}
 	got1, _ := mgr.GetRoleAssignment(ctx, a1.ID)
-	if got1.Active || got1.EndedReason != models.EndedByEviction {
+	if got1.Active || got1.EndedReason != mwanachamaactor.EndedByEviction {
 		t.Fatalf("a1 = %+v, want inactive/evicted", got1)
 	}
 	got2, _ := mgr.GetRoleAssignment(ctx, a2.ID)
-	if got2.Active || got2.EndedReason != models.EndedByDeparture {
+	if got2.Active || got2.EndedReason != mwanachamaactor.EndedByDeparture {
 		t.Fatalf("a2 = %+v, want inactive/deregistered", got2)
 	}
 }

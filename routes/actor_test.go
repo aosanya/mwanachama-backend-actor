@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aosanya/mwanachama-backend-actor/models"
+	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 	"github.com/aosanya/mwanachama-backend-actor/routes"
 )
 
@@ -23,7 +23,7 @@ func TestCreateActor(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.Actor
+	var out mwanachamaactor.Actor
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.ID == "" || out.DisplayName != "Amos" {
 		t.Fatalf("unexpected actor: %+v", out)
@@ -32,7 +32,7 @@ func TestCreateActor(t *testing.T) {
 
 func TestGetActor(t *testing.T) {
 	um := newTestManager(t)
-	created, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	created, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed CreateActor: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestGetActor_NotFound(t *testing.T) {
 
 func TestListActors(t *testing.T) {
 	um := newTestManager(t)
-	if _, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"}); err != nil {
+	if _, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 	handler := routes.ListActors(um)
@@ -74,7 +74,7 @@ func TestListActors(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out []models.Actor
+	var out []mwanachamaactor.Actor
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if len(out) != 1 {
 		t.Fatalf("got %d actors, want 1", len(out))
@@ -83,7 +83,7 @@ func TestListActors(t *testing.T) {
 
 func TestSetActorDisplayName(t *testing.T) {
 	um := newTestManager(t)
-	created, err := um.CreateActor(context.Background(), models.Actor{DisplayName: "Amos"})
+	created, err := um.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: "Amos"})
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestSetActorDisplayName(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.Actor
+	var out mwanachamaactor.Actor
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.DisplayName != "A. Sanya" {
 		t.Fatalf("unexpected actor: %+v", out)

@@ -9,57 +9,56 @@ import (
 	"testing"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 func TestGroupDashboardComposesRolesAndCounts(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root, err := mgr.CreateGroup(ctx, models.Group{Name: "County"})
+	root, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "County"})
 	if err != nil {
 		t.Fatalf("create root: %v", err)
 	}
-	if _, err := mgr.CreateGroup(ctx, models.Group{Name: "Ward A", ParentID: root.ID}); err != nil {
+	if _, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward A", ParentID: root.ID}); err != nil {
 		t.Fatalf("create ward a: %v", err)
 	}
-	if _, err := mgr.CreateGroup(ctx, models.Group{Name: "Ward B", ParentID: root.ID}); err != nil {
+	if _, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward B", ParentID: root.ID}); err != nil {
 		t.Fatalf("create ward b: %v", err)
 	}
 
-	kind1, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator"})
-	kind2, _ := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Organizer"})
+	kind1, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	kind2, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Organizer"})
 
 	actorIDs := map[string]string{}
 	for _, label := range []string{"m-1", "m-2", "m-3", "m-4"} {
-		created, err := mgr.CreateActor(ctx, models.Actor{DisplayName: label})
+		created, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: label})
 		if err != nil {
 			t.Fatalf("create actor %s: %v", label, err)
 		}
 		actorIDs[label] = created.ID
 	}
 
-	a1, _ := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: actorIDs["m-1"], GroupID: root.ID, KindID: kind1.ID})
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: actorIDs["m-2"], GroupID: root.ID, KindID: kind2.ID}); err != nil {
+	a1, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: actorIDs["m-1"], GroupID: root.ID, KindID: kind1.ID})
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: actorIDs["m-2"], GroupID: root.ID, KindID: kind2.ID}); err != nil {
 		t.Fatalf("grant m-2: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: actorIDs["m-3"], GroupID: root.ID, KindID: kind2.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: actorIDs["m-3"], GroupID: root.ID, KindID: kind2.ID}); err != nil {
 		t.Fatalf("grant m-3: %v", err)
 	}
 	if err := mgr.StepDownRole(ctx, a1.ID); err != nil {
 		t.Fatalf("stepdown: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-99", GroupID: "elsewhere-nonexistent-group", KindID: kind1.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-99", GroupID: "elsewhere-nonexistent-group", KindID: kind1.ID}); err != nil {
 		t.Fatalf("grant elsewhere: %v", err)
 	}
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: actorIDs["m-1"], GroupID: root.ID}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: actorIDs["m-1"], GroupID: root.ID}); err != nil {
 		t.Fatalf("register m-1: %v", err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: actorIDs["m-2"], GroupID: root.ID}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: actorIDs["m-2"], GroupID: root.ID}); err != nil {
 		t.Fatalf("register m-2: %v", err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: actorIDs["m-3"], GroupID: root.ID}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: actorIDs["m-3"], GroupID: root.ID}); err != nil {
 		t.Fatalf("register m-3: %v", err)
 	}
 
@@ -111,8 +110,8 @@ func TestGroupDashboardMemberIDsNeverNil(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
-	root, _ := mgr.CreateGroup(ctx, models.Group{Name: "County"})
-	if _, err := mgr.CreateRoleKind(ctx, models.RoleKind{Name: "Treasurer"}); err != nil {
+	root, _ := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "County"})
+	if _, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Treasurer"}); err != nil {
 		t.Fatalf("kind: %v", err)
 	}
 

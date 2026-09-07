@@ -9,10 +9,12 @@
 //
 // Layout:
 //   - models/    — domain types (Actor, Group, GroupEdit, ActorGroupAssignment);
-//     callers use models.Actor etc. directly, no re-export in this package
+//     re-exported as aliases in user.go, so callers only need this package's
+//     import, never models's directly
 //   - gormstore/ — GORM row structs, row<->domain conversion, migration
 //   - doc.go (this file), tables.go — table-name/migrate wrappers
-//   - user.go               — UserManager interface, userManager struct
+//   - user.go               — UserManager interface, userManager struct,
+//     and the models. type/const/func aliases
 //   - actor_impl.go         — Actor CRUD
 //   - group_impl.go         — Group CRUD, tree operations
 //   - registration_impl.go  — ActorGroupAssignment operations

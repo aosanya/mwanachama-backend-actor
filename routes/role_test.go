@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aosanya/mwanachama-backend-actor/models"
+	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 	"github.com/aosanya/mwanachama-backend-actor/routes"
 )
 
@@ -23,7 +23,7 @@ func TestCreateRoleKind(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.RoleKind
+	var out mwanachamaactor.RoleKind
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.ID == "" || out.Name != "Coordinator" {
 		t.Fatalf("unexpected role kind: %+v", out)
@@ -32,7 +32,7 @@ func TestCreateRoleKind(t *testing.T) {
 
 func TestListRoleKinds(t *testing.T) {
 	um := newTestManager(t)
-	if _, err := um.CreateRoleKind(context.Background(), models.RoleKind{Name: "Coordinator"}); err != nil {
+	if _, err := um.CreateRoleKind(context.Background(), mwanachamaactor.RoleKind{Name: "Coordinator"}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 	handler := routes.ListRoleKinds(um)
@@ -44,7 +44,7 @@ func TestListRoleKinds(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out []models.RoleKind
+	var out []mwanachamaactor.RoleKind
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if len(out) != 1 {
 		t.Fatalf("got %d kinds, want 1", len(out))
@@ -53,7 +53,7 @@ func TestListRoleKinds(t *testing.T) {
 
 func TestGetRoleKind(t *testing.T) {
 	um := newTestManager(t)
-	created, err := um.CreateRoleKind(context.Background(), models.RoleKind{Name: "Coordinator"})
+	created, err := um.CreateRoleKind(context.Background(), mwanachamaactor.RoleKind{Name: "Coordinator"})
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -84,11 +84,11 @@ func TestGetRoleKind_NotFound(t *testing.T) {
 func TestGetRoleAssignment(t *testing.T) {
 	um := newTestManager(t)
 	ctx := context.Background()
-	k, err := um.CreateRoleKind(ctx, models.RoleKind{Name: "Coordinator"})
+	k, err := um.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
 	if err != nil {
 		t.Fatalf("seed kind: %v", err)
 	}
-	a, err := um.GrantRole(ctx, models.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
+	a, err := um.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
 	if err != nil {
 		t.Fatalf("seed grant: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestGetRoleAssignment(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
-	var out models.ActorRoleAssignment
+	var out mwanachamaactor.ActorRoleAssignment
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	if out.ID != a.ID || out.ActorID != "m-1" {
 		t.Fatalf("unexpected assignment: %+v", out)

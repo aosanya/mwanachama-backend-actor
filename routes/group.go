@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 // statusFor maps this package's own error sentinels to a status code, the
@@ -90,7 +89,7 @@ func checkHierarchyRefs(hc HierarchyChecker, r *http.Request, hierarchyID, level
 // `"discoverable":false` read differently afterwards.
 func CreateGroup(um mwanachamaactor.UserManager, hc HierarchyChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		in := models.Group{Discoverable: true}
+		in := mwanachamaactor.Group{Discoverable: true}
 		if err := readJSON(r, &in); err != nil {
 			writeErr(w, http.StatusBadRequest, err.Error())
 			return
@@ -125,7 +124,7 @@ func CreateGroup(um mwanachamaactor.UserManager, hc HierarchyChecker) http.Handl
 	}
 }
 
-// groupEditBody is the wire shape for EditGroup — mirrors [models.GroupEdit]
+// groupEditBody is the wire shape for EditGroup — mirrors [mwanachamaactor.GroupEdit]
 // field-for-field; a distinct type only so the DisallowUnknownFields readJSON
 // already applies keeps rejecting a request that names a field GroupEdit does
 // not have, without this package needing json tags on GroupEdit itself.
@@ -181,7 +180,7 @@ func EditGroup(um mwanachamaactor.UserManager, hc HierarchyChecker) http.Handler
 				return
 			}
 		}
-		out, err := um.EditGroup(r.Context(), id, models.GroupEdit{
+		out, err := um.EditGroup(r.Context(), id, mwanachamaactor.GroupEdit{
 			Name:                  body.Name,
 			NodeType:              body.NodeType,
 			AnchorLevelOverrideID: body.AnchorLevelOverrideID,

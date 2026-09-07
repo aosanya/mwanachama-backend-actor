@@ -5,21 +5,20 @@ import (
 	"testing"
 
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-func mustActor(t *testing.T, mgr mwanachamaactor.UserManager, name string) models.Actor {
+func mustActor(t *testing.T, mgr mwanachamaactor.UserManager, name string) mwanachamaactor.Actor {
 	t.Helper()
-	a, err := mgr.CreateActor(context.Background(), models.Actor{DisplayName: name})
+	a, err := mgr.CreateActor(context.Background(), mwanachamaactor.Actor{DisplayName: name})
 	if err != nil {
 		t.Fatalf("CreateActor: %v", err)
 	}
 	return a
 }
 
-func mustGroup(t *testing.T, mgr mwanachamaactor.UserManager, name string) models.Group {
+func mustGroup(t *testing.T, mgr mwanachamaactor.UserManager, name string) mwanachamaactor.Group {
 	t.Helper()
-	g, err := mgr.CreateGroup(context.Background(), models.Group{Name: name})
+	g, err := mgr.CreateGroup(context.Background(), mwanachamaactor.Group{Name: name})
 	if err != nil {
 		t.Fatalf("CreateGroup: %v", err)
 	}
@@ -32,7 +31,7 @@ func TestRegister_RoundTrips(t *testing.T) {
 	a := mustActor(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	reg, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
+	reg, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{
 		ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true},
 	})
 	if err != nil {
@@ -56,7 +55,7 @@ func TestRegister_MissingActor(t *testing.T) {
 	ctx := context.Background()
 	g := mustGroup(t, mgr, "Ward A")
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: "nope", GroupID: g.ID}); err == nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: "nope", GroupID: g.ID}); err == nil {
 		t.Fatal("expected an error registering a nonexistent actor")
 	}
 }
@@ -75,10 +74,10 @@ func TestRegister_NoHomeExclusivity(t *testing.T) {
 	g2 := mustGroup(t, mgr, "Ward B")
 
 	home := map[string]any{"is_home": true}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g1.ID, Attributes: home}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g1.ID, Attributes: home}); err != nil {
 		t.Fatalf("Register g1: %v", err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g2.ID, Attributes: home}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g2.ID, Attributes: home}); err != nil {
 		t.Fatalf("Register g2: %v", err)
 	}
 
@@ -103,11 +102,11 @@ func TestRegister_ReRegisterPreservesCreatedAt(t *testing.T) {
 	a := mustActor(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	first, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID})
+	first, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID})
 	if err != nil {
 		t.Fatalf("first Register: %v", err)
 	}
-	second, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{
+	second, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{
 		ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true},
 	})
 	if err != nil {
@@ -135,7 +134,7 @@ func TestDeregister_RemovesEdgeAndReturnsPriorState(t *testing.T) {
 	a := mustActor(t, mgr, "Amina")
 	g := mustGroup(t, mgr, "Ward A")
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true}}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID, Attributes: map[string]any{"is_home": true}}); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 
@@ -181,10 +180,10 @@ func TestListActorsForGroup(t *testing.T) {
 	a1 := mustActor(t, mgr, "Amina")
 	a2 := mustActor(t, mgr, "Baraka")
 
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a1.ID, GroupID: g.ID}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a1.ID, GroupID: g.ID}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a2.ID, GroupID: g.ID}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a2.ID, GroupID: g.ID}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -208,13 +207,13 @@ func TestHomeCounts_OnlyCountsHome(t *testing.T) {
 
 	home := map[string]any{"is_home": true}
 	notHome := map[string]any{"is_home": false}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a1.ID, GroupID: g1.ID, Attributes: home}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a1.ID, GroupID: g1.ID, Attributes: home}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a2.ID, GroupID: g1.ID, Attributes: notHome}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a2.ID, GroupID: g1.ID, Attributes: notHome}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mgr.AssignGroup(ctx, models.ActorGroupAssignment{ActorID: a3.ID, GroupID: g2.ID, Attributes: home}); err != nil {
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a3.ID, GroupID: g2.ID, Attributes: home}); err != nil {
 		t.Fatal(err)
 	}
 
