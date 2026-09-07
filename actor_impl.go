@@ -21,41 +21,41 @@ import (
 // [models.DefaultActorProperties] first — a Required property missing or
 // blank, a value of the wrong Range, or a Unique property already held by
 // another actor all fail the call before any row is written.
-func (m *userManager) CreateActor(ctx context.Context, act models.Actor) (models.Actor, error) {
+func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error) {
 	properties := models.DefaultActorProperties()
 	if err := models.ValidateAttributes(properties, act.Attributes); err != nil {
-		return models.Actor{}, fmt.Errorf("%w: %v", ErrInvalidActor, err)
+		return Actor{}, fmt.Errorf("%w: %v", ErrInvalidActor, err)
 	}
 	if err := m.checkUniqueAttributes(ctx, m.tables.Actors, properties, act.Attributes); err != nil {
-		return models.Actor{}, err
+		return Actor{}, err
 	}
 	if act.CreatedAt == "" {
-		act.CreatedAt = models.NowRFC3339()
+		act.CreatedAt = NowRFC3339()
 	}
 	row := gormstore.ActorToRow(act)
 	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Create(&row).Error; err != nil {
-		return models.Actor{}, fmt.Errorf("CreateActor: %w", err)
+		return Actor{}, fmt.Errorf("CreateActor: %w", err)
 	}
 	return gormstore.ActorFromRow(row), nil
 }
 
 // GetActor reads a single Actor entity.
-func (m *userManager) GetActor(ctx context.Context, id string) (models.Actor, error) {
+func (m *userManager) GetActor(ctx context.Context, id string) (Actor, error) {
 	var row gormstore.ActorRow
 	err := m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).First(&row).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.Actor{}, ErrActorNotFound
+			return Actor{}, ErrActorNotFound
 		}
-		return models.Actor{}, fmt.Errorf("GetActor: %w", err)
+		return Actor{}, fmt.Errorf("GetActor: %w", err)
 	}
 	return gormstore.ActorFromRow(row), nil
 }
 
 // GetActors returns the Actors for the given ids, sorted by id. Ids with
 // no actor are skipped rather than erroring.
-func (m *userManager) GetActors(ctx context.Context, ids []string) ([]models.Actor, error) {
-	out := []models.Actor{}
+func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, error) {
+	out := []Actor{}
 	seen := map[string]bool{}
 	for _, id := range ids {
 		if seen[id] {
@@ -76,16 +76,16 @@ func (m *userManager) GetActors(ctx context.Context, ids []string) ([]models.Act
 }
 
 // SetActorDisplayName records the name an actor gave for themselves.
-func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName string) (models.Actor, error) {
+func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error) {
 	current, err := m.GetActor(ctx, id)
 	if err != nil {
-		return models.Actor{}, err
+		return Actor{}, err
 	}
-	now := models.NowRFC3339()
+	now := NowRFC3339()
 	err = m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).
 		Updates(map[string]any{"display_name": displayName, "updated_at": now}).Error
 	if err != nil {
-		return models.Actor{}, fmt.Errorf("SetActorDisplayName: %w", err)
+		return Actor{}, fmt.Errorf("SetActorDisplayName: %w", err)
 	}
 	current.DisplayName = displayName
 	current.LastUpdated = now
@@ -93,12 +93,12 @@ func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName s
 }
 
 // ListActors returns every non-deleted Actor, id order.
-func (m *userManager) ListActors(ctx context.Context) ([]models.Actor, error) {
+func (m *userManager) ListActors(ctx context.Context) ([]Actor, error) {
 	var rows []gormstore.ActorRow
 	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Where("deleted = ?", false).Order("id").Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("ListActors: %w", err)
 	}
-	out := make([]models.Actor, 0, len(rows))
+	out := make([]Actor, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, gormstore.ActorFromRow(r))
 	}
