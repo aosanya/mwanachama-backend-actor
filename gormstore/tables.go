@@ -22,6 +22,11 @@ type TableNames struct {
 	// todo_actor_absorb.md.
 	RoleKinds           string
 	ActorRoleAssignments string
+	// Hierarchies and Levels are DSN-1699 gap 1's addition, resolved: the
+	// org-configured level tree folded in alongside Group/RoleKind rather
+	// than staying behind in the gateway's own Postgres tables.
+	Hierarchies string
+	Levels      string
 }
 
 // DefaultTableNames builds the conventional table set for one mounted
@@ -42,6 +47,8 @@ func DefaultTableNames(instance string) TableNames {
 		ActorGroupAssignments: instance + "_actor_group_assignments",
 		RoleKinds:             instance + "_role_kinds",
 		ActorRoleAssignments:  instance + "_actor_role_assignments",
+		Hierarchies:           instance + "_hierarchies",
+		Levels:                instance + "_levels",
 	}
 }
 
@@ -73,6 +80,38 @@ func Migrate(db *gorm.DB, t TableNames) error {
 	}
 	if err := db.Table(t.ActorRoleAssignments).AutoMigrate(&ActorRoleAssignmentRow{}); err != nil {
 		return err
+	}
+	if err := db.Table(t.Hierarchies).AutoMigrate(&HierarchyRow{}); err != nil {
+		return err
+	}
+	if err := db.Table(t.Levels).AutoMigrate(&LevelRow{}); err != nil {
+		return err
+	}
+	if err := syncDefaultAnchorIndex(db, t.Levels); err != nil {
+		return err
+	}
+	return nil
+}
+
+// syncDefaultAnchorIndex creates the partial unique index backing "at most
+// one default-anchor level per hierarchy" — the DB-level half of what
+// CreateLevel/SetDefaultAnchor already enforce in Go, mirroring the retired
+// gateway migration 000033's chapter_level_one_default_anchor. Partial on
+// is_default_anchor so any number of non-anchor levels coexist per
+// hierarchy; only a second `true` row for the same hierarchy_id collides.
+func syncDefaultAnchorIndex(db *gorm.DB, table string) error {
+	switch db.Dialector.Name() {
+	case "postgres", "sqlite":
+	default:
+		return nil
+	}
+	idx := fmt.Sprintf("%s_one_default_anchor", table)
+	sql := fmt.Sprintf(
+		"CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (hierarchy_id) WHERE is_default_anchor = TRUE",
+		idx, table,
+	)
+	if err := db.Exec(sql).Error; err != nil {
+		return fmt.Errorf("syncDefaultAnchorIndex: %s: %w", idx, err)
 	}
 	return nil
 }

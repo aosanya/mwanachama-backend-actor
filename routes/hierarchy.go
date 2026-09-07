@@ -3,11 +3,11 @@ package routes
 import "context"
 
 // HierarchyChecker answers the two reference questions CreateGroup and
-// EditGroup need about the hierarchy/chapter_level tables this package does
-// not own (DSN-1699 gap 1's default keeps them physically in the mounting
-// process — see models.Group's doc). The mounting process supplies an
-// implementation at wiring time; this package takes no import on whatever
-// owns those tables in return.
+// EditGroup need about the hierarchy/level tables — DSN-1699 gap 1, resolved:
+// those tables live in this same repo now (see [mwanachamaactor.UserManager],
+// which satisfies this interface directly), but the small interface stays so
+// this package still takes no dependency on the full UserManager surface, or
+// on the models package, for the one thing it actually needs from it.
 type HierarchyChecker interface {
 	// HierarchyExists reports whether id names a hierarchy.
 	HierarchyExists(ctx context.Context, id string) (bool, error)

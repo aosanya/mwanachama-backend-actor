@@ -46,3 +46,23 @@ var ErrKindHasLiveAssignments = errors.New("mwanachamaactor: role kind still has
 // ErrKindRetired refuses a grant that names a role kind which has been
 // retired — DEV-1201, ported unchanged from the gateway's role.ErrKindRetired.
 var ErrKindRetired = errors.New("mwanachamaactor: role kind is retired — un-retire it before granting a seat")
+
+// ErrHierarchyNotFound is returned when a Hierarchy id has no record.
+var ErrHierarchyNotFound = errors.New("mwanachamaactor: hierarchy not found")
+
+// ErrLevelNotFound is returned when a Level id has no record.
+var ErrLevelNotFound = errors.New("mwanachamaactor: level not found")
+
+// ErrLevelWornByGroups refuses a level delete while a Group still wears the
+// rung (LevelID or AnchorLevelOverrideID). Mirrors the gateway's
+// chapter.ErrLevelWornByChapters.
+var ErrLevelWornByGroups = errors.New("mwanachamaactor: this level still carries groups, so it cannot be removed")
+
+// ErrLevelHasRoleKinds refuses a level delete while a RoleKind is still
+// scoped to it. Mirrors the gateway's chapter.ErrLevelHasRoleKinds.
+var ErrLevelHasRoleKinds = errors.New("mwanachamaactor: this level still carries role kinds, so it cannot be removed")
+
+// ErrDuplicateDefaultAnchor refuses a second default-anchor level on the
+// same hierarchy — at most one may carry the flag. The DB-level half of this
+// guarantee is gormstore.Migrate's partial unique index.
+var ErrDuplicateDefaultAnchor = errors.New("mwanachamaactor: hierarchy already has a default anchor level")

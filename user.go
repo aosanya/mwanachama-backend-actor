@@ -19,6 +19,8 @@ type (
 	ActorGroupAssignment = models.ActorGroupAssignment
 	RoleKind             = models.RoleKind
 	ActorRoleAssignment  = models.ActorRoleAssignment
+	Hierarchy            = models.Hierarchy
+	Level                = models.Level
 )
 
 // TimeLayout is the timestamp layout every model in this package is written
@@ -191,6 +193,50 @@ type UserManager interface {
 	// and Actor/Group data that only became intra-repo once role landed
 	// here. Returns [ErrGroupNotFound] if the group does not exist.
 	GroupDashboard(ctx context.Context, groupID string) (models.GroupDashboard, error)
+
+	// CreateHierarchy creates a new named ladder of levels. Assigns a
+	// server-generated ID when h.ID is empty.
+	CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarchy, error)
+	// ListHierarchies returns every hierarchy, id order.
+	ListHierarchies(ctx context.Context) ([]Hierarchy, error)
+	// GetHierarchy retrieves a single Hierarchy by id. Returns
+	// [ErrHierarchyNotFound] if no matching hierarchy exists.
+	GetHierarchy(ctx context.Context, id string) (Hierarchy, error)
+	// RenameHierarchy writes a hierarchy's name and nothing else. Returns
+	// [ErrHierarchyNotFound] if the hierarchy does not exist.
+	RenameHierarchy(ctx context.Context, id, name string) (Hierarchy, error)
+
+	// CreateLevel creates a new rung on a hierarchy. Assigns a
+	// server-generated ID when l.ID is empty. Returns [ErrHierarchyNotFound]
+	// when l.HierarchyID names no hierarchy, and
+	// [ErrDuplicateDefaultAnchor] when l.IsDefaultAnchor is set and the
+	// hierarchy already has one.
+	CreateLevel(ctx context.Context, l Level) (Level, error)
+	// GetLevel retrieves a single Level by id. Returns [ErrLevelNotFound]
+	// if no matching level exists.
+	GetLevel(ctx context.Context, id string) (Level, error)
+	// RenameLevel writes a level's name and nothing else. Returns
+	// [ErrLevelNotFound] if the level does not exist.
+	RenameLevel(ctx context.Context, id, name string) (Level, error)
+	// DeleteLevel removes a rung. Returns [ErrLevelWornByGroups] when a
+	// Group still wears it (LevelID or AnchorLevelOverrideID), or
+	// [ErrLevelHasRoleKinds] when a RoleKind is still scoped to it.
+	DeleteLevel(ctx context.Context, id string) error
+	// SetDefaultAnchor moves a hierarchy's anchor rung — the level at which
+	// a self-service member registers — clearing the old flag and setting
+	// the new one in one transaction. Returns [ErrLevelNotFound] if levelID
+	// does not exist or does not belong to hierarchyID. A no-op when
+	// levelID already carries the flag.
+	SetDefaultAnchor(ctx context.Context, hierarchyID, levelID string) error
+	// ListLevels returns the levels of a hierarchy, or — when hierarchyID
+	// is empty — every level across every hierarchy, depth-then-id order.
+	ListLevels(ctx context.Context, hierarchyID string) ([]Level, error)
+
+	// HierarchyExists reports whether id names a hierarchy.
+	HierarchyExists(ctx context.Context, id string) (bool, error)
+	// LevelInHierarchy reports whether levelID names a level belonging to
+	// hierarchyID.
+	LevelInHierarchy(ctx context.Context, levelID, hierarchyID string) (bool, error)
 }
 
 // userManager is the concrete implementation of [UserManager].
