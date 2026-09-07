@@ -90,21 +90,37 @@ updated in a follow-up change — not done here, by explicit scope decision.
   hand-formatted RFC 3339 strings (not GORM-managed `time.Time` columns) —
   see `models/time.go`'s `TimeLayout` doc for why plain `time.RFC3339Nano`
   isn't safe for sort order.
-- **`Hierarchy` and `Level` did NOT move here.** DSN-1699 gap 1 was left
-  unresolved by the design session; this repo's first build took the
-  DEFAULT the design doc names and recorded it explicitly (see
-  `documentation/2. design/README.md`): `hierarchy` and `chapter_level` stay
-  physically in the gateway's own Postgres tables. `Group` carries
-  `hierarchy_id` / `level_id` / `parent_id` / `anchor_level_override` as
-  plain string columns with **no foreign key** back to those gateway
-  tables — and therefore no equivalent of the gateway's migration-000034
-  composite-FK guarantee that an anchor override names a level from the
-  chapter's own hierarchy. This has nothing to do with the entitygraph→GORM
-  move (see `gormstore/group.go`'s `GroupRow` doc); it is unchanged from
-  before it. If
-  gap 1 is ever resolved the other way (hierarchy/level move into this repo
-  as their own types), `MoveGroup`'s in-Go cycle walk and these
-  column-only fields both need revisiting.
+- **`Hierarchy` and `Level` moved here, 2026-09-07 (DSN-1699 gap 1,
+  resolved the other way).** The gap was left open by the original design
+  session and this repo's first build took the DEFAULT it named — hierarchy
+  and level stayed behind in the gateway's own Postgres. That default rotted
+  silently: the gateway's raw-SQL store kept querying `hierarchy`/
+  `chapter_level` tables no migration created any more (they were dropped
+  during an earlier cutover and nothing replaced them), producing a 500 on
+  every `POST /v1/hierarchies`. Resolved by moving `Hierarchy`/`Level` in
+  here instead, alongside `Group`/`RoleKind` — `models/hierarchy.go`,
+  `gormstore/hierarchy.go`, `hierarchy_impl.go`. The deciding factor: every
+  row that references a Level (`Group.LevelID`, `Group.AnchorLevelOverrideID`,
+  `RoleKind.LevelID`) already lives in this package, so `DeleteLevel`'s two
+  refusals — worn by a Group, scoped to by a RoleKind — can now both be
+  checked in one native transaction. The RoleKind half of that check had
+  been silently dropped from the gateway's old split-store version after
+  role folded in here and nobody re-wired it; this restores it.
+  `gormstore.Migrate`'s partial unique index on `(hierarchy_id) WHERE
+  is_default_anchor` is the new database-level home for the old gateway
+  migration 000033's `chapter_level_one_default_anchor` guarantee — still no
+  FK from `Group.LevelID`/`.AnchorLevelOverrideID` to the new Level table,
+  same posture as `ParentID`, for the same multi-instance-table-naming
+  reason `gormstore/group.go`'s `GroupRow` doc explains. One behavior change
+  from the retired gateway stores: hierarchy/level ids now mint as UUIDs
+  (`HierarchyRow`/`LevelRow`'s `BeforeCreate`, matching `GroupRow`/
+  `RoleKindRow`) rather than the old `hier-`/`lvl-` sequence-numbered
+  strings — no client or test asserted on that format. Another: each
+  mounted instance now gets its own hierarchy/level tables
+  (`<instance>_hierarchies`/`<instance>_levels`) rather than one shared
+  gateway-side store across every instance — no effect today (only
+  `"member"` is mounted) but worth knowing if a second instance is ever
+  added.
 - **`Registration.IsHome` carries no exclusivity.** DSN-1698 decision 8
   drops "one home chapter per member" outright, not relocated — do not
   reintroduce a uniqueness check on `is_home`, in this repo or in a caller.
