@@ -59,22 +59,22 @@ func (m *userManager) findAssignmentRow(ctx context.Context, actorID, groupID st
 // is only checked when a new row is being created (see the
 // checkUniqueAttributes call below), not on an update of an existing
 // assignment's own row.
-func (m *userManager) AssignGroup(ctx context.Context, r models.ActorGroupAssignment) (models.ActorGroupAssignment, error) {
+func (m *userManager) AssignGroup(ctx context.Context, r ActorGroupAssignment) (ActorGroupAssignment, error) {
 	properties := models.DefaultActorGroupAssignmentProperties()
 	if err := models.ValidateAttributes(properties, r.Attributes); err != nil {
-		return models.ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
+		return ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
 	}
 
 	existing, found, err := m.findAssignmentRow(ctx, r.ActorID, r.GroupID)
 	if err != nil {
-		return models.ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
+		return ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
 	}
 	if found {
 		r.CreatedAt = existing.CreatedAt
 	} else if r.CreatedAt == "" {
-		r.CreatedAt = models.NowRFC3339()
+		r.CreatedAt = NowRFC3339()
 	}
-	r.LastUpdated = models.NowRFC3339()
+	r.LastUpdated = NowRFC3339()
 
 	row := gormstore.ActorGroupAssignmentToRow(r)
 	if found {
@@ -89,18 +89,18 @@ func (m *userManager) AssignGroup(ctx context.Context, r models.ActorGroupAssign
 		// behavior the tests already exercise.
 		var actorExists int64
 		if cerr := m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", r.ActorID).Count(&actorExists).Error; cerr != nil {
-			return models.ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", cerr)
+			return ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", cerr)
 		}
 		if actorExists == 0 {
-			return models.ActorGroupAssignment{}, ErrActorNotFound
+			return ActorGroupAssignment{}, ErrActorNotFound
 		}
 		if err := m.checkUniqueAttributes(ctx, m.tables.ActorGroupAssignments, properties, r.Attributes); err != nil {
-			return models.ActorGroupAssignment{}, err
+			return ActorGroupAssignment{}, err
 		}
 		err = m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).Create(&row).Error
 	}
 	if err != nil {
-		return models.ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
+		return ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
 	}
 	return r, nil
 }
@@ -112,19 +112,19 @@ func (m *userManager) AssignGroup(ctx context.Context, r models.ActorGroupAssign
 // caller (the gateway adapter) is responsible for composing and writing
 // whatever record its own domain wants of the removal, using the returned
 // ActorGroupAssignment.
-func (m *userManager) Deregister(ctx context.Context, actorID, groupID string) (models.ActorGroupAssignment, bool, error) {
+func (m *userManager) Deregister(ctx context.Context, actorID, groupID string) (ActorGroupAssignment, bool, error) {
 	row, found, err := m.findAssignmentRow(ctx, actorID, groupID)
 	if err != nil {
-		return models.ActorGroupAssignment{}, false, fmt.Errorf("Deregister: %w", err)
+		return ActorGroupAssignment{}, false, fmt.Errorf("Deregister: %w", err)
 	}
 	if !found {
-		return models.ActorGroupAssignment{}, false, nil
+		return ActorGroupAssignment{}, false, nil
 	}
 	reg := gormstore.ActorGroupAssignmentFromRow(row)
 	err = m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).
 		Where("actor_id = ? AND group_id = ?", actorID, groupID).Delete(&gormstore.ActorGroupAssignmentRow{}).Error
 	if err != nil {
-		return models.ActorGroupAssignment{}, false, fmt.Errorf("Deregister: %w", err)
+		return ActorGroupAssignment{}, false, fmt.Errorf("Deregister: %w", err)
 	}
 	return reg, true, nil
 }
@@ -132,13 +132,13 @@ func (m *userManager) Deregister(ctx context.Context, actorID, groupID string) (
 // ListGroupsForActor returns every registration an actor holds, created_at-
 // then-group-id order (matching the gateway's ORDER BY joined_at,
 // chapter_id — created_at now plays that role, see the package doc).
-func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([]models.ActorGroupAssignment, error) {
+func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([]ActorGroupAssignment, error) {
 	var rows []gormstore.ActorGroupAssignmentRow
 	err := m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).Where("actor_id = ?", actorID).Find(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("ListGroupsForActor: %w", err)
 	}
-	out := make([]models.ActorGroupAssignment, 0, len(rows))
+	out := make([]ActorGroupAssignment, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, gormstore.ActorGroupAssignmentFromRow(r))
 	}
@@ -154,13 +154,13 @@ func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([
 // ListActorsForGroup returns every actor registered at a group, created_at-
 // then-actor-id order (matching the gateway's ORDER BY joined_at,
 // member_id — created_at now plays that role).
-func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([]models.ActorGroupAssignment, error) {
+func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error) {
 	var rows []gormstore.ActorGroupAssignmentRow
 	err := m.db.WithContext(ctx).Table(m.tables.ActorGroupAssignments).Where("group_id = ?", groupID).Find(&rows).Error
 	if err != nil {
 		return nil, fmt.Errorf("ListActorsForGroup: %w", err)
 	}
-	out := make([]models.ActorGroupAssignment, 0, len(rows))
+	out := make([]ActorGroupAssignment, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, gormstore.ActorGroupAssignmentFromRow(r))
 	}

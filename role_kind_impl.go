@@ -15,32 +15,31 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/aosanya/mwanachama-backend-actor/gormstore"
-	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
 // CreateRoleKind stores a role kind, minting an id when empty. A kind is
 // never born retired — RetiredAt/RetiredBy are cleared unconditionally,
 // mirroring the gateway's own CreateKind (DEV-1133): a caller-supplied
 // ending would create a kind retired the moment it existed.
-func (m *userManager) CreateRoleKind(ctx context.Context, k models.RoleKind) (models.RoleKind, error) {
+func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error) {
 	k.RetiredAt, k.RetiredBy = "", ""
 	row, err := gormstore.RoleKindToRow(k)
 	if err != nil {
-		return models.RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
+		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
 	}
 	if err := m.db.WithContext(ctx).Table(m.tables.RoleKinds).Create(&row).Error; err != nil {
-		return models.RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
+		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
 	}
 	return gormstore.RoleKindFromRow(row)
 }
 
 // ListRoleKinds returns every role kind, id order.
-func (m *userManager) ListRoleKinds(ctx context.Context) ([]models.RoleKind, error) {
+func (m *userManager) ListRoleKinds(ctx context.Context) ([]RoleKind, error) {
 	var rows []gormstore.RoleKindRow
 	if err := m.db.WithContext(ctx).Table(m.tables.RoleKinds).Order("id").Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("ListRoleKinds: %w", err)
 	}
-	out := make([]models.RoleKind, 0, len(rows))
+	out := make([]RoleKind, 0, len(rows))
 	for _, r := range rows {
 		k, err := gormstore.RoleKindFromRow(r)
 		if err != nil {
@@ -52,10 +51,10 @@ func (m *userManager) ListRoleKinds(ctx context.Context) ([]models.RoleKind, err
 }
 
 // GetRoleKind returns a role kind by id.
-func (m *userManager) GetRoleKind(ctx context.Context, id string) (models.RoleKind, error) {
+func (m *userManager) GetRoleKind(ctx context.Context, id string) (RoleKind, error) {
 	row, err := m.findRoleKindRow(ctx, id)
 	if err != nil {
-		return models.RoleKind{}, err
+		return RoleKind{}, err
 	}
 	return gormstore.RoleKindFromRow(row)
 }
@@ -85,8 +84,8 @@ func (m *userManager) findRoleKindRow(ctx context.Context, id string) (gormstore
 // interleave into the state G229 exists to prevent; unchanged from every
 // other read-then-write in this package (e.g. AssignGroup's upsert), not a
 // new gap this port introduces.
-func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string) (models.RoleKind, error) {
-	var out models.RoleKind
+func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string) (RoleKind, error) {
+	var out RoleKind
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row gormstore.RoleKindRow
 		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).First(&row).Error; err != nil {
@@ -108,7 +107,7 @@ func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string
 		if live > 0 {
 			return ErrKindHasLiveAssignments
 		}
-		row.RetiredAt = models.NowRFC3339()
+		row.RetiredAt = NowRFC3339()
 		row.RetiredBy = actorID
 		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).
 			Updates(map[string]any{"retired_at": row.RetiredAt, "retired_by": row.RetiredBy}).Error; err != nil {
@@ -119,15 +118,15 @@ func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string
 		return err
 	})
 	if err != nil {
-		return models.RoleKind{}, err
+		return RoleKind{}, err
 	}
 	return out, nil
 }
 
 // UnretireRoleKind reverses a retirement, clearing both fields together.
 // Idempotent: un-retiring an already-live kind returns it unchanged.
-func (m *userManager) UnretireRoleKind(ctx context.Context, kindID string) (models.RoleKind, error) {
-	var out models.RoleKind
+func (m *userManager) UnretireRoleKind(ctx context.Context, kindID string) (RoleKind, error) {
+	var out RoleKind
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var row gormstore.RoleKindRow
 		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).First(&row).Error; err != nil {
@@ -151,7 +150,7 @@ func (m *userManager) UnretireRoleKind(ctx context.Context, kindID string) (mode
 		return err
 	})
 	if err != nil {
-		return models.RoleKind{}, err
+		return RoleKind{}, err
 	}
 	return out, nil
 }
