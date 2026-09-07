@@ -10,9 +10,11 @@ package models
 // this package — Description is free text a caller renders, IsDelegate marks
 // a kind that represents delegation to the next group up rather than a
 // capability-bearing seat. LevelID scopes a kind to one hierarchy level
-// (empty means every level) — a plain string, carrying DSN-1699 gap 1's
-// existing shape forward: Hierarchy/Level stay in the gateway's own tables,
-// never FK'd from here.
+// (empty means every level) — a plain string, not FK'd to the Level table
+// (see gormstore/group.go's GroupRow doc for why columns that reference
+// another row in this package stay plain/indexed rather than a declared
+// GORM association). DeleteLevel checks this column before removing a rung
+// — see hierarchy_impl.go.
 //
 // RetiredAt and RetiredBy are the kind's ending (DEV-1133). They are set
 // together and cleared together, and RetiredBy is the one field on this type
