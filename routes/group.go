@@ -63,10 +63,10 @@ func checkHierarchyRefs(hc HierarchyChecker, r *http.Request, hierarchyID, level
 			return "", false, err
 		}
 		if !exists {
-			return "hierarchy_id: invalid reference", false, nil
+			return "invalid reference", false, nil
 		}
 	}
-	for field, id := range map[string]string{"level_id": levelID, "anchor_level_override": anchorLevelOverrideID} {
+	for _, id := range []string{levelID, anchorLevelOverrideID} {
 		if id == "" {
 			continue
 		}
@@ -75,7 +75,7 @@ func checkHierarchyRefs(hc HierarchyChecker, r *http.Request, hierarchyID, level
 			return "", false, err
 		}
 		if !inHierarchy {
-			return field + ": invalid reference", false, nil
+			return "invalid reference", false, nil
 		}
 	}
 	return "", true, nil
@@ -108,7 +108,7 @@ func CreateGroup(um mwanachamaactor.UserManager, hc HierarchyChecker) http.Handl
 		if in.ParentID != "" {
 			if _, err := um.GetGroup(r.Context(), in.ParentID); err != nil {
 				if errors.Is(err, mwanachamaactor.ErrGroupNotFound) {
-					writeErr(w, http.StatusBadRequest, "parent_id: invalid reference")
+					writeErr(w, http.StatusBadRequest, "invalid reference")
 					return
 				}
 				writeGroupErr(w, err)
