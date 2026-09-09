@@ -19,6 +19,12 @@ var ErrInvalidGroup = errors.New("mwanachamaactor: invalid group")
 // same model — see attributes.go's checkUniqueAttributes.
 var ErrDuplicateAttribute = errors.New("mwanachamaactor: attribute value already in use")
 
+// ErrDuplicateID is returned when CreateActor is given a caller-supplied id
+// that already names another Actor. Distinct from ErrDuplicateAttribute,
+// which is about a Unique Attributes value, not the primary key — see
+// actor_impl.go's classifyCreateErr.
+var ErrDuplicateID = errors.New("mwanachamaactor: an actor with this id already exists")
+
 // ErrRootCannotMove — the root group has no parent, so there is nothing to
 // move it under. Mirrors the gateway's chapter.ErrRootCannotMove.
 var ErrRootCannotMove = errors.New("mwanachamaactor: the root group has no parent, so it cannot be moved")

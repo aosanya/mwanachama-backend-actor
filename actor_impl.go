@@ -10,7 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"github.com/aosanya/mwanachama-backend-actor/gormstore"
@@ -34,9 +36,25 @@ func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error)
 	}
 	row := gormstore.ActorToRow(act)
 	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Create(&row).Error; err != nil {
-		return Actor{}, fmt.Errorf("CreateActor: %w", err)
+		return Actor{}, fmt.Errorf("CreateActor: %w", classifyDuplicateID(err))
 	}
 	return gormstore.ActorFromRow(row), nil
+}
+
+// classifyDuplicateID recognises a primary-key collision — the only way
+// Create can fail this way, since a caller-supplied id is the one write
+// path with no Go-level pre-check (checkUniqueAttributes only covers
+// Attributes) — and turns it into [ErrDuplicateID]. Any other error passes
+// through unchanged.
+func classifyDuplicateID(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return ErrDuplicateID
+	}
+	if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		return ErrDuplicateID
+	}
+	return err
 }
 
 // GetActor reads a single Actor entity.
