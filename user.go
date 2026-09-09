@@ -63,6 +63,13 @@ type UserManager interface {
 	// with no actor are skipped rather than erroring.
 	GetActors(ctx context.Context, ids []string) ([]Actor, error)
 
+	// GetActorByPhone looks up the Actor holding this phone number in its
+	// Attributes (Unique, so at most one ever can). Returns
+	// [ErrActorNotFound] if none does — a caller minting a new Actor after a
+	// CreateActor call refused with [ErrDuplicateAttribute] on "phone" uses
+	// this to recover the Actor that already holds it.
+	GetActorByPhone(ctx context.Context, phone string) (Actor, error)
+
 	// SetActorDisplayName records the name an actor gave for themselves.
 	// Returns [ErrActorNotFound] if the actor does not exist.
 	SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error)

@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/aosanya/mwanachama-backend-actor/gormstore"
@@ -55,6 +56,21 @@ func classifyDuplicateID(err error) error {
 		return ErrDuplicateID
 	}
 	return err
+}
+
+// GetActorByPhone reads the Actor holding this phone number, the same
+// Attributes JSON lookup checkUniqueAttributes uses to refuse a second one.
+func (m *userManager) GetActorByPhone(ctx context.Context, phone string) (Actor, error) {
+	var row gormstore.ActorRow
+	err := m.db.WithContext(ctx).Table(m.tables.Actors).
+		Where(datatypes.JSONQuery("attributes").Equals(phone, "phone")).First(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return Actor{}, ErrActorNotFound
+		}
+		return Actor{}, fmt.Errorf("GetActorByPhone: %w", err)
+	}
+	return gormstore.ActorFromRow(row), nil
 }
 
 // GetActor reads a single Actor entity.
