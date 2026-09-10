@@ -232,3 +232,54 @@ lock — a known gap, not a silent regression.
   identical. New adapter types satisfying them live in the gateway's
   `internal/store/entitygraph` (rename pending the gateway's own follow-up
   change), not here.
+
+## MCP tools
+
+A domain library that already ships its own `routes/` HTTP package (this
+one included) *may* also ship its own `mcp/` package exposing the same
+manager's methods as Model Context Protocol tools, once a hosting product
+actually needs an AI agent to reach it. `mwanachama-backend-agency`'s
+`mcp/` package (added 2026-09-10, AG13) is the reference implementation —
+follow its shape rather than re-deriving one from scratch.
+
+This is deliberately a *may*, not a *must*: MCP tool code has otherwise
+always lived in a hosting gateway, not the domain library — see
+`mwanachama-backend-api-shared`'s centralized `mcp_tools_taskmanager.go`/
+`mcp_tools_git.go`, which exist there specifically because **two**
+independent gateways (`api-gateway` and `api-kazi`) need the identical
+tool set for those domains. That centralization pattern is still correct
+for that problem and is not superseded by this one — don't migrate
+taskmanager/git (or any other already-centralized domain) into their own
+libraries just to match agency. Reach for an in-library `mcp/` package
+only when a domain has exactly one primary hosting product, the way
+agency currently has exactly one (`mwanachama-wakala-api`).
+
+Two things make MCP a different shape than `routes/`, not just an MCP
+version of it:
+
+- **`ManagerResolver`, not a concrete manager.** `routes/`'s
+  `Routes(m AgencyManager, names ResourceNames) []Route` gets away with a
+  concrete manager because a mounting host rebuilds it fresh on every HTTP
+  request, closing over whichever manager that request's own path segment
+  resolves to. MCP's `mcp.AddTool` wires a handler onto the server *once*,
+  at startup — there's no per-call rebuild point — so an `mcp/` package
+  instead exports `type ManagerResolver func(ctx context.Context, id
+  string) (Manager, error)` and a `RegisterTools(server, resolve)` that
+  every tool closes over. The mounting host supplies `resolve`; a
+  single-Agency host can ignore the id and always return the same manager,
+  a multi-Agency host (like wakala-api's own Registry) resolves it per
+  call. See `mwanachama-wakala-api/internal/api/http/mcp.go`'s
+  `resolveAgencyManager` for the multi-instance case.
+- **Every List/Match tool must return an object, never a bare slice.**
+  MCP's spec defines `CallToolResult.structuredContent` as a JSON object;
+  the go-sdk does not enforce this and will happily serialize a bare slice
+  return type straight into it, which passes the go-sdk's own (lenient)
+  test client but fails a spec-strict one with "expected record, received
+  array". Every List/Match tool in `mwanachama-backend-agency/mcp` returns
+  `ListResult[T]{Items: [...]}` for exactly this reason — reuse that
+  exported type (or its equivalent) rather than returning `[]T` directly.
+
+A library adopting this pattern should add one line to its own CLAUDE.md
+next to its `routes/` entry: "`mcp/`, matching agency's `mcp/` package
+exactly. See actor/CLAUDE.md." — the same propagation mechanism `routes/`
+itself already uses.
