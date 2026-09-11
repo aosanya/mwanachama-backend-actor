@@ -31,6 +31,36 @@ func TestCreateActor_MintsIDAndCreatedAt(t *testing.T) {
 	if a.IsAgentic {
 		t.Error("IsAgentic should default false")
 	}
+	if a.Code != "AC-1" {
+		t.Errorf("Code = %q, want AC-1", a.Code)
+	}
+}
+
+func TestCreateActor_CodeIsSequentialAndImmutable(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+
+	a1, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	a2, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Baraka"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	if a1.Code != "AC-1" || a2.Code != "AC-2" {
+		t.Fatalf("Codes = %q, %q, want AC-1, AC-2 (sequential across repeated Creates)", a1.Code, a2.Code)
+	}
+
+	// Code survives SetActorDisplayName unchanged — that call writes
+	// display_name/updated_at only, never code.
+	renamed, err := mgr.SetActorDisplayName(ctx, a1.ID, "Amina Renamed")
+	if err != nil {
+		t.Fatalf("SetActorDisplayName: %v", err)
+	}
+	if renamed.Code != a1.Code {
+		t.Fatalf("Code changed after SetActorDisplayName: got %q, want %q", renamed.Code, a1.Code)
+	}
 }
 
 func TestCreateActor_WithAttributes_RoundTrips(t *testing.T) {

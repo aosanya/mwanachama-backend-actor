@@ -10,7 +10,11 @@ package models
 // gateway member.Member writes .Phone/.Email into
 // Attributes["phone"]/Attributes["email"] instead of a struct field.
 type Actor struct {
-	ID          string `json:"id"`
+	ID string `json:"id"`
+	// Code is a stable, human-readable identifier (e.g. "AC-1"), assigned
+	// once at creation and never changed afterward — see gormstore's
+	// NextCode. Unlike DisplayName, it is never editable.
+	Code        string `json:"code"`
 	DisplayName string `json:"display_name"`
 	CreatedAt   string `json:"created_at"`
 	// LastUpdated is stamped on every write (create and every subsequent

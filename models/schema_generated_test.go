@@ -11,42 +11,45 @@ import (
 
 func TestHierarchyMatchesSchema(t *testing.T) {
 	typ := reflect.TypeOf(models.Hierarchy{})
-	if typ.NumField() != 2 {
-		t.Fatalf("Hierarchy: schema declares 2 field(s), struct has %d", typ.NumField())
+	if typ.NumField() != 3 {
+		t.Fatalf("Hierarchy: schema declares 3 field(s), struct has %d", typ.NumField())
 	}
 	assertField(t, typ, 0, "ID", "string", `json:"id"`)
-	assertField(t, typ, 1, "Name", "string", `json:"name"`)
+	assertField(t, typ, 1, "Code", "string", `json:"code"`)
+	assertField(t, typ, 2, "Name", "string", `json:"name"`)
 }
 
 func TestLevelMatchesSchema(t *testing.T) {
 	typ := reflect.TypeOf(models.Level{})
-	if typ.NumField() != 5 {
-		t.Fatalf("Level: schema declares 5 field(s), struct has %d", typ.NumField())
+	if typ.NumField() != 6 {
+		t.Fatalf("Level: schema declares 6 field(s), struct has %d", typ.NumField())
 	}
 	assertField(t, typ, 0, "ID", "string", `json:"id"`)
-	assertField(t, typ, 1, "HierarchyID", "string", `json:"hierarchy_id"`)
-	assertField(t, typ, 2, "Name", "string", `json:"name"`)
-	assertField(t, typ, 3, "Depth", "int", `json:"depth"`)
-	assertField(t, typ, 4, "IsDefaultAnchor", "bool", `json:"is_default_anchor,omitempty"`)
+	assertField(t, typ, 1, "Code", "string", `json:"code"`)
+	assertField(t, typ, 2, "HierarchyID", "string", `json:"hierarchy_id"`)
+	assertField(t, typ, 3, "Name", "string", `json:"name"`)
+	assertField(t, typ, 4, "Depth", "int", `json:"depth"`)
+	assertField(t, typ, 5, "IsDefaultAnchor", "bool", `json:"is_default_anchor,omitempty"`)
 }
 
 func TestGroupMatchesSchema(t *testing.T) {
 	typ := reflect.TypeOf(models.Group{})
-	if typ.NumField() != 12 {
-		t.Fatalf("Group: schema declares 12 field(s), struct has %d", typ.NumField())
+	if typ.NumField() != 13 {
+		t.Fatalf("Group: schema declares 13 field(s), struct has %d", typ.NumField())
 	}
 	assertField(t, typ, 0, "ID", "string", `json:"id"`)
-	assertField(t, typ, 1, "HierarchyID", "string", `json:"hierarchy_id"`)
-	assertField(t, typ, 2, "LevelID", "string", `json:"level_id"`)
-	assertField(t, typ, 3, "ParentID", "string", `json:"parent_id,omitempty"`)
-	assertField(t, typ, 4, "Name", "string", `json:"name"`)
-	assertField(t, typ, 5, "Discoverable", "bool", `json:"discoverable"`)
-	assertField(t, typ, 6, "AnchorLevelOverrideID", "string", `json:"anchor_level_override,omitempty"`)
-	assertField(t, typ, 7, "NodeType", "string", `json:"node_type,omitempty"`)
-	assertField(t, typ, 8, "CreatedAt", "string", `json:"created_at"`)
-	assertField(t, typ, 9, "LastUpdated", "string", `json:"last_updated"`)
-	assertField(t, typ, 10, "Deleted", "bool", `json:"deleted"`)
-	assertField(t, typ, 11, "Attributes", "map[string]interface {}", `json:"attributes,omitempty"`)
+	assertField(t, typ, 1, "Code", "string", `json:"code"`)
+	assertField(t, typ, 2, "HierarchyID", "string", `json:"hierarchy_id"`)
+	assertField(t, typ, 3, "LevelID", "string", `json:"level_id"`)
+	assertField(t, typ, 4, "ParentID", "string", `json:"parent_id,omitempty"`)
+	assertField(t, typ, 5, "Name", "string", `json:"name"`)
+	assertField(t, typ, 6, "Discoverable", "bool", `json:"discoverable"`)
+	assertField(t, typ, 7, "AnchorLevelOverrideID", "string", `json:"anchor_level_override,omitempty"`)
+	assertField(t, typ, 8, "NodeType", "string", `json:"node_type,omitempty"`)
+	assertField(t, typ, 9, "CreatedAt", "string", `json:"created_at"`)
+	assertField(t, typ, 10, "LastUpdated", "string", `json:"last_updated"`)
+	assertField(t, typ, 11, "Deleted", "bool", `json:"deleted"`)
+	assertField(t, typ, 12, "Attributes", "map[string]interface {}", `json:"attributes,omitempty"`)
 }
 
 func TestGroupEditMatchesSchema(t *testing.T) {

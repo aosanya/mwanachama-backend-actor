@@ -21,7 +21,12 @@ package models
 // this package's own UserManager still resolves from an actor id — see
 // RetireRoleKind.
 type RoleKind struct {
-	ID           string   `json:"id"`
+	ID string `json:"id"`
+	// Code is a stable, human-readable identifier (e.g. "RK-1"), assigned
+	// once at creation and never changed afterward — see gormstore's
+	// NextCode. Unlike Name, it is never editable — no RoleKind write path
+	// touches it after CreateRoleKind.
+	Code         string   `json:"code"`
 	Name         string   `json:"name"`
 	Capabilities []string `json:"capabilities"`
 	Description  string   `json:"description,omitempty"`

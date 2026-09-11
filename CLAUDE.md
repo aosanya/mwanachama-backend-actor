@@ -278,6 +278,32 @@ version of it:
   array". Every List/Match tool in `mwanachama-backend-agency/mcp` returns
   `ListResult[T]{Items: [...]}` for exactly this reason — reuse that
   exported type (or its equivalent) rather than returning `[]T` directly.
+- **Every tool's success path returns a one-line human-readable
+  `Content`, not the go-sdk's default JSON dump.** Left alone, the go-sdk
+  auto-fills `CallToolResult.Content` by JSON-marshaling the whole return
+  value — technically correct, but unreadable in any UI that surfaces a
+  tool call's text (a human watching an agent work, a call log). Return
+  `summary("Created Role %q (%s)", out.Name, out.ID)` (a small
+  `func(format string, args ...any) *mcp.CallToolResult` wrapping
+  `&mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{...}}}`,
+  see `mcp/mcp.go`) as the handler's first return value instead of `nil`.
+  `StructuredContent` is untouched either way — the go-sdk fills it from
+  the handler's actual typed return value regardless of what `Content`
+  holds — so this only changes what a human/LLM reading the call sees,
+  never what a programmatic caller reads back. Only worth doing on the
+  success path: the go-sdk discards whatever `*mcp.CallToolResult` a
+  handler returned the moment it also returns a non-nil error, replacing
+  it with its own error-shaped result, so an error path can keep
+  returning `nil` exactly as before.
+- **Every `mcp.Tool` gets a `Title`, not just a `Name`.** `Name` (e.g.
+  `agency_set_raci`) is the technical identifier a caller invokes by and
+  must stay a stable snake_case slug; `Title` (e.g. `"Assign RACI"`) is the
+  MCP spec's own sanctioned field for what a UI displays instead — "Display
+  name precedence order is: title, annotations.title, then name" per the
+  go-sdk's own doc comment on `Tool.Name`. Confirmed at the wire level via
+  a raw `tools/list` call. Add both on every `&mcp.Tool{...}` literal; never
+  rename `Name` to make it more readable — that breaks every existing
+  caller.
 
 A library adopting this pattern should add one line to its own CLAUDE.md
 next to its `routes/` entry: "`mcp/`, matching agency's `mcp/` package

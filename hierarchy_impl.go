@@ -24,8 +24,17 @@ import (
 
 // CreateHierarchy stores a hierarchy, minting an id when empty.
 func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarchy, error) {
-	row := gormstore.HierarchyToRow(h)
-	if err := m.db.WithContext(ctx).Table(m.tables.Hierarchies).Create(&row).Error; err != nil {
+	var row gormstore.HierarchyRow
+	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "hierarchy", "H")
+		if err != nil {
+			return err
+		}
+		h.Code = code
+		row = gormstore.HierarchyToRow(h)
+		return tx.WithContext(ctx).Table(m.tables.Hierarchies).Create(&row).Error
+	})
+	if err != nil {
 		return Hierarchy{}, fmt.Errorf("CreateHierarchy: %w", err)
 	}
 	return gormstore.HierarchyFromRow(row), nil
@@ -60,14 +69,16 @@ func (m *userManager) GetHierarchy(ctx context.Context, id string) (Hierarchy, e
 
 // RenameHierarchy writes a hierarchy's name and nothing else.
 func (m *userManager) RenameHierarchy(ctx context.Context, id, name string) (Hierarchy, error) {
-	if _, err := m.GetHierarchy(ctx, id); err != nil {
+	current, err := m.GetHierarchy(ctx, id)
+	if err != nil {
 		return Hierarchy{}, err
 	}
 	if err := m.db.WithContext(ctx).Table(m.tables.Hierarchies).Where("id = ?", id).
 		Update("name", name).Error; err != nil {
 		return Hierarchy{}, fmt.Errorf("RenameHierarchy: %w", err)
 	}
-	return Hierarchy{ID: id, Name: name}, nil
+	current.Name = name
+	return current, nil
 }
 
 // CreateLevel stores a level, minting an id when empty. Returns
@@ -91,8 +102,17 @@ func (m *userManager) CreateLevel(ctx context.Context, l Level) (Level, error) {
 			return Level{}, ErrDuplicateDefaultAnchor
 		}
 	}
-	row := gormstore.LevelToRow(l)
-	if err := m.db.WithContext(ctx).Table(m.tables.Levels).Create(&row).Error; err != nil {
+	var row gormstore.LevelRow
+	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "level", "L")
+		if err != nil {
+			return err
+		}
+		l.Code = code
+		row = gormstore.LevelToRow(l)
+		return tx.WithContext(ctx).Table(m.tables.Levels).Create(&row).Error
+	})
+	if err != nil {
 		return Level{}, fmt.Errorf("CreateLevel: %w", err)
 	}
 	return gormstore.LevelFromRow(row), nil

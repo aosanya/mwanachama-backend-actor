@@ -23,11 +23,20 @@ import (
 // ending would create a kind retired the moment it existed.
 func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error) {
 	k.RetiredAt, k.RetiredBy = "", ""
-	row, err := gormstore.RoleKindToRow(k)
+	var row gormstore.RoleKindRow
+	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "role_kind", "RK")
+		if err != nil {
+			return err
+		}
+		k.Code = code
+		row, err = gormstore.RoleKindToRow(k)
+		if err != nil {
+			return err
+		}
+		return tx.WithContext(ctx).Table(m.tables.RoleKinds).Create(&row).Error
+	})
 	if err != nil {
-		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
-	}
-	if err := m.db.WithContext(ctx).Table(m.tables.RoleKinds).Create(&row).Error; err != nil {
 		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
 	}
 	return gormstore.RoleKindFromRow(row)

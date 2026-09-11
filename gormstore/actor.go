@@ -14,7 +14,11 @@ import (
 
 // ActorRow is the GORM row for a [models.Actor].
 type ActorRow struct {
-	ID          string `gorm:"primaryKey"`
+	ID string `gorm:"primaryKey"`
+	// Code is the stable, human-readable "AC-<n>" identifier minted once by
+	// CreateActor via NextCode — see codesequence.go. Never updated after
+	// insert.
+	Code        string `gorm:"uniqueIndex"`
 	DisplayName string
 	IsAgentic   bool
 	// Attributes is the persona blob (DSN-1664's A-Box), stored as native
@@ -46,6 +50,7 @@ func ActorToRow(a models.Actor) ActorRow {
 	}
 	return ActorRow{
 		ID:          a.ID,
+		Code:        a.Code,
 		DisplayName: a.DisplayName,
 		IsAgentic:   a.IsAgentic,
 		Attributes:  attrs,
@@ -59,6 +64,7 @@ func ActorToRow(a models.Actor) ActorRow {
 func ActorFromRow(r ActorRow) models.Actor {
 	a := models.Actor{
 		ID:          r.ID,
+		Code:        r.Code,
 		DisplayName: r.DisplayName,
 		IsAgentic:   r.IsAgentic,
 		CreatedAt:   r.CreatedAt,

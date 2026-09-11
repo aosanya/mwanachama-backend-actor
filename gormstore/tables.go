@@ -27,6 +27,9 @@ type TableNames struct {
 	// than staying behind in the gateway's own Postgres tables.
 	Hierarchies string
 	Levels      string
+	// CodeSequences holds one counter row per entity type, backing every
+	// type's stable business Code (see codesequence.go's NextCode).
+	CodeSequences string
 }
 
 // DefaultTableNames builds the conventional table set for one mounted
@@ -49,6 +52,7 @@ func DefaultTableNames(instance string) TableNames {
 		ActorRoleAssignments:  instance + "_actor_role_assignments",
 		Hierarchies:           instance + "_hierarchies",
 		Levels:                instance + "_levels",
+		CodeSequences:         instance + "_code_sequences",
 	}
 }
 
@@ -57,6 +61,9 @@ func DefaultTableNames(instance string) TableNames {
 // startup (or in test setup) before constructing a UserManager with the
 // same db and t.
 func Migrate(db *gorm.DB, t TableNames) error {
+	if err := db.Table(t.CodeSequences).AutoMigrate(&CodeSequenceRow{}); err != nil {
+		return err
+	}
 	if err := db.Table(t.Actors).AutoMigrate(&ActorRow{}); err != nil {
 		return err
 	}
@@ -88,6 +95,25 @@ func Migrate(db *gorm.DB, t TableNames) error {
 		return err
 	}
 	if err := syncDefaultAnchorIndex(db, t.Levels); err != nil {
+		return err
+	}
+	// BackfillCodes covers rows written before Code existed. Actor/Group
+	// order by created_at (the natural chronological key both rows carry);
+	// Hierarchy/Level/RoleKind have no created_at column, so they order by
+	// id instead — see BackfillCodes' own doc.
+	if err := BackfillCodes(db, t.Actors, t.CodeSequences, "actor", "AC", "created_at"); err != nil {
+		return err
+	}
+	if err := BackfillCodes(db, t.Groups, t.CodeSequences, "group", "G", "created_at"); err != nil {
+		return err
+	}
+	if err := BackfillCodes(db, t.Hierarchies, t.CodeSequences, "hierarchy", "H", "id"); err != nil {
+		return err
+	}
+	if err := BackfillCodes(db, t.Levels, t.CodeSequences, "level", "L", "id"); err != nil {
+		return err
+	}
+	if err := BackfillCodes(db, t.RoleKinds, t.CodeSequences, "role_kind", "RK", "id"); err != nil {
 		return err
 	}
 	return nil

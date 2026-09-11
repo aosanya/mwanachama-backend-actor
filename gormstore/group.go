@@ -27,7 +27,11 @@ import (
 // stays a Go walk over ListGroups in the root package's group_impl.go,
 // unaffected either way.
 type GroupRow struct {
-	ID                    string `gorm:"primaryKey"`
+	ID string `gorm:"primaryKey"`
+	// Code is the stable, human-readable "G-<n>" identifier minted once by
+	// CreateGroup via NextCode — see codesequence.go. Never updated after
+	// insert; EditGroup does not touch it.
+	Code                  string `gorm:"uniqueIndex"`
 	HierarchyID           string
 	LevelID               string
 	ParentID              *string `gorm:"index"`
@@ -59,6 +63,7 @@ func GroupToRow(g models.Group) GroupRow {
 	}
 	return GroupRow{
 		ID:                    g.ID,
+		Code:                  g.Code,
 		Name:                  g.Name,
 		HierarchyID:           g.HierarchyID,
 		LevelID:               g.LevelID,
@@ -77,6 +82,7 @@ func GroupToRow(g models.Group) GroupRow {
 func GroupFromRow(r GroupRow) models.Group {
 	g := models.Group{
 		ID:                    r.ID,
+		Code:                  r.Code,
 		Name:                  r.Name,
 		HierarchyID:           r.HierarchyID,
 		LevelID:               r.LevelID,

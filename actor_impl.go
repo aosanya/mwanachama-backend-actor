@@ -35,9 +35,21 @@ func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error)
 	if act.CreatedAt == "" {
 		act.CreatedAt = NowRFC3339()
 	}
-	row := gormstore.ActorToRow(act)
-	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Create(&row).Error; err != nil {
-		return Actor{}, fmt.Errorf("CreateActor: %w", classifyDuplicateID(err))
+	var row gormstore.ActorRow
+	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "actor", "AC")
+		if err != nil {
+			return err
+		}
+		act.Code = code
+		row = gormstore.ActorToRow(act)
+		if err := tx.WithContext(ctx).Table(m.tables.Actors).Create(&row).Error; err != nil {
+			return classifyDuplicateID(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return Actor{}, fmt.Errorf("CreateActor: %w", err)
 	}
 	return gormstore.ActorFromRow(row), nil
 }

@@ -35,8 +35,17 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if g.CreatedAt == "" {
 		g.CreatedAt = NowRFC3339()
 	}
-	row := gormstore.GroupToRow(g)
-	if err := m.db.WithContext(ctx).Table(m.tables.Groups).Create(&row).Error; err != nil {
+	var row gormstore.GroupRow
+	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "group", "G")
+		if err != nil {
+			return err
+		}
+		g.Code = code
+		row = gormstore.GroupToRow(g)
+		return tx.WithContext(ctx).Table(m.tables.Groups).Create(&row).Error
+	})
+	if err != nil {
 		return Group{}, fmt.Errorf("CreateGroup: %w", err)
 	}
 	return gormstore.GroupFromRow(row), nil

@@ -12,7 +12,12 @@ package models
 // validation it still wants to do against its own hierarchy/chapter_level
 // tables.
 type Group struct {
-	ID                    string `json:"id"`
+	ID string `json:"id"`
+	// Code is a stable, human-readable identifier (e.g. "G-1"), assigned
+	// once at creation and never changed afterward — see gormstore's
+	// NextCode. Unlike Name, it is never editable (GroupEdit carries no
+	// Code field).
+	Code                  string `json:"code"`
 	HierarchyID           string `json:"hierarchy_id"`
 	LevelID               string `json:"level_id"`
 	ParentID              string `json:"parent_id,omitempty"`

@@ -94,6 +94,48 @@ func TestEditGroup_EmptyClears(t *testing.T) {
 	}
 }
 
+func TestCreateGroup_CodeIsSequentialAndImmutable(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+
+	g1, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward A"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if g1.Code == "" {
+		t.Fatal("expected a minted Code")
+	}
+	if g1.Code != "G-1" {
+		t.Fatalf("Code = %q, want G-1", g1.Code)
+	}
+
+	g2, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward B"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if g2.Code != "G-2" {
+		t.Fatalf("Code = %q, want G-2 (sequential across repeated Creates)", g2.Code)
+	}
+
+	// Code survives an edit unchanged — EditGroup writes name/node_type/
+	// anchor_level_override only, never code.
+	edited, err := mgr.EditGroup(ctx, g1.ID, mwanachamaactor.GroupEdit{Name: "Ward A Renamed"})
+	if err != nil {
+		t.Fatalf("EditGroup: %v", err)
+	}
+	if edited.Code != g1.Code {
+		t.Fatalf("Code changed after edit: got %q, want %q", edited.Code, g1.Code)
+	}
+
+	got, err := mgr.GetGroup(ctx, g1.ID)
+	if err != nil {
+		t.Fatalf("GetGroup: %v", err)
+	}
+	if got.Code != g1.Code {
+		t.Fatalf("Code did not persist across edit: got %q, want %q", got.Code, g1.Code)
+	}
+}
+
 func TestMoveGroup_RootCannotMove(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()

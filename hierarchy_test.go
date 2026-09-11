@@ -56,6 +56,52 @@ func TestHierarchyLifecycle(t *testing.T) {
 	}
 }
 
+func TestCreateHierarchyAndLevel_CodeIsSequentialAndImmutable(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+
+	h1, err := mgr.CreateHierarchy(ctx, mwanachamaactor.Hierarchy{Name: "Kenya"})
+	if err != nil {
+		t.Fatalf("CreateHierarchy: %v", err)
+	}
+	h2, err := mgr.CreateHierarchy(ctx, mwanachamaactor.Hierarchy{Name: "Uganda"})
+	if err != nil {
+		t.Fatalf("CreateHierarchy: %v", err)
+	}
+	if h1.Code != "H-1" || h2.Code != "H-2" {
+		t.Fatalf("Codes = %q, %q, want H-1, H-2 (sequential across repeated Creates)", h1.Code, h2.Code)
+	}
+
+	// Code survives RenameHierarchy unchanged — that call writes name only.
+	renamed, err := mgr.RenameHierarchy(ctx, h1.ID, "Kenya v2")
+	if err != nil {
+		t.Fatalf("RenameHierarchy: %v", err)
+	}
+	if renamed.Code != h1.Code {
+		t.Fatalf("Code changed after rename: got %q, want %q", renamed.Code, h1.Code)
+	}
+
+	l1, err := mgr.CreateLevel(ctx, mwanachamaactor.Level{HierarchyID: h1.ID, Name: "Ward"})
+	if err != nil {
+		t.Fatalf("CreateLevel: %v", err)
+	}
+	l2, err := mgr.CreateLevel(ctx, mwanachamaactor.Level{HierarchyID: h1.ID, Name: "County", Depth: 1})
+	if err != nil {
+		t.Fatalf("CreateLevel: %v", err)
+	}
+	if l1.Code != "L-1" || l2.Code != "L-2" {
+		t.Fatalf("Codes = %q, %q, want L-1, L-2 (sequential across repeated Creates)", l1.Code, l2.Code)
+	}
+
+	renamedLevel, err := mgr.RenameLevel(ctx, l1.ID, "Ward Renamed")
+	if err != nil {
+		t.Fatalf("RenameLevel: %v", err)
+	}
+	if renamedLevel.Code != l1.Code {
+		t.Fatalf("Code changed after level rename: got %q, want %q", renamedLevel.Code, l1.Code)
+	}
+}
+
 func TestCreateLevelValidatesHierarchyAndAnchorExclusivity(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()

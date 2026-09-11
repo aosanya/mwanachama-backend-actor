@@ -9,7 +9,11 @@ import (
 
 // RoleKindRow is the GORM row for a [models.RoleKind].
 type RoleKindRow struct {
-	ID           string `gorm:"primaryKey"`
+	ID string `gorm:"primaryKey"`
+	// Code is the stable, human-readable "RK-<n>" identifier minted once by
+	// CreateRoleKind via NextCode — see codesequence.go. Never updated
+	// after insert — no RoleKind write path touches it.
+	Code         string `gorm:"uniqueIndex"`
 	Name         string
 	Capabilities datatypes.JSON
 	Description  string
@@ -38,6 +42,7 @@ func RoleKindToRow(k models.RoleKind) (RoleKindRow, error) {
 	}
 	return RoleKindRow{
 		ID:           k.ID,
+		Code:         k.Code,
 		Name:         k.Name,
 		Capabilities: caps,
 		Description:  k.Description,
@@ -61,6 +66,7 @@ func RoleKindFromRow(r RoleKindRow) (models.RoleKind, error) {
 	}
 	return models.RoleKind{
 		ID:           r.ID,
+		Code:         r.Code,
 		Name:         r.Name,
 		Capabilities: caps,
 		Description:  r.Description,

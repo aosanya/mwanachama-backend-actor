@@ -52,6 +52,48 @@ func TestRoleKindLifecycle(t *testing.T) {
 	}
 }
 
+func TestCreateRoleKind_CodeIsSequentialAndImmutable(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+
+	k1, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	if err != nil {
+		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	if k1.Code == "" {
+		t.Fatal("expected a minted Code")
+	}
+	if k1.Code != "RK-1" {
+		t.Fatalf("Code = %q, want RK-1", k1.Code)
+	}
+
+	k2, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Organizer"})
+	if err != nil {
+		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	if k2.Code != "RK-2" {
+		t.Fatalf("Code = %q, want RK-2 (sequential across repeated Creates)", k2.Code)
+	}
+
+	// Code survives retire/unretire unchanged — neither writes the code
+	// column.
+	retired, err := mgr.RetireRoleKind(ctx, k1.ID, "hq-admin")
+	if err != nil {
+		t.Fatalf("RetireRoleKind: %v", err)
+	}
+	if retired.Code != k1.Code {
+		t.Fatalf("Code changed after retire: got %q, want %q", retired.Code, k1.Code)
+	}
+
+	unretired, err := mgr.UnretireRoleKind(ctx, k1.ID)
+	if err != nil {
+		t.Fatalf("UnretireRoleKind: %v", err)
+	}
+	if unretired.Code != k1.Code {
+		t.Fatalf("Code changed after unretire: got %q, want %q", unretired.Code, k1.Code)
+	}
+}
+
 func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()

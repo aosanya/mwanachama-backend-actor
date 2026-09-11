@@ -6,7 +6,12 @@ package models
 // alongside Group rather than staying behind in the gateway's own tables.
 // See this repo's CLAUDE.md for the decision record.
 type Hierarchy struct {
-	ID   string `json:"id"`
+	ID string `json:"id"`
+	// Code is a stable, human-readable identifier (e.g. "H-1"), assigned
+	// once at creation and never changed afterward — see gormstore's
+	// NextCode. Unlike Name, it is never editable (RenameHierarchy writes
+	// only Name).
+	Code string `json:"code"`
 	Name string `json:"name"`
 }
 
@@ -18,7 +23,12 @@ type Hierarchy struct {
 // gormstore.Migrate's partial unique index, the DB-level half of the
 // exclusivity CreateLevel and SetDefaultAnchor enforce in Go.
 type Level struct {
-	ID              string `json:"id"`
+	ID string `json:"id"`
+	// Code is a stable, human-readable identifier (e.g. "L-1"), assigned
+	// once at creation and never changed afterward — see gormstore's
+	// NextCode. Unlike Name, it is never editable (RenameLevel writes only
+	// Name).
+	Code            string `json:"code"`
 	HierarchyID     string `json:"hierarchy_id"`
 	Name            string `json:"name"`
 	Depth           int    `json:"depth"`
