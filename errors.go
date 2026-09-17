@@ -68,6 +68,17 @@ var ErrLevelWornByGroups = errors.New("mwanachamaactor: this level still carries
 // scoped to it. Mirrors the gateway's chapter.ErrLevelHasRoleKinds.
 var ErrLevelHasRoleKinds = errors.New("mwanachamaactor: this level still carries role kinds, so it cannot be removed")
 
+// ErrGroupTypeNotFound is returned when a GroupType id has no record.
+var ErrGroupTypeNotFound = errors.New("mwanachamaactor: group type not found")
+
+// ErrInvalidGroupType is returned by CreateGroupType/EditGroupType when Name
+// is blank.
+var ErrInvalidGroupType = errors.New("mwanachamaactor: invalid group type")
+
+// ErrGroupTypeWornByGroups refuses a group type delete while a Group's
+// NodeType still names it.
+var ErrGroupTypeWornByGroups = errors.New("mwanachamaactor: this group type still carries groups, so it cannot be removed")
+
 // ErrDuplicateDefaultAnchor refuses a second default-anchor level on the
 // same hierarchy — at most one may carry the flag. The DB-level half of this
 // guarantee is gormstore.Migrate's partial unique index.

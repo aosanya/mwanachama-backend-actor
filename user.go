@@ -21,6 +21,7 @@ type (
 	ActorRoleAssignment  = models.ActorRoleAssignment
 	Hierarchy            = models.Hierarchy
 	Level                = models.Level
+	GroupType            = models.GroupType
 )
 
 // TimeLayout is the timestamp layout every model in this package is written
@@ -238,6 +239,26 @@ type UserManager interface {
 	// ListLevels returns the levels of a hierarchy, or — when hierarchyID
 	// is empty — every level across every hierarchy, depth-then-id order.
 	ListLevels(ctx context.Context, hierarchyID string) ([]Level, error)
+
+	// CreateGroupType creates a new kind of node the org is built from
+	// ("Department", "Ward Branch"), optionally pinned to one Level. This
+	// declares that the org HAS that kind; it creates no Group. Returns
+	// [ErrHierarchyNotFound], [ErrLevelNotFound] if a non-empty LevelID does
+	// not exist, or [ErrInvalidGroupType] if Name is blank.
+	CreateGroupType(ctx context.Context, g GroupType) (GroupType, error)
+	// GetGroupType retrieves a single GroupType by id. Returns
+	// [ErrGroupTypeNotFound] if no matching row exists.
+	GetGroupType(ctx context.Context, id string) (GroupType, error)
+	// EditGroupType writes Name/Singular/Plural/LevelID. Returns
+	// [ErrGroupTypeNotFound] if the group type does not exist, or
+	// [ErrLevelNotFound] if a non-empty levelID does not.
+	EditGroupType(ctx context.Context, id, name, singular, plural, levelID string) (GroupType, error)
+	// DeleteGroupType removes a group type. Returns
+	// [ErrGroupTypeWornByGroups] while any Group's NodeType still names it.
+	DeleteGroupType(ctx context.Context, id string) error
+	// ListGroupTypes returns the group types of a hierarchy, or — when
+	// hierarchyID is empty — every group type across every hierarchy.
+	ListGroupTypes(ctx context.Context, hierarchyID string) ([]GroupType, error)
 
 	// HierarchyExists reports whether id names a hierarchy.
 	HierarchyExists(ctx context.Context, id string) (bool, error)

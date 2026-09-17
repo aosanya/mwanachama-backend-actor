@@ -20,13 +20,14 @@ type TableNames struct {
 	// RoleKinds and ActorRoleAssignments are DEV-1659's addition — role kinds
 	// and their seats, folded in alongside ActorGroupAssignment per
 	// todo_actor_absorb.md.
-	RoleKinds           string
+	RoleKinds            string
 	ActorRoleAssignments string
 	// Hierarchies and Levels are DSN-1699 gap 1's addition, resolved: the
 	// org-configured level tree folded in alongside Group/RoleKind rather
 	// than staying behind in the gateway's own Postgres tables.
 	Hierarchies string
 	Levels      string
+	GroupTypes  string
 	// CodeSequences holds one counter row per entity type, backing every
 	// type's stable business Code (see codesequence.go's NextCode).
 	CodeSequences string
@@ -52,6 +53,7 @@ func DefaultTableNames(instance string) TableNames {
 		ActorRoleAssignments:  instance + "_actor_role_assignments",
 		Hierarchies:           instance + "_hierarchies",
 		Levels:                instance + "_levels",
+		GroupTypes:            instance + "_group_types",
 		CodeSequences:         instance + "_code_sequences",
 	}
 }
@@ -97,6 +99,9 @@ func Migrate(db *gorm.DB, t TableNames) error {
 	if err := syncDefaultAnchorIndex(db, t.Levels); err != nil {
 		return err
 	}
+	if err := db.Table(t.GroupTypes).AutoMigrate(&GroupTypeRow{}); err != nil {
+		return err
+	}
 	// BackfillCodes covers rows written before Code existed. Actor/Group
 	// order by created_at (the natural chronological key both rows carry);
 	// Hierarchy/Level/RoleKind have no created_at column, so they order by
@@ -114,6 +119,9 @@ func Migrate(db *gorm.DB, t TableNames) error {
 		return err
 	}
 	if err := BackfillCodes(db, t.RoleKinds, t.CodeSequences, "role_kind", "RK", "id"); err != nil {
+		return err
+	}
+	if err := BackfillCodes(db, t.GroupTypes, t.CodeSequences, "grouptype", "GT", "id"); err != nil {
 		return err
 	}
 	return nil
