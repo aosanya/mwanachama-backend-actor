@@ -54,20 +54,34 @@ func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error)
 	return gormstore.ActorFromRow(row), nil
 }
 
-// classifyDuplicateID recognises a primary-key collision — the only way
-// Create can fail this way, since a caller-supplied id is the one write
-// path with no Go-level pre-check (checkUniqueAttributes only covers
-// Attributes) — and turns it into [ErrDuplicateID]. Any other error passes
+// classifyDuplicateID turns a unique-constraint violation on Create into a
+// typed error: [ErrDuplicateAttribute] when the violated index is one of
+// gormstore.syncUniqueAttributeIndexes's "<table>_attr_<name>_uniq" indexes
+// (the DB-level backstop for two writers racing past checkUniqueAttributes),
+// [ErrDuplicateID] for any other unique violation — in practice the primary
+// key, the one write path with no Go-level pre-check. Any other error passes
 // through unchanged.
 func classifyDuplicateID(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if isAttributeIndex(pgErr.ConstraintName) {
+			return ErrDuplicateAttribute
+		}
 		return ErrDuplicateID
 	}
 	if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		if isAttributeIndex(err.Error()) {
+			return ErrDuplicateAttribute
+		}
 		return ErrDuplicateID
 	}
 	return err
+}
+
+// isAttributeIndex reports whether s names one of the per-attribute unique
+// indexes ("<table>_attr_<name>_uniq").
+func isAttributeIndex(s string) bool {
+	return strings.Contains(s, "_attr_") && strings.Contains(s, "_uniq")
 }
 
 // GetActorByPhone reads the Actor holding this phone number, the same

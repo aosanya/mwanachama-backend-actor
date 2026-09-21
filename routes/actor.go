@@ -22,6 +22,8 @@ func actorStatusFor(err error) int {
 	case errors.Is(err, mwanachamaactor.ErrInvalidActor),
 		errors.Is(err, mwanachamaactor.ErrDuplicateAttribute):
 		return http.StatusBadRequest
+	case errors.Is(err, mwanachamaactor.ErrDuplicateID):
+		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError
 	}

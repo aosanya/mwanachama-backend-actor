@@ -1,6 +1,6 @@
 package mwanachamaactor_test
 
-// Pins board row ACT1 (documentation/3. implementation/todo.md): the
+// Covers board row ACT1 (documentation/3. implementation/todo.md): the
 // DB-level partial unique index that backstops checkUniqueAttributes'
 // Go-level pre-check (gormstore.syncUniqueAttributeIndexes,
 // "actors_attr_phone_uniq") DOES stop two concurrent CreateActor calls with
@@ -119,7 +119,7 @@ func raceBarrier(db *gorm.DB, actorsTable string) {
 	})
 }
 
-func TestCreateActor_PinsRacedDuplicatePhoneMisclassifiedAsID(t *testing.T) {
+func TestCreateActor_RacedDuplicatePhoneIsDuplicateAttribute(t *testing.T) {
 	mgr, db, tables := newRaceTestManager(t)
 	ctx := context.Background()
 
@@ -169,19 +169,17 @@ func TestCreateActor_PinsRacedDuplicatePhoneMisclassifiedAsID(t *testing.T) {
 		t.Fatalf("expected exactly one success and one failure racing the same phone, got successes=%d failures=%d errs=%v", successes, failures, errs)
 	}
 
-	// CURRENT (broken) behavior: the DB-level partial unique index does
-	// stop the duplicate — good — but the loser is misclassified as
-	// ErrDuplicateID (an id collision) rather than ErrDuplicateAttribute
-	// (the phone collision that actually happened).
-	if !errors.Is(loserErr, mwanachamaactor.ErrDuplicateID) {
-		t.Fatalf("expected the raced loser to be misclassified as ErrDuplicateID (pinning ACT1's current behavior), got: %v", loserErr)
+	// The DB-level index stops the duplicate and the loser is classified as
+	// the phone collision it is, not as an id collision.
+	if !errors.Is(loserErr, mwanachamaactor.ErrDuplicateAttribute) {
+		t.Fatalf("expected the raced loser to surface ErrDuplicateAttribute, got: %v", loserErr)
 	}
-	if errors.Is(loserErr, mwanachamaactor.ErrDuplicateAttribute) {
-		t.Fatalf("loser now correctly classified as ErrDuplicateAttribute — ACT1 appears fixed; update this test to assert the fixed behavior instead of the bug")
+	if errors.Is(loserErr, mwanachamaactor.ErrDuplicateID) {
+		t.Fatalf("raced loser must not be classified as ErrDuplicateID, got: %v", loserErr)
 	}
 }
 
-func TestActorRoutes_PinsRacedDuplicatePhoneReturns500NotConflict(t *testing.T) {
+func TestActorRoutes_RacedDuplicatePhoneReturns400(t *testing.T) {
 	mgr, db, tables := newRaceTestManager(t)
 
 	// Warm up the "actor" CodeSequence row first — see the sibling test's
@@ -239,14 +237,8 @@ func TestActorRoutes_PinsRacedDuplicatePhoneReturns500NotConflict(t *testing.T) 
 		t.Fatalf("expected exactly one 201 and one non-201 among the two racing HTTP requests, got statuses=%v", statuses)
 	}
 
-	// CURRENT (broken) behavior: the losing request gets an opaque 500,
-	// because actorStatusFor (routes/actor.go) has no case for
-	// ErrDuplicateID and falls through to its default arm. A caller
-	// sending the identical duplicate-phone body sequentially (no race)
-	// gets a clean 400 instead — see routes/actor_test.go for that case.
-	// Once fixed, this should become http.StatusBadRequest (or another
-	// clean 4xx), matching the sequential case.
-	if loserStatus != http.StatusInternalServerError {
-		t.Fatalf("expected the raced loser to get 500 (pinning ACT1's current behavior), got %d — ACT1 appears fixed; update this test to assert the fixed status code", loserStatus)
+	// Same clean 400 the sequential duplicate-phone request gets.
+	if loserStatus != http.StatusBadRequest {
+		t.Fatalf("expected the raced loser to get 400, got %d", loserStatus)
 	}
 }
