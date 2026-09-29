@@ -1,10 +1,3 @@
-// role_kind_impl.go — RoleKind lifecycle for [userManager]. Ported from
-// mwanachama-backend-api-gateway's internal/domain/role.go's Repository
-// contract and internal/store/{memory,postgres}/role_store_kind.go's
-// behavior, minus the custody-log composition DEV-1658 already moved out to
-// the gateway's HTTP layer before this port — see that board's row and
-// user.go's own doc on RetireRoleKind/UnretireRoleKind for why neither
-// writes an audit row here.
 package mwanachamaactor
 
 import (
@@ -14,117 +7,102 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/aosanya/mwanachama-backend-actor/gormstore"
+	"github.com/aosanya/mwanachama-backend-shared/specstore"
 )
 
-// CreateRoleKind stores a role kind, minting an id when empty. A kind is
-// never born retired — RetiredAt/RetiredBy are cleared unconditionally,
-// mirroring the gateway's own CreateKind (DEV-1133): a caller-supplied
-// ending would create a kind retired the moment it existed.
+func withCapabilities(k RoleKind) RoleKind {
+	if k.Capabilities == nil {
+		k.Capabilities = []string{}
+	}
+	return k
+}
+
 func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error) {
+	k.ID = newSpecID()
 	k.RetiredAt, k.RetiredBy = "", ""
-	var row gormstore.RoleKindRow
+
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "role_kind", "RK")
+		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "role_kind", "RK")
 		if err != nil {
 			return err
 		}
 		k.Code = code
-		row, err = gormstore.RoleKindToRow(k)
+		row, err := encode(m.object(roleRoleKind), k)
 		if err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Table(m.tables.RoleKinds).Create(&row).Error
+		if err := tx.WithContext(ctx).Table(m.table(roleRoleKind)).Create(row).Error; err != nil {
+			return classifyDuplicateID(err)
+		}
+		return nil
 	})
 	if err != nil {
 		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
 	}
-	return gormstore.RoleKindFromRow(row)
+	return withCapabilities(k), nil
 }
 
-// ListRoleKinds returns every role kind, id order.
 func (m *userManager) ListRoleKinds(ctx context.Context) ([]RoleKind, error) {
-	var rows []gormstore.RoleKindRow
-	if err := m.db.WithContext(ctx).Table(m.tables.RoleKinds).Order("id").Find(&rows).Error; err != nil {
+	q := m.store.Query(ctx, roleRoleKind).Order("id")
+	rows, err := specstore.List[RoleKind](m.store, q, roleRoleKind)
+	if err != nil {
 		return nil, fmt.Errorf("ListRoleKinds: %w", err)
 	}
 	out := make([]RoleKind, 0, len(rows))
-	for _, r := range rows {
-		k, err := gormstore.RoleKindFromRow(r)
-		if err != nil {
-			return nil, fmt.Errorf("ListRoleKinds: %w", err)
-		}
-		out = append(out, k)
+	for _, k := range rows {
+		out = append(out, withCapabilities(k))
 	}
 	return out, nil
 }
 
-// GetRoleKind returns a role kind by id.
 func (m *userManager) GetRoleKind(ctx context.Context, id string) (RoleKind, error) {
-	row, err := m.findRoleKindRow(ctx, id)
-	if err != nil {
+	var out RoleKind
+	q := m.store.Query(ctx, roleRoleKind).Where("id = ?", id)
+	if err := m.store.Take(q, roleRoleKind, &out, ErrRoleKindNotFound); err != nil {
+		if errors.Is(err, ErrRoleKindNotFound) {
+			return RoleKind{}, ErrRoleKindNotFound
+		}
+		return RoleKind{}, fmt.Errorf("GetRoleKind: %w", err)
+	}
+	return withCapabilities(out), nil
+}
+
+func (m *userManager) roleKindIn(tx *gorm.DB, id string) (RoleKind, error) {
+	var out RoleKind
+	q := tx.Table(m.table(roleRoleKind)).Where("id = ?", id)
+	if err := m.store.Take(q, roleRoleKind, &out, ErrRoleKindNotFound); err != nil {
 		return RoleKind{}, err
 	}
-	return gormstore.RoleKindFromRow(row)
+	return withCapabilities(out), nil
 }
 
-func (m *userManager) findRoleKindRow(ctx context.Context, id string) (gormstore.RoleKindRow, error) {
-	var row gormstore.RoleKindRow
-	err := m.db.WithContext(ctx).Table(m.tables.RoleKinds).Where("id = ?", id).First(&row).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return gormstore.RoleKindRow{}, ErrRoleKindNotFound
-	}
-	if err != nil {
-		return gormstore.RoleKindRow{}, fmt.Errorf("findRoleKindRow: %w", err)
-	}
-	return row, nil
-}
-
-// RetireRoleKind ends a role kind — G229's refusal and the stamp, ported
-// unchanged in substance. actorID stamps RetiredBy; the current time stamps
-// RetiredAt. Idempotent: re-retiring an already-retired kind returns it
-// unchanged rather than overwriting who ended it.
-//
-// The live-assignment check and the stamp run inside one transaction. Unlike
-// the gateway's own Postgres store, this does not take an explicit row lock
-// (SELECT ... FOR UPDATE) first — no other method in this package does
-// either, and adding the first one here would be a bigger change than this
-// port's scope. A grant and a retirement racing on the same kind can still
-// interleave into the state G229 exists to prevent; unchanged from every
-// other read-then-write in this package (e.g. AssignGroup's upsert), not a
-// new gap this port introduces.
 func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string) (RoleKind, error) {
 	var out RoleKind
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row gormstore.RoleKindRow
-		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrRoleKindNotFound
-			}
+		k, err := m.roleKindIn(tx, kindID)
+		if err != nil {
 			return err
 		}
-		if row.RetiredAt != "" {
-			k, err := gormstore.RoleKindFromRow(row)
+		if k.RetiredAt != "" {
 			out = k
-			return err
+			return nil
 		}
 		var live int64
-		if err := tx.Table(m.tables.ActorRoleAssignments).
+		if err := tx.Table(m.table(roleActorRoleAssignment)).
 			Where("kind_id = ? AND active", kindID).Count(&live).Error; err != nil {
 			return err
 		}
 		if live > 0 {
 			return ErrKindHasLiveAssignments
 		}
-		row.RetiredAt = NowRFC3339()
-		row.RetiredBy = actorID
-		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).
-			Updates(map[string]any{"retired_at": row.RetiredAt, "retired_by": row.RetiredBy}).Error; err != nil {
+		k.RetiredAt = NowRFC3339()
+		k.RetiredBy = actorID
+		if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", kindID).
+			Updates(map[string]any{"retired_at": k.RetiredAt, "retired_by": k.RetiredBy}).Error; err != nil {
 			return err
 		}
-		k, err := gormstore.RoleKindFromRow(row)
 		out = k
-		return err
+		return nil
 	})
 	if err != nil {
 		return RoleKind{}, err
@@ -132,31 +110,24 @@ func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string
 	return out, nil
 }
 
-// UnretireRoleKind reverses a retirement, clearing both fields together.
-// Idempotent: un-retiring an already-live kind returns it unchanged.
 func (m *userManager) UnretireRoleKind(ctx context.Context, kindID string) (RoleKind, error) {
 	var out RoleKind
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var row gormstore.RoleKindRow
-		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).First(&row).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrRoleKindNotFound
-			}
+		k, err := m.roleKindIn(tx, kindID)
+		if err != nil {
 			return err
 		}
-		if row.RetiredAt == "" {
-			k, err := gormstore.RoleKindFromRow(row)
+		if k.RetiredAt == "" {
 			out = k
-			return err
+			return nil
 		}
-		row.RetiredAt, row.RetiredBy = "", ""
-		if err := tx.Table(m.tables.RoleKinds).Where("id = ?", kindID).
+		k.RetiredAt, k.RetiredBy = "", ""
+		if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", kindID).
 			Updates(map[string]any{"retired_at": "", "retired_by": ""}).Error; err != nil {
 			return err
 		}
-		k, err := gormstore.RoleKindFromRow(row)
 		out = k
-		return err
+		return nil
 	})
 	if err != nil {
 		return RoleKind{}, err

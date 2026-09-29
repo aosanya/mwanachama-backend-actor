@@ -1,0 +1,61 @@
+{
+  "module": "actor",
+  "domain": "agency",
+  "instance": "wakala",
+  "objects": [
+    {
+      "role": "actor",
+      "name": "actor",
+      "table": "actors",
+      "description": "A member of the agency, or an agent acting for one."
+    },
+    {
+      "role": "group",
+      "name": "group",
+      "table": "groups",
+      "description": "A node of the agency's structure — whatever its levels call one."
+    },
+    {
+      "role": "actor_group_assignment",
+      "name": "actor_group_assignment",
+      "table": "actor_group_assignments",
+      "description": "One member's registration in one node of the structure."
+    },
+    {
+      "role": "role_kind",
+      "name": "role_kind",
+      "table": "role_kinds",
+      "description": "A kind of seat the agency's members can be granted."
+    },
+    {
+      "role": "actor_role_assignment",
+      "name": "actor_role_assignment",
+      "table": "actor_role_assignments",
+      "description": "One seat held by one member in one node, live or ended."
+    },
+    {
+      "role": "hierarchy",
+      "name": "hierarchy",
+      "table": "hierarchies",
+      "description": "One named tree of levels the agency's structure is built from."
+    },
+    {
+      "role": "level",
+      "name": "level",
+      "table": "levels",
+      "description": "One rung of the agency's tree."
+    },
+    {
+      "role": "group_type",
+      "name": "group_type",
+      "table": "group_types",
+      "description": "The agency's own noun for the nodes at one level."
+    },
+    {
+      "role": "code_sequence",
+      "name": "code_sequence",
+      "table": "code_sequences",
+      "description": "The counters behind every coded type's stable identifier."
+    }
+  ]
+}

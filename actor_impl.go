@@ -1,8 +1,3 @@
-// actor_impl.go — Actor CRUD implementation for [userManager]. Ported
-// from mwanachama-backend-api-gateway's internal/store/postgres/member_store.go
-// and internal/store/memory/member_store.go (the identity half; the
-// registration half is in registration_impl.go, mirroring the gateway's own
-// member_store.go / member_registration_store.go split).
 package mwanachamaactor
 
 import (
@@ -16,34 +11,36 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	"github.com/aosanya/mwanachama-backend-actor/gormstore"
+	"github.com/aosanya/mwanachama-backend-shared/specstore"
+
 	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-// CreateActor creates an Actor entity. Attributes is validated against
-// [models.DefaultActorProperties] first — a Required property missing or
-// blank, a value of the wrong Range, or a Unique property already held by
-// another actor all fail the call before any row is written.
 func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error) {
 	properties := models.DefaultActorProperties()
 	if err := models.ValidateAttributes(properties, act.Attributes); err != nil {
 		return Actor{}, fmt.Errorf("%w: %v", ErrInvalidActor, err)
 	}
-	if err := m.checkUniqueAttributes(ctx, m.tables.Actors, properties, act.Attributes); err != nil {
+	if err := m.checkUniqueAttributes(ctx, m.table(roleActor), properties, act.Attributes); err != nil {
 		return Actor{}, err
 	}
-	if act.CreatedAt == "" {
-		act.CreatedAt = NowRFC3339()
-	}
-	var row gormstore.ActorRow
+
+	act.ID = newSpecID()
+	act.CreatedAt = NowRFC3339()
+	act.LastUpdated = act.CreatedAt
+	act.Deleted = false
+
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := gormstore.NextCode(ctx, tx, m.tables.CodeSequences, "actor", "AC")
+		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "actor", "AC")
 		if err != nil {
 			return err
 		}
 		act.Code = code
-		row = gormstore.ActorToRow(act)
-		if err := tx.WithContext(ctx).Table(m.tables.Actors).Create(&row).Error; err != nil {
+		row, err := encode(m.object(roleActor), act)
+		if err != nil {
+			return err
+		}
+		if err := tx.WithContext(ctx).Table(m.table(roleActor)).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil
@@ -51,16 +48,9 @@ func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error)
 	if err != nil {
 		return Actor{}, fmt.Errorf("CreateActor: %w", err)
 	}
-	return gormstore.ActorFromRow(row), nil
+	return act, nil
 }
 
-// classifyDuplicateID turns a unique-constraint violation on Create into a
-// typed error: [ErrDuplicateAttribute] when the violated index is one of
-// gormstore.syncUniqueAttributeIndexes's "<table>_attr_<name>_uniq" indexes
-// (the DB-level backstop for two writers racing past checkUniqueAttributes),
-// [ErrDuplicateID] for any other unique violation — in practice the primary
-// key, the one write path with no Go-level pre-check. Any other error passes
-// through unchanged.
 func classifyDuplicateID(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -78,42 +68,36 @@ func classifyDuplicateID(err error) error {
 	return err
 }
 
-// isAttributeIndex reports whether s names one of the per-attribute unique
-// indexes ("<table>_attr_<name>_uniq").
 func isAttributeIndex(s string) bool {
-	return strings.Contains(s, "_attr_") && strings.Contains(s, "_uniq")
+	return strings.Contains(s, "_attributes_")
 }
 
-// GetActorByPhone reads the Actor holding this phone number, the same
-// Attributes JSON lookup checkUniqueAttributes uses to refuse a second one.
 func (m *userManager) GetActorByPhone(ctx context.Context, phone string) (Actor, error) {
-	var row gormstore.ActorRow
-	err := m.db.WithContext(ctx).Table(m.tables.Actors).
-		Where(datatypes.JSONQuery("attributes").Equals(phone, "phone")).First(&row).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	var out Actor
+	q := m.store.Query(ctx, roleActor).
+		Where(datatypes.JSONQuery("attributes").Equals(phone, "phone")).
+		Where("deleted = ?", false)
+	if err := m.store.Take(q, roleActor, &out, ErrActorNotFound); err != nil {
+		if errors.Is(err, ErrActorNotFound) {
 			return Actor{}, ErrActorNotFound
 		}
 		return Actor{}, fmt.Errorf("GetActorByPhone: %w", err)
 	}
-	return gormstore.ActorFromRow(row), nil
+	return out, nil
 }
 
-// GetActor reads a single Actor entity.
 func (m *userManager) GetActor(ctx context.Context, id string) (Actor, error) {
-	var row gormstore.ActorRow
-	err := m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).First(&row).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	var out Actor
+	q := m.store.Query(ctx, roleActor).Where("id = ?", id).Where("deleted = ?", false)
+	if err := m.store.Take(q, roleActor, &out, ErrActorNotFound); err != nil {
+		if errors.Is(err, ErrActorNotFound) {
 			return Actor{}, ErrActorNotFound
 		}
 		return Actor{}, fmt.Errorf("GetActor: %w", err)
 	}
-	return gormstore.ActorFromRow(row), nil
+	return out, nil
 }
 
-// GetActors returns the Actors for the given ids, sorted by id. Ids with
-// no actor are skipped rather than erroring.
 func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, error) {
 	out := []Actor{}
 	seen := map[string]bool{}
@@ -135,15 +119,14 @@ func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, err
 	return out, nil
 }
 
-// SetActorDisplayName records the name an actor gave for themselves.
 func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error) {
 	current, err := m.GetActor(ctx, id)
 	if err != nil {
 		return Actor{}, err
 	}
 	now := NowRFC3339()
-	err = m.db.WithContext(ctx).Table(m.tables.Actors).Where("id = ?", id).
-		Updates(map[string]any{"display_name": displayName, "updated_at": now}).Error
+	err = m.store.Query(ctx, roleActor).Where("id = ?", id).
+		Updates(map[string]any{"display_name": displayName, "last_updated": now}).Error
 	if err != nil {
 		return Actor{}, fmt.Errorf("SetActorDisplayName: %w", err)
 	}
@@ -152,15 +135,11 @@ func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName s
 	return current, nil
 }
 
-// ListActors returns every non-deleted Actor, id order.
 func (m *userManager) ListActors(ctx context.Context) ([]Actor, error) {
-	var rows []gormstore.ActorRow
-	if err := m.db.WithContext(ctx).Table(m.tables.Actors).Where("deleted = ?", false).Order("id").Find(&rows).Error; err != nil {
+	q := m.store.Query(ctx, roleActor).Where("deleted = ?", false).Order("id")
+	out, err := specstore.List[Actor](m.store, q, roleActor)
+	if err != nil {
 		return nil, fmt.Errorf("ListActors: %w", err)
-	}
-	out := make([]Actor, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, gormstore.ActorFromRow(r))
 	}
 	return out, nil
 }

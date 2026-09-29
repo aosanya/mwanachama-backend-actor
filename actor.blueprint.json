@@ -1,0 +1,510 @@
+{
+  "module": "actor",
+  "objects": [
+    {
+      "role": "actor",
+      "description": "Someone or something that acts — a person, or an agent standing in for one. The persona is the document beside it; only the few fields here mean the same in every domain.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable human-readable identifier, \"AC-<n>\", minted once at creation and never rewritten.",
+          "required": true,
+          "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "display_name",
+          "type": "string",
+          "description": "What to call this actor on screen. The only name the domain promises to show."
+        },
+        {
+          "name": "is_agentic",
+          "type": "bool",
+          "description": "True when the actor is an agent rather than a person, so a caller can tell a human seat from a machine one."
+        },
+        {
+          "name": "attributes",
+          "type": "json",
+          "description": "The persona: everything a domain knows about this actor beyond its name. Queried in place by path, so a domain's own vocabulary never becomes a column here."
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "description": "When the row was created."
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the row was last written."
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "description": "Soft delete. A deleted row is invisible to every listing."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "attributes_phone",
+          "description": "One actor per phone number. The database half of the duplicate-attribute refusal, so a write that races past the Go pre-check still fails.",
+          "path": {
+            "field": "attributes",
+            "path": "phone"
+          },
+          "unique": true
+        },
+        {
+          "name": "attributes_email",
+          "description": "One actor per email address, for the same reason the phone index exists.",
+          "path": {
+            "field": "attributes",
+            "path": "email"
+          },
+          "unique": true
+        }
+      ]
+    },
+    {
+      "role": "group",
+      "description": "A node in the org structure — a department, a cohort, a team. Its parent decides where it sits and its level decides what it is called.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable human-readable identifier, \"G-<n>\", minted once at creation and never rewritten by an edit.",
+          "required": true,
+          "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "hierarchy_id",
+          "type": "string",
+          "description": "The level tree this group belongs to. Fixed at creation — a group does not move between hierarchies."
+        },
+        {
+          "name": "level_id",
+          "type": "string",
+          "description": "The level this group sits at, which is what gives it its depth and its domain noun."
+        },
+        {
+          "name": "parent_id",
+          "type": "string",
+          "description": "The group directly above this one. Empty at the root, and never a group inside this one's own subtree."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "The group's human-readable name, shown wherever the structure is drawn."
+        },
+        {
+          "name": "discoverable",
+          "type": "bool",
+          "description": "True when an actor who is not already registered may find this group and ask to join."
+        },
+        {
+          "name": "anchor_level_override_id",
+          "type": "string",
+          "description": "The level that anchors this group's subtree, where it differs from the hierarchy's default anchor. Empty means the default applies."
+        },
+        {
+          "name": "node_type",
+          "type": "string",
+          "description": "The group type this group was created as, carried as a plain label rather than a reference."
+        },
+        {
+          "name": "attributes",
+          "type": "json",
+          "description": "Whatever the domain declares about a group beyond its name, queried in place by path."
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "description": "When the row was created."
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the row was last written."
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "description": "Soft delete. A deleted row is invisible to every listing."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "parent",
+          "description": "Walks the structure one level down, which is what listing a group's children is.",
+          "fields": [
+            "parent_id"
+          ]
+        },
+        {
+          "name": "hierarchy",
+          "description": "Reads one hierarchy's whole structure without touching another's.",
+          "fields": [
+            "hierarchy_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "actor_group_assignment",
+      "description": "One actor's registration in one group. The pair is the key, so an actor is registered in a group once or not at all.",
+      "fields": [
+        {
+          "name": "actor_id",
+          "type": "string",
+          "description": "The registered actor. Half of the key.",
+          "primary": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group registered in. The other half of the key.",
+          "primary": true
+        },
+        {
+          "name": "attributes",
+          "type": "json",
+          "description": "Whatever the domain declares about a registration — when it started, what it is for — queried in place by path."
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "description": "When the registration was made. The only date a registration carries."
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the row was last written."
+        },
+        {
+          "name": "deleted",
+          "type": "bool",
+          "description": "Soft delete. A deleted row is invisible to every listing."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "group",
+          "description": "Lists a group's roster, which is the read the structure screen makes per node.",
+          "fields": [
+            "group_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "role_kind",
+      "description": "A kind of seat that can be held — chair, treasurer, delegate. Retiring one stops it being granted without disturbing the seats already held.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable human-readable identifier, \"RK-<n>\", minted once at creation and never rewritten.",
+          "required": true,
+          "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "What the seat is called, in the domain's own words."
+        },
+        {
+          "name": "capabilities",
+          "type": "json",
+          "description": "The capability names this kind confers, as a JSON array. Never null on the way out — a kind created without any reads back as an empty list."
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "description": "What the seat is for, shown wherever a holder is chosen."
+        },
+        {
+          "name": "is_delegate",
+          "type": "bool",
+          "description": "True when the seat stands in for another group rather than governing its own."
+        },
+        {
+          "name": "level_id",
+          "type": "string",
+          "description": "The level this kind may be granted at. Empty means any level."
+        },
+        {
+          "name": "retired_at",
+          "type": "timestamp",
+          "description": "When the kind was retired. Empty means it is still grantable — this field is what Retired() reads."
+        },
+        {
+          "name": "retired_by",
+          "type": "string",
+          "description": "The actor who retired the kind. A domain fact, not audit dressing, which is why retiring takes an actor and unretiring does not."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "level",
+          "description": "Finds the kinds grantable at one level, which is what a grant form offers.",
+          "fields": [
+            "level_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "actor_role_assignment",
+      "description": "One held seat: an actor holding a role kind in a group. Granted, then ended — revoked, resigned, evicted or departed — and never deleted, so the history of who held what survives.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key. A seat is granted, revoked and stepped down from by id, unlike a registration, which is keyed by its pair.",
+          "primary": true
+        },
+        {
+          "name": "actor_id",
+          "type": "string",
+          "description": "The actor holding the seat."
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group the seat is held in."
+        },
+        {
+          "name": "kind_id",
+          "type": "string",
+          "description": "The kind of seat held."
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "description": "True while the seat is held. An ended seat stays as a row with this false."
+        },
+        {
+          "name": "granted_at",
+          "type": "timestamp",
+          "description": "When the seat was granted."
+        },
+        {
+          "name": "granted_by",
+          "type": "string",
+          "description": "The actor who granted it."
+        },
+        {
+          "name": "ended_at",
+          "type": "timestamp",
+          "description": "When the seat stopped being held. Empty while it is still active."
+        },
+        {
+          "name": "ended_reason",
+          "type": "enum",
+          "description": "Why the seat ended: taken away, given up, lost with the group seat, or lost with the registration.",
+          "values": [
+            "revoked",
+            "resigned",
+            "evicted",
+            "deregistered"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "actor",
+          "description": "Lists every seat one actor holds, across groups.",
+          "fields": [
+            "actor_id"
+          ]
+        },
+        {
+          "name": "group",
+          "description": "Lists every seat held in one group, which is what the dashboard reads.",
+          "fields": [
+            "group_id"
+          ]
+        },
+        {
+          "name": "kind",
+          "description": "Finds the live seats of one kind, which is what refuses the retirement of a kind still held.",
+          "fields": [
+            "kind_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "hierarchy",
+      "description": "One named tree of levels. A domain may keep several — a governance tree and a delivery tree — and a group belongs to exactly one.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable human-readable identifier, \"H-<n>\", minted once at creation and never rewritten by a rename.",
+          "required": true,
+          "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "What the tree is called."
+        }
+      ]
+    },
+    {
+      "role": "level",
+      "description": "One rung of a hierarchy: how deep it sits, and whether it is the rung a subtree anchors on.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable human-readable identifier, \"L-<n>\", minted once at creation and never rewritten by a rename.",
+          "required": true,
+          "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "hierarchy_id",
+          "type": "string",
+          "description": "The tree this rung belongs to."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "What this rung is called, which is the noun a group at it is shown under."
+        },
+        {
+          "name": "depth",
+          "type": "int",
+          "description": "How far down the tree this rung sits, counting from zero at the root."
+        },
+        {
+          "name": "is_default_anchor",
+          "type": "bool",
+          "description": "True on the one rung per hierarchy that a subtree anchors on unless a group overrides it."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "hierarchy",
+          "description": "Reads one tree's rungs in order, which is every read of a hierarchy.",
+          "fields": [
+            "hierarchy_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "group_type",
+      "description": "The domain's own noun for the groups at one level — \"chapter\", \"faculty\", \"squad\" — in both its singular and plural spellings.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable human-readable identifier, \"GT-<n>\", minted once at creation and never rewritten.",
+          "required": true,
+          "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "hierarchy_id",
+          "type": "string",
+          "description": "The tree this noun belongs to."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "The type's own name, which is what a group carries as its node type."
+        },
+        {
+          "name": "singular",
+          "type": "string",
+          "description": "How to name one group of this type."
+        },
+        {
+          "name": "plural",
+          "type": "string",
+          "description": "How to name several."
+        },
+        {
+          "name": "level_id",
+          "type": "string",
+          "description": "The level this noun applies at. Empty means it applies anywhere in the tree."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "hierarchy",
+          "description": "Lists one tree's nouns, which is what a structure screen reads to label its nodes.",
+          "fields": [
+            "hierarchy_id"
+          ]
+        },
+        {
+          "name": "level",
+          "description": "Finds the noun for one level, which is the lookup a group's label makes.",
+          "fields": [
+            "level_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "code_sequence",
+      "description": "One counter per coded type, holding the next number its code will take. Written by a compare-and-set so two concurrent creates cannot mint the same code.",
+      "fields": [
+        {
+          "name": "entity_type",
+          "type": "string",
+          "description": "The type being counted — actor, group, hierarchy, level, role_kind, grouptype. One row each.",
+          "primary": true
+        },
+        {
+          "name": "next_number",
+          "type": "int",
+          "description": "The number the next code of this type takes. Read and advanced in one conditional write."
+        }
+      ]
+    }
+  ]
+}

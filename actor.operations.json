@@ -1,0 +1,371 @@
+{
+  "errors": {
+    "ErrActorNotFound": 404,
+    "ErrGroupNotFound": 404,
+    "ErrRoleKindNotFound": 404,
+    "ErrAssignmentNotFound": 404,
+    "ErrHierarchyNotFound": 404,
+    "ErrLevelNotFound": 404,
+    "ErrInvalidActor": 400,
+    "ErrInvalidGroup": 400,
+    "ErrParentNotFound": 400,
+    "ErrDuplicateAttribute": 400,
+    "ErrDuplicateID": 409,
+    "ErrRootCannotMove": 409,
+    "ErrParentIsSelf": 409,
+    "ErrParentInSubtree": 409,
+    "ErrKindHasLiveAssignments": 409,
+    "ErrKindRetired": 409
+  },
+  "operations": {
+    "create_group": {
+      "method": "POST",
+      "path": "/groups",
+      "call": "CreateGroup",
+      "action": "actor.group.create",
+      "status": 201,
+      "title": "Create group",
+      "description": "Add a node to the org structure — a department, a cohort, a team. Its parent decides where it sits.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The group to create: its name, node type, hierarchy and parent."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_group"
+    },
+    "edit_group": {
+      "method": "PATCH",
+      "path": "/groups/{groupID}",
+      "call": "EditGroup",
+      "action": "actor.group.update",
+      "title": "Rename group",
+      "description": "Change a group's name, node type or anchor level. Whichever fields are empty are cleared.",
+      "args": [
+        {
+          "from": "path",
+          "as": "groupID",
+          "description": "The group to edit."
+        },
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The three columns an edit carries."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_edit_group"
+    },
+    "move_group": {
+      "method": "POST",
+      "path": "/groups/{groupID}/move",
+      "call": "MoveGroup",
+      "action": "actor.group.move",
+      "title": "Move group",
+      "description": "Re-parent a group. A root cannot move, and a group cannot become its own descendant's child.",
+      "args": [
+        {
+          "from": "path",
+          "as": "groupID",
+          "description": "The group to move."
+        },
+        {
+          "from": "body",
+          "as": "parent_id",
+          "description": "The group it should hang under."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_move_group"
+    },
+    "create_actor": {
+      "method": "POST",
+      "path": "/actors",
+      "call": "CreateActor",
+      "action": "actor.actor.create",
+      "status": 201,
+      "title": "Create person",
+      "description": "Add a person the structure can hold seats for. Attributes marked unique, such as a phone number, are refused if another person already holds them.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The person to create, with their attributes."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_actor"
+    },
+    "list_actors": {
+      "method": "GET",
+      "path": "/actors",
+      "call": "ListActors",
+      "action": "actor.actor.list",
+      "title": "List people",
+      "description": "Every person held, in id order.",
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_actors"
+    },
+    "get_actor": {
+      "method": "GET",
+      "path": "/actors/{actorID}",
+      "call": "GetActor",
+      "action": "actor.actor.read",
+      "title": "Read person",
+      "description": "One person and their attributes.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actorID",
+          "description": "The person to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_actor"
+    },
+    "set_actor_display_name": {
+      "method": "PATCH",
+      "path": "/actors/{actorID}/display-name",
+      "call": "SetActorDisplayName",
+      "action": "actor.actor.set_display_name",
+      "title": "Rename person",
+      "description": "Record the name a person gave for themselves.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actorID",
+          "description": "The person to rename."
+        },
+        {
+          "from": "body",
+          "as": "display_name",
+          "description": "The name they gave."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_actor_display_name"
+    },
+    "assign_group": {
+      "method": "POST",
+      "path": "/actors/{actorID}/assignments",
+      "call": "AssignGroup",
+      "action": "actor.assignment.create",
+      "status": 201,
+      "title": "Seat a person",
+      "description": "Enrol a person at a group. Calling it again for the same pair updates the seat rather than adding a second.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The group being joined and any attributes the seat carries."
+        },
+        {
+          "from": "path",
+          "as": "actorID",
+          "into": "ActorID",
+          "description": "The person being seated. The address outranks the body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_assign_group"
+    },
+    "deregister": {
+      "method": "DELETE",
+      "path": "/actors/{actorID}/assignments/{groupID}",
+      "call": "Deregister",
+      "action": "actor.assignment.delete",
+      "status": 204,
+      "title": "Unseat a person",
+      "description": "Remove a person's seat at a group. Removing one that was never there is not an error.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actorID",
+          "description": "The person to unseat."
+        },
+        {
+          "from": "path",
+          "as": "groupID",
+          "description": "The group to unseat them from."
+        }
+      ],
+      "returns": [
+        {
+          "as": "assignment"
+        },
+        {
+          "as": "removed"
+        }
+      ],
+      "tool": "actor_deregister"
+    },
+    "list_groups_for_actor": {
+      "method": "GET",
+      "path": "/actors/{actorID}/assignments",
+      "call": "ListGroupsForActor",
+      "action": "actor.assignment.list_for_actor",
+      "title": "List a person's seats",
+      "description": "Every group one person holds a seat at.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actorID",
+          "description": "The person whose seats to list."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_groups_for_actor"
+    },
+    "list_actors_for_group": {
+      "method": "GET",
+      "path": "/groups/{groupID}/assignments",
+      "call": "ListActorsForGroup",
+      "action": "actor.assignment.list_for_group",
+      "title": "List a group's people",
+      "description": "Everyone holding a seat at one group — the founders of a team, the staff of a department.",
+      "args": [
+        {
+          "from": "path",
+          "as": "groupID",
+          "description": "The group whose people to list."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_actors_for_group"
+    },
+    "home_counts": {
+      "method": "GET",
+      "path": "/assignments/home-counts",
+      "call": "HomeCounts",
+      "action": "actor.assignment.home_counts",
+      "title": "Count people per group",
+      "description": "How many people call each group home, for a structure view that shows size without loading every seat.",
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_home_counts"
+    },
+    "create_role_kind": {
+      "method": "POST",
+      "path": "/role-kinds",
+      "call": "CreateRoleKind",
+      "action": "actor.role_kind.create",
+      "status": 201,
+      "title": "Create kind of seat",
+      "description": "Declare a kind of seat a person can hold — founder, coach, partner — before anyone is put in one.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The kind of seat to declare."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_role_kind"
+    },
+    "list_role_kinds": {
+      "method": "GET",
+      "path": "/role-kinds",
+      "call": "ListRoleKinds",
+      "action": "actor.role_kind.list",
+      "title": "List kinds of seat",
+      "description": "Every kind of seat declared here.",
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_role_kinds"
+    },
+    "get_role_kind": {
+      "method": "GET",
+      "path": "/role-kinds/{kindID}",
+      "call": "GetRoleKind",
+      "action": "actor.role_kind.read",
+      "title": "Read kind of seat",
+      "description": "One kind of seat and what it carries.",
+      "args": [
+        {
+          "from": "path",
+          "as": "kindID",
+          "description": "The kind of seat to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_role_kind"
+    },
+    "get_role_assignment": {
+      "method": "GET",
+      "path": "/role-assignments/{assignmentID}",
+      "call": "GetRoleAssignment",
+      "action": "actor.role_assignment.read",
+      "title": "Read a held seat",
+      "description": "One seat a named person holds, and where.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignmentID",
+          "description": "The held seat to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_role_assignment"
+    }
+  }
+}
