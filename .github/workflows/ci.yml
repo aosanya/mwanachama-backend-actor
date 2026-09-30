@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: mwanachama-backend-actor
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mwanachama-backend-actor
+
+      # go.mod replaces mwanachama-backend-shared with ../mwanachama-backend-shared,
+      # so CI has to reproduce the sibling layout this module is developed in.
+      - uses: actions/checkout@v4
+        with:
+          repository: aosanya/mwanachama-backend-shared
+          path: mwanachama-backend-shared
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mwanachama-backend-actor/go.mod
+          cache-dependency-path: mwanachama-backend-actor/go.sum
+
+      - name: Formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "these files are not gofmt'd:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Build
+        run: make build
+
+      - name: Vet
+        run: make vet
+
+      - name: Unit tests
+        run: make test
+
+      - name: Postgres tests
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+        run: |
+          if [ -z "$POSTGRES_URL" ]; then
+            echo "POSTGRES_URL is not set, so postgres_integration_test.go would skip itself."
+            echo "It is the whole reason this step exists — failing rather than skipping."
+            exit 1
+          fi
+          make test-pg

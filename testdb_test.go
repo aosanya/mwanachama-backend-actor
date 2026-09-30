@@ -9,26 +9,25 @@ import (
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 )
 
-// newTestManager builds a [mwanachamaactor.UserManager] backed by a fresh
-// in-memory sqlite database, migrated the same way a real deployment would
-// via [mwanachamaactor.Migrate]. Replaces the old hand-maintained
-// fakeDataManager: exercising real GORM/SQL behavior catches more than a Go
-// map fake ever could, while staying fully in-process — no containers, no
-// POSTGRES_URL, consistent with this repo's existing separation between fast
-// unit tests here and the opt-in postgres_integration_test.go.
 func newTestManager(t *testing.T) mwanachamaactor.UserManager {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("gorm.Open: %v", err)
 	}
+	return newTestManagerOn(t, db)
+}
 
-	tables := mwanachamaactor.DefaultTableNames("test")
-	if err := mwanachamaactor.Migrate(db, tables); err != nil {
-		t.Fatalf("Migrate: %v", err)
+func newTestManagerOn(t *testing.T, db *gorm.DB) mwanachamaactor.UserManager {
+	t.Helper()
+	s, err := mwanachamaactor.SpecFor("test")
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
 	}
-
-	mgr, err := mwanachamaactor.NewUserManager(db, tables)
+	if err := mwanachamaactor.Provision(db, s); err != nil {
+		t.Fatalf("Provision: %v", err)
+	}
+	mgr, err := mwanachamaactor.NewUserManager(db, s)
 	if err != nil {
 		t.Fatalf("NewUserManager: %v", err)
 	}
@@ -36,7 +35,11 @@ func newTestManager(t *testing.T) mwanachamaactor.UserManager {
 }
 
 func TestNewUserManager_NilDB(t *testing.T) {
-	if _, err := mwanachamaactor.NewUserManager(nil, mwanachamaactor.DefaultTableNames("test")); err == nil {
+	s, err := mwanachamaactor.SpecFor("test")
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
+	}
+	if _, err := mwanachamaactor.NewUserManager(nil, s); err == nil {
 		t.Fatal("expected error for nil db")
 	}
 }

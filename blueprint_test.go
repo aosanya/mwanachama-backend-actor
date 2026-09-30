@@ -41,22 +41,67 @@ func TestTheShippedDomainSpecLoads(t *testing.T) {
 	if !ok {
 		t.Fatal("the spec fills no object for the role actor")
 	}
-	if got, want := s.TableFor(o), "wakala_actor_actors"; got != want {
+	if got, want := s.RawNameFor(o), "actor_main_actors"; got != want {
+		t.Errorf("logical name = %q, want %q", got, want)
+	}
+	if got, want := s.TableFor(o), "wakala_"+spec.HashName("actor_main_actors"); got != want {
 		t.Errorf("table = %q, want %q", got, want)
 	}
 }
 
 func TestASecondMountTakesItsOwnTables(t *testing.T) {
+	first, err := SpecFor("wakala")
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
+	}
+	second, err := SpecForMount("wakala", "shadow")
+	if err != nil {
+		t.Fatalf("SpecForMount: %v", err)
+	}
+	for _, role := range []string{roleActor, roleGroup, roleCodeSequence} {
+		a, ok := first.ByRole(role)
+		if !ok {
+			t.Fatalf("the default mount fills no object for the role %q", role)
+		}
+		b, ok := second.ByRole(role)
+		if !ok {
+			t.Fatalf("the second mount fills no object for the role %q", role)
+		}
+		if first.TableFor(a) == second.TableFor(b) {
+			t.Errorf("both mounts put %q in %q, so the second would adopt the first's rows",
+				role, first.TableFor(a))
+		}
+	}
+	if got, want := second.RawNameFor(mustRole(t, second, roleActor)), "actor_shadow_actors"; got != want {
+		t.Errorf("logical name = %q, want %q", got, want)
+	}
+}
+
+func mustRole(t *testing.T, s *spec.Spec, role string) spec.Object {
+	t.Helper()
+	o, ok := s.ByRole(role)
+	if !ok {
+		t.Fatalf("the spec fills no object for the role %q", role)
+	}
+	return o
+}
+
+func TestEveryPhysicalNameFitsTheIdentifierBudget(t *testing.T) {
 	s, err := SpecForMount("wakala", "shadow")
 	if err != nil {
 		t.Fatalf("SpecForMount: %v", err)
 	}
-	o, ok := s.ByRole(roleActor)
-	if !ok {
-		t.Fatal("the spec fills no object for the role actor")
-	}
-	if got, want := s.TableFor(o), "wakala_actor_shadow_actors"; got != want {
-		t.Errorf("table = %q, want %q", got, want)
+	for _, o := range s.Objects {
+		if got := len(s.TableFor(o)); got > spec.MaxIdentifier {
+			t.Errorf("table %q needs %d bytes, and the database truncates at %d",
+				s.TableFor(o), got, spec.MaxIdentifier)
+		}
+		for _, idx := range o.Indexes {
+			if got := len(s.IndexFor(o, idx)); got > spec.MaxIdentifier {
+				t.Errorf("index %q needs %d bytes, and the database truncates at %d",
+					s.IndexFor(o, idx), got, spec.MaxIdentifier)
+			}
+		}
 	}
 }
 

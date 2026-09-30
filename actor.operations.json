@@ -6,8 +6,10 @@
     "ErrAssignmentNotFound": 404,
     "ErrHierarchyNotFound": 404,
     "ErrLevelNotFound": 404,
+    "ErrGroupTypeNotFound": 404,
     "ErrInvalidActor": 400,
     "ErrInvalidGroup": 400,
+    "ErrInvalidGroupType": 400,
     "ErrParentNotFound": 400,
     "ErrDuplicateAttribute": 400,
     "ErrDuplicateID": 409,
@@ -15,9 +17,142 @@
     "ErrParentIsSelf": 409,
     "ErrParentInSubtree": 409,
     "ErrKindHasLiveAssignments": 409,
-    "ErrKindRetired": 409
+    "ErrKindRetired": 409,
+    "ErrLevelWornByGroups": 409,
+    "ErrLevelHasRoleKinds": 409,
+    "ErrGroupTypeWornByGroups": 409,
+    "ErrDuplicateDefaultAnchor": 409
   },
   "operations": {
+    "create_actor": {
+      "method": "POST",
+      "path": "/actors",
+      "call": "CreateActor",
+      "action": "actor.actor.create",
+      "status": 201,
+      "title": "Create actor",
+      "description": "Add someone — a person or an agent — to this instance. The id, the code and both timestamps are the server's to mint.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The actor to create: its display name, whether it is agentic, and its attributes."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_actor"
+    },
+    "get_actor": {
+      "method": "GET",
+      "path": "/actors/{actor_id}",
+      "call": "GetActor",
+      "action": "actor.actor.read",
+      "title": "Read actor",
+      "description": "Read one actor by id. A soft-deleted actor answers exactly as a missing one.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actor_id",
+          "description": "The actor to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_actor"
+    },
+    "get_actors": {
+      "method": "GET",
+      "path": "/actors/batch",
+      "call": "GetActors",
+      "action": "actor.actor.read_many",
+      "title": "Read several actors",
+      "description": "Read many actors at once, in id order. An id naming nobody is skipped rather than refused.",
+      "args": [
+        {
+          "from": "query",
+          "as": "id",
+          "repeated": true,
+          "description": "One actor id. Repeat the parameter for each actor wanted."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_actors"
+    },
+    "get_actor_by_phone": {
+      "method": "GET",
+      "path": "/actors/by-phone",
+      "call": "GetActorByPhone",
+      "action": "actor.actor.read_by_phone",
+      "title": "Find actor by phone",
+      "description": "Find the one actor holding this phone number. Recovers the actor that a create refused as a duplicate.",
+      "args": [
+        {
+          "from": "query",
+          "as": "phone",
+          "required": true,
+          "description": "The phone number to look up."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_actor_by_phone"
+    },
+    "set_actor_display_name": {
+      "method": "PATCH",
+      "path": "/actors/{actor_id}/display-name",
+      "call": "SetActorDisplayName",
+      "action": "actor.actor.set_display_name",
+      "title": "Rename actor",
+      "description": "Record the name an actor gave for themselves. Touches nothing else.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actor_id",
+          "description": "The actor to rename."
+        },
+        {
+          "from": "body",
+          "as": "display_name",
+          "required": true,
+          "description": "The name to show."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_actor_display_name"
+    },
+    "list_actors": {
+      "method": "GET",
+      "path": "/actors",
+      "call": "ListActors",
+      "action": "actor.actor.list",
+      "title": "List actors",
+      "description": "Every actor that has not been deleted, in id order.",
+      "args": [],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_actors"
+    },
     "create_group": {
       "method": "POST",
       "path": "/groups",
@@ -40,9 +175,30 @@
       ],
       "tool": "actor_create_group"
     },
+    "get_group": {
+      "method": "GET",
+      "path": "/groups/{group_id}",
+      "call": "GetGroup",
+      "action": "actor.group.read",
+      "title": "Read group",
+      "description": "Read one node of the structure by id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_group"
+    },
     "edit_group": {
       "method": "PATCH",
-      "path": "/groups/{groupID}",
+      "path": "/groups/{group_id}",
       "call": "EditGroup",
       "action": "actor.group.update",
       "title": "Rename group",
@@ -50,7 +206,7 @@
       "args": [
         {
           "from": "path",
-          "as": "groupID",
+          "as": "group_id",
           "description": "The group to edit."
         },
         {
@@ -68,21 +224,21 @@
     },
     "move_group": {
       "method": "POST",
-      "path": "/groups/{groupID}/move",
+      "path": "/groups/{group_id}/move",
       "call": "MoveGroup",
       "action": "actor.group.move",
       "title": "Move group",
-      "description": "Re-parent a group. A root cannot move, and a group cannot become its own descendant's child.",
+      "description": "Re-parent a group. The root cannot move, and no group may move beneath itself.",
       "args": [
         {
           "from": "path",
-          "as": "groupID",
+          "as": "group_id",
           "description": "The group to move."
         },
         {
           "from": "body",
-          "as": "parent_id",
-          "description": "The group it should hang under."
+          "as": "new_parent_id",
+          "description": "The group it should sit under. Empty makes it a root."
         }
       ],
       "returns": [
@@ -92,54 +248,18 @@
       ],
       "tool": "actor_move_group"
     },
-    "create_actor": {
-      "method": "POST",
-      "path": "/actors",
-      "call": "CreateActor",
-      "action": "actor.actor.create",
-      "status": 201,
-      "title": "Create person",
-      "description": "Add a person the structure can hold seats for. Attributes marked unique, such as a phone number, are refused if another person already holds them.",
-      "args": [
-        {
-          "from": "body",
-          "whole": true,
-          "description": "The person to create, with their attributes."
-        }
-      ],
-      "returns": [
-        {
-          "body": true
-        }
-      ],
-      "tool": "actor_create_actor"
-    },
-    "list_actors": {
+    "list_group_children": {
       "method": "GET",
-      "path": "/actors",
-      "call": "ListActors",
-      "action": "actor.actor.list",
-      "title": "List people",
-      "description": "Every person held, in id order.",
-      "returns": [
-        {
-          "body": true
-        }
-      ],
-      "tool": "actor_list_actors"
-    },
-    "get_actor": {
-      "method": "GET",
-      "path": "/actors/{actorID}",
-      "call": "GetActor",
-      "action": "actor.actor.read",
-      "title": "Read person",
-      "description": "One person and their attributes.",
+      "path": "/groups/{parent_id}/children",
+      "call": "ListGroupChildren",
+      "action": "actor.group.list_children",
+      "title": "List child groups",
+      "description": "The groups sitting directly under one group, in id order.",
       "args": [
         {
           "from": "path",
-          "as": "actorID",
-          "description": "The person to read."
+          "as": "parent_id",
+          "description": "The parent whose children to list."
         }
       ],
       "returns": [
@@ -147,25 +267,20 @@
           "body": true
         }
       ],
-      "tool": "actor_get_actor"
+      "tool": "actor_list_group_children"
     },
-    "set_actor_display_name": {
-      "method": "PATCH",
-      "path": "/actors/{actorID}/display-name",
-      "call": "SetActorDisplayName",
-      "action": "actor.actor.set_display_name",
-      "title": "Rename person",
-      "description": "Record the name a person gave for themselves.",
+    "list_groups": {
+      "method": "GET",
+      "path": "/groups",
+      "call": "ListGroups",
+      "action": "actor.group.list",
+      "title": "List groups",
+      "description": "Every group that has not been deleted, oldest first. Narrows to one hierarchy when asked.",
       "args": [
         {
-          "from": "path",
-          "as": "actorID",
-          "description": "The person to rename."
-        },
-        {
-          "from": "body",
-          "as": "display_name",
-          "description": "The name they gave."
+          "from": "query",
+          "as": "hierarchy_id",
+          "description": "Limit to one hierarchy. Empty returns every group."
         }
       ],
       "returns": [
@@ -173,27 +288,48 @@
           "body": true
         }
       ],
-      "tool": "actor_set_actor_display_name"
+      "tool": "actor_list_groups"
+    },
+    "list_discoverable_groups": {
+      "method": "GET",
+      "path": "/groups/discoverable",
+      "call": "ListDiscoverableGroups",
+      "action": "actor.group.list_discoverable",
+      "title": "List discoverable groups",
+      "description": "The groups an unregistered actor may find and ask to join, narrowed by a name fragment.",
+      "args": [
+        {
+          "from": "query",
+          "as": "q",
+          "description": "Case-insensitive fragment of the group's name. Empty returns all discoverable groups."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_discoverable_groups"
     },
     "assign_group": {
       "method": "POST",
-      "path": "/actors/{actorID}/assignments",
+      "path": "/actors/{actor_id}/assignments",
       "call": "AssignGroup",
       "action": "actor.assignment.create",
       "status": 201,
-      "title": "Seat a person",
-      "description": "Enrol a person at a group. Calling it again for the same pair updates the seat rather than adding a second.",
+      "title": "Register actor in group",
+      "description": "Register an actor in a group. Registering twice updates the attributes and keeps the original date.",
       "args": [
         {
           "from": "body",
           "whole": true,
-          "description": "The group being joined and any attributes the seat carries."
+          "description": "The registration: the group, and whatever attributes the domain declares."
         },
         {
           "from": "path",
-          "as": "actorID",
+          "as": "actor_id",
           "into": "ActorID",
-          "description": "The person being seated. The address outranks the body."
+          "description": "The actor being registered. The address decides, not the body."
         }
       ],
       "returns": [
@@ -205,22 +341,21 @@
     },
     "deregister": {
       "method": "DELETE",
-      "path": "/actors/{actorID}/assignments/{groupID}",
+      "path": "/actors/{actor_id}/assignments/{group_id}",
       "call": "Deregister",
       "action": "actor.assignment.delete",
-      "status": 204,
-      "title": "Unseat a person",
-      "description": "Remove a person's seat at a group. Removing one that was never there is not an error.",
+      "title": "Deregister actor from group",
+      "description": "Remove an actor's registration in a group. Removing one that is not there is not an error.",
       "args": [
         {
           "from": "path",
-          "as": "actorID",
-          "description": "The person to unseat."
+          "as": "actor_id",
+          "description": "The registered actor."
         },
         {
           "from": "path",
-          "as": "groupID",
-          "description": "The group to unseat them from."
+          "as": "group_id",
+          "description": "The group to remove them from."
         }
       ],
       "returns": [
@@ -228,23 +363,23 @@
           "as": "assignment"
         },
         {
-          "as": "removed"
+          "as": "found"
         }
       ],
       "tool": "actor_deregister"
     },
     "list_groups_for_actor": {
       "method": "GET",
-      "path": "/actors/{actorID}/assignments",
+      "path": "/actors/{actor_id}/assignments",
       "call": "ListGroupsForActor",
       "action": "actor.assignment.list_for_actor",
-      "title": "List a person's seats",
-      "description": "Every group one person holds a seat at.",
+      "title": "List an actor's groups",
+      "description": "Every registration one actor holds, oldest first.",
       "args": [
         {
           "from": "path",
-          "as": "actorID",
-          "description": "The person whose seats to list."
+          "as": "actor_id",
+          "description": "The actor whose registrations to list."
         }
       ],
       "returns": [
@@ -256,16 +391,16 @@
     },
     "list_actors_for_group": {
       "method": "GET",
-      "path": "/groups/{groupID}/assignments",
+      "path": "/groups/{group_id}/assignments",
       "call": "ListActorsForGroup",
       "action": "actor.assignment.list_for_group",
-      "title": "List a group's people",
-      "description": "Everyone holding a seat at one group — the founders of a team, the staff of a department.",
+      "title": "List a group's roster",
+      "description": "Every actor registered in one group, oldest first.",
       "args": [
         {
           "from": "path",
-          "as": "groupID",
-          "description": "The group whose people to list."
+          "as": "group_id",
+          "description": "The group whose roster to list."
         }
       ],
       "returns": [
@@ -280,8 +415,9 @@
       "path": "/assignments/home-counts",
       "call": "HomeCounts",
       "action": "actor.assignment.home_counts",
-      "title": "Count people per group",
-      "description": "How many people call each group home, for a structure view that shows size without loading every seat.",
+      "title": "Count actors per home group",
+      "description": "How many actors call each group home, keyed by group. A group with nobody is absent, not zero.",
+      "args": [],
       "returns": [
         {
           "body": true
@@ -295,13 +431,13 @@
       "call": "CreateRoleKind",
       "action": "actor.role_kind.create",
       "status": 201,
-      "title": "Create kind of seat",
-      "description": "Declare a kind of seat a person can hold — founder, coach, partner — before anyone is put in one.",
+      "title": "Create role kind",
+      "description": "Declare a kind of seat that can be held. A kind is never born retired.",
       "args": [
         {
           "from": "body",
           "whole": true,
-          "description": "The kind of seat to declare."
+          "description": "The kind to create: its name, capabilities, description and level."
         }
       ],
       "returns": [
@@ -316,8 +452,9 @@
       "path": "/role-kinds",
       "call": "ListRoleKinds",
       "action": "actor.role_kind.list",
-      "title": "List kinds of seat",
-      "description": "Every kind of seat declared here.",
+      "title": "List role kinds",
+      "description": "Every kind of seat, retired or not, in id order.",
+      "args": [],
       "returns": [
         {
           "body": true
@@ -327,16 +464,16 @@
     },
     "get_role_kind": {
       "method": "GET",
-      "path": "/role-kinds/{kindID}",
+      "path": "/role-kinds/{kind_id}",
       "call": "GetRoleKind",
       "action": "actor.role_kind.read",
-      "title": "Read kind of seat",
-      "description": "One kind of seat and what it carries.",
+      "title": "Read role kind",
+      "description": "Read one kind of seat by id.",
       "args": [
         {
           "from": "path",
-          "as": "kindID",
-          "description": "The kind of seat to read."
+          "as": "kind_id",
+          "description": "The kind to read."
         }
       ],
       "returns": [
@@ -346,18 +483,87 @@
       ],
       "tool": "actor_get_role_kind"
     },
-    "get_role_assignment": {
-      "method": "GET",
-      "path": "/role-assignments/{assignmentID}",
-      "call": "GetRoleAssignment",
-      "action": "actor.role_assignment.read",
-      "title": "Read a held seat",
-      "description": "One seat a named person holds, and where.",
+    "retire_role_kind": {
+      "method": "POST",
+      "path": "/role-kinds/{kind_id}/retire",
+      "call": "RetireRoleKind",
+      "action": "actor.role_kind.retire",
+      "title": "Retire role kind",
+      "description": "Stop a kind being granted. Refused while anyone still holds one; retiring twice keeps the first stamp.",
       "args": [
         {
           "from": "path",
-          "as": "assignmentID",
-          "description": "The held seat to read."
+          "as": "kind_id",
+          "description": "The kind to retire."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "Who retired it, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_retire_role_kind"
+    },
+    "unretire_role_kind": {
+      "method": "POST",
+      "path": "/role-kinds/{kind_id}/unretire",
+      "call": "UnretireRoleKind",
+      "action": "actor.role_kind.unretire",
+      "title": "Un-retire role kind",
+      "description": "Make a retired kind grantable again, clearing both ending fields together.",
+      "args": [
+        {
+          "from": "path",
+          "as": "kind_id",
+          "description": "The kind to un-retire."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_unretire_role_kind"
+    },
+    "grant_role": {
+      "method": "POST",
+      "path": "/role-assignments",
+      "call": "GrantRole",
+      "action": "actor.role_assignment.create",
+      "status": 201,
+      "title": "Grant a seat",
+      "description": "Give an actor a seat of some kind in a group. Refused when the kind is retired.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The seat to grant: the actor, the group and the kind."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_grant_role"
+    },
+    "get_role_assignment": {
+      "method": "GET",
+      "path": "/role-assignments/{assignment_id}",
+      "call": "GetRoleAssignment",
+      "action": "actor.role_assignment.read",
+      "title": "Read a seat",
+      "description": "Read one seat by id, whether it is still held or already ended.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat to read."
         }
       ],
       "returns": [
@@ -366,6 +572,521 @@
         }
       ],
       "tool": "actor_get_role_assignment"
+    },
+    "revoke_role": {
+      "method": "POST",
+      "path": "/role-assignments/{assignment_id}/revoke",
+      "call": "RevokeRole",
+      "action": "actor.role_assignment.revoke",
+      "status": 204,
+      "title": "Revoke a seat",
+      "description": "Take a seat away. Revoking an already-ended seat keeps the first reason and date.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat to revoke."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_revoke_role"
+    },
+    "step_down_role": {
+      "method": "POST",
+      "path": "/role-assignments/{assignment_id}/step-down",
+      "call": "StepDownRole",
+      "action": "actor.role_assignment.step_down",
+      "status": 204,
+      "title": "Step down from a seat",
+      "description": "End a seat at the holder's own request.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat being given up."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_step_down_role"
+    },
+    "end_role_on_eviction": {
+      "method": "POST",
+      "path": "/role-assignments/{assignment_id}/end-on-eviction",
+      "call": "EndRoleOnEviction",
+      "action": "actor.role_assignment.end_on_eviction",
+      "status": 204,
+      "title": "End a seat on eviction",
+      "description": "End a seat because an operator ended the holder's registration in its group.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat to end."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_end_role_on_eviction"
+    },
+    "end_role_on_departure": {
+      "method": "POST",
+      "path": "/role-assignments/{assignment_id}/end-on-departure",
+      "call": "EndRoleOnDeparture",
+      "action": "actor.role_assignment.end_on_departure",
+      "status": 204,
+      "title": "End a seat on departure",
+      "description": "End a seat because the holder ended their own registration in its group.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat to end."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_end_role_on_departure"
+    },
+    "list_role_assignments_for_group": {
+      "method": "GET",
+      "path": "/groups/{group_id}/role-assignments",
+      "call": "ListRoleAssignmentsForGroup",
+      "action": "actor.role_assignment.list_for_group",
+      "title": "List a group's seats",
+      "description": "Every seat held in one group, oldest grant first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose seats to list."
+        },
+        {
+          "from": "query",
+          "as": "active_only",
+          "description": "true to leave out the seats that have already ended."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_role_assignments_for_group"
+    },
+    "list_role_assignments_for_actor": {
+      "method": "GET",
+      "path": "/actors/{actor_id}/role-assignments",
+      "call": "ListRoleAssignmentsForActor",
+      "action": "actor.role_assignment.list_for_actor",
+      "title": "List an actor's seats",
+      "description": "Every seat one actor holds, across every group, oldest grant first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actor_id",
+          "description": "The actor whose seats to list."
+        },
+        {
+          "from": "query",
+          "as": "active_only",
+          "description": "true to leave out the seats that have already ended."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_role_assignments_for_actor"
+    },
+    "group_dashboard": {
+      "method": "GET",
+      "path": "/groups/{group_id}/dashboard",
+      "call": "GroupDashboard",
+      "action": "actor.group.dashboard",
+      "title": "Read a group's dashboard",
+      "description": "Every role kind and who holds it at this group, with the roster and child counts beside it.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group to summarise."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_group_dashboard"
+    },
+    "create_hierarchy": {
+      "method": "POST",
+      "path": "/hierarchies",
+      "call": "CreateHierarchy",
+      "action": "actor.hierarchy.create",
+      "status": 201,
+      "title": "Create hierarchy",
+      "description": "Start a new named tree of levels for the structure to be built from.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The hierarchy to create: its name."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_hierarchy"
+    },
+    "list_hierarchies": {
+      "method": "GET",
+      "path": "/hierarchies",
+      "call": "ListHierarchies",
+      "action": "actor.hierarchy.list",
+      "title": "List hierarchies",
+      "description": "Every tree of levels, in id order.",
+      "args": [],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_hierarchies"
+    },
+    "get_hierarchy": {
+      "method": "GET",
+      "path": "/hierarchies/{hierarchy_id}",
+      "call": "GetHierarchy",
+      "action": "actor.hierarchy.read",
+      "title": "Read hierarchy",
+      "description": "Read one tree of levels by id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "hierarchy_id",
+          "description": "The hierarchy to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_hierarchy"
+    },
+    "rename_hierarchy": {
+      "method": "PATCH",
+      "path": "/hierarchies/{hierarchy_id}",
+      "call": "RenameHierarchy",
+      "action": "actor.hierarchy.rename",
+      "title": "Rename hierarchy",
+      "description": "Change a tree's name and nothing else.",
+      "args": [
+        {
+          "from": "path",
+          "as": "hierarchy_id",
+          "description": "The hierarchy to rename."
+        },
+        {
+          "from": "body",
+          "as": "name",
+          "required": true,
+          "description": "The new name."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_rename_hierarchy"
+    },
+    "set_default_anchor": {
+      "method": "POST",
+      "path": "/hierarchies/{hierarchy_id}/default-anchor",
+      "call": "SetDefaultAnchor",
+      "action": "actor.hierarchy.set_default_anchor",
+      "status": 204,
+      "title": "Move the default anchor",
+      "description": "Move the rung a subtree anchors on, clearing the old flag and setting the new one together.",
+      "args": [
+        {
+          "from": "path",
+          "as": "hierarchy_id",
+          "description": "The hierarchy whose anchor is moving."
+        },
+        {
+          "from": "body",
+          "as": "level_id",
+          "required": true,
+          "description": "The rung that becomes the anchor. It must belong to this hierarchy."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_default_anchor"
+    },
+    "create_level": {
+      "method": "POST",
+      "path": "/levels",
+      "call": "CreateLevel",
+      "action": "actor.level.create",
+      "status": 201,
+      "title": "Create level",
+      "description": "Add a rung to a hierarchy. A second default anchor on one hierarchy is refused.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The level to create: its hierarchy, name, depth and whether it anchors."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_level"
+    },
+    "get_level": {
+      "method": "GET",
+      "path": "/levels/{level_id}",
+      "call": "GetLevel",
+      "action": "actor.level.read",
+      "title": "Read level",
+      "description": "Read one rung by id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "level_id",
+          "description": "The level to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_level"
+    },
+    "rename_level": {
+      "method": "PATCH",
+      "path": "/levels/{level_id}",
+      "call": "RenameLevel",
+      "action": "actor.level.rename",
+      "title": "Rename level",
+      "description": "Change a rung's name. Its depth and hierarchy are not reachable from here — a rung a rename can renumber is not a rung.",
+      "args": [
+        {
+          "from": "path",
+          "as": "level_id",
+          "description": "The level to rename."
+        },
+        {
+          "from": "body",
+          "as": "name",
+          "required": true,
+          "description": "The new name."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_rename_level"
+    },
+    "delete_level": {
+      "method": "DELETE",
+      "path": "/levels/{level_id}",
+      "call": "DeleteLevel",
+      "action": "actor.level.delete",
+      "status": 204,
+      "title": "Delete level",
+      "description": "Remove a rung. Refused while a group wears it or a role kind is scoped to it.",
+      "args": [
+        {
+          "from": "path",
+          "as": "level_id",
+          "description": "The level to remove."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_delete_level"
+    },
+    "list_levels": {
+      "method": "GET",
+      "path": "/levels",
+      "call": "ListLevels",
+      "action": "actor.level.list",
+      "title": "List levels",
+      "description": "The rungs of one hierarchy, shallowest first, or every rung when no hierarchy is named.",
+      "args": [
+        {
+          "from": "query",
+          "as": "hierarchy_id",
+          "description": "Limit to one hierarchy. Empty returns every level."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_levels"
+    },
+    "create_group_type": {
+      "method": "POST",
+      "path": "/group-types",
+      "call": "CreateGroupType",
+      "action": "actor.group_type.create",
+      "status": 201,
+      "title": "Create group type",
+      "description": "Declare the domain's own noun for the groups at one level. This creates no group.",
+      "args": [
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The type to create: its hierarchy, name, singular and plural spellings, and level."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_group_type"
+    },
+    "get_group_type": {
+      "method": "GET",
+      "path": "/group-types/{group_type_id}",
+      "call": "GetGroupType",
+      "action": "actor.group_type.read",
+      "title": "Read group type",
+      "description": "Read one noun by id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_type_id",
+          "description": "The group type to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_group_type"
+    },
+    "edit_group_type": {
+      "method": "PATCH",
+      "path": "/group-types/{group_type_id}",
+      "call": "EditGroupType",
+      "action": "actor.group_type.update",
+      "title": "Edit group type",
+      "description": "Change a noun's name, spellings or level. A rename carries every group wearing the old name over to the new one.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_type_id",
+          "description": "The group type to edit."
+        },
+        {
+          "from": "body",
+          "as": "name",
+          "required": true,
+          "description": "The type's name."
+        },
+        {
+          "from": "body",
+          "as": "singular",
+          "description": "How to name one group of this type. Empty falls back to the name."
+        },
+        {
+          "from": "body",
+          "as": "plural",
+          "description": "How to name several. Empty falls back to the name plus an s."
+        },
+        {
+          "from": "body",
+          "as": "level_id",
+          "description": "The level this noun applies at. Empty means anywhere in the tree."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_edit_group_type"
+    },
+    "delete_group_type": {
+      "method": "DELETE",
+      "path": "/group-types/{group_type_id}",
+      "call": "DeleteGroupType",
+      "action": "actor.group_type.delete",
+      "status": 204,
+      "title": "Delete group type",
+      "description": "Remove a noun. Refused while any group still names it.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_type_id",
+          "description": "The group type to remove."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_delete_group_type"
+    },
+    "list_group_types": {
+      "method": "GET",
+      "path": "/group-types",
+      "call": "ListGroupTypes",
+      "action": "actor.group_type.list",
+      "title": "List group types",
+      "description": "The nouns of one hierarchy in code order, or every noun when no hierarchy is named.",
+      "args": [
+        {
+          "from": "query",
+          "as": "hierarchy_id",
+          "description": "Limit to one hierarchy. Empty returns every group type."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_group_types"
     }
   }
 }

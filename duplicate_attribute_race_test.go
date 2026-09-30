@@ -54,7 +54,7 @@ import (
 // concurrency rather than queuing the second writer the way a real WAL
 // file (or Postgres, this package's actual deployment target) does — a
 // sqlite-shared-cache testing artifact, not a finding about this package.
-func newRaceTestManager(t *testing.T) (mwanachamaactor.UserManager, *gorm.DB, mwanachamaactor.TableNames) {
+func newRaceTestManager(t *testing.T) (mwanachamaactor.UserManager, *gorm.DB, string) {
 	t.Helper()
 	dsn := fmt.Sprintf("%s/race.db?_pragma=busy_timeout(5000)", t.TempDir())
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
@@ -82,15 +82,18 @@ func newRaceTestManager(t *testing.T) (mwanachamaactor.UserManager, *gorm.DB, mw
 		t.Fatalf("PRAGMA busy_timeout: %v", err)
 	}
 
-	tables := mwanachamaactor.DefaultTableNames("test")
-	if err := mwanachamaactor.Migrate(db, tables); err != nil {
-		t.Fatalf("Migrate: %v", err)
+	s, err := mwanachamaactor.SpecFor("test")
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
 	}
-	mgr, err := mwanachamaactor.NewUserManager(db, tables)
+	if err := mwanachamaactor.Provision(db, s); err != nil {
+		t.Fatalf("Provision: %v", err)
+	}
+	mgr, err := mwanachamaactor.NewUserManager(db, s)
 	if err != nil {
 		t.Fatalf("NewUserManager: %v", err)
 	}
-	return mgr, db, tables
+	return mgr, db, "test_actor_actors"
 }
 
 // raceBarrier registers a Query callback that blocks each of the first two
@@ -120,7 +123,7 @@ func raceBarrier(db *gorm.DB, actorsTable string) {
 }
 
 func TestCreateActor_RacedDuplicatePhoneIsDuplicateAttribute(t *testing.T) {
-	mgr, db, tables := newRaceTestManager(t)
+	mgr, db, actors := newRaceTestManager(t)
 	ctx := context.Background()
 
 	// Warm up the "actor" CodeSequence row sequentially first (its own
@@ -134,7 +137,7 @@ func TestCreateActor_RacedDuplicatePhoneIsDuplicateAttribute(t *testing.T) {
 		t.Fatalf("warm-up CreateActor: %v", err)
 	}
 
-	raceBarrier(db, tables.Actors)
+	raceBarrier(db, actors)
 
 	var errs [2]error
 	var start sync.WaitGroup
@@ -180,7 +183,7 @@ func TestCreateActor_RacedDuplicatePhoneIsDuplicateAttribute(t *testing.T) {
 }
 
 func TestActorRoutes_RacedDuplicatePhoneReturns400(t *testing.T) {
-	mgr, db, tables := newRaceTestManager(t)
+	mgr, db, actors := newRaceTestManager(t)
 
 	// Warm up the "actor" CodeSequence row first — see the sibling test's
 	// identical comment for why.
@@ -190,10 +193,10 @@ func TestActorRoutes_RacedDuplicatePhoneReturns400(t *testing.T) {
 		t.Fatalf("warm-up CreateActor: %v", err)
 	}
 
-	raceBarrier(db, tables.Actors)
+	raceBarrier(db, actors)
 
 	mux := http.NewServeMux()
-	for _, rt := range routes.ActorRoutes(mgr, routes.ResourceNames{}) {
+	for _, rt := range routes.Routes(mgr) {
 		mux.HandleFunc(rt.Pattern(""), rt.Handler)
 	}
 	srv := httptest.NewServer(mux)

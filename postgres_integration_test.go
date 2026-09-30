@@ -48,15 +48,20 @@ func newPostgresUserManager(t *testing.T) mwanachamaactor.UserManager {
 
 	// A unique-enough prefix per test keeps concurrent -run invocations from
 	// colliding on the same physical tables.
-	tables := mwanachamaactor.DefaultTableNames("useri")
-	if err := mwanachamaactor.Migrate(db, tables); err != nil {
-		t.Fatalf("Migrate: %v", err)
+	s, err := mwanachamaactor.SpecFor("useri")
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
+	}
+	if err := mwanachamaactor.Provision(db, s); err != nil {
+		t.Fatalf("Provision: %v", err)
 	}
 	t.Cleanup(func() {
-		_ = db.Migrator().DropTable(tables.ActorGroupAssignments, tables.Actors, tables.Groups)
+		for _, o := range s.Objects {
+			_ = db.Migrator().DropTable(s.TableFor(o))
+		}
 	})
 
-	mgr, err := mwanachamaactor.NewUserManager(db, tables)
+	mgr, err := mwanachamaactor.NewUserManager(db, s)
 	if err != nil {
 		t.Fatalf("NewUserManager: %v", err)
 	}
