@@ -44,7 +44,7 @@ func TestTheShippedDomainSpecLoads(t *testing.T) {
 	if got, want := s.RawNameFor(o), "actor_main_actors"; got != want {
 		t.Errorf("logical name = %q, want %q", got, want)
 	}
-	if got, want := s.TableFor(o), "wakala_"+spec.HashName("actor_main_actors"); got != want {
+	if got, want := s.TableFor(o), "wakala_"+s.MountKey()+"_"+spec.HashName("actor_actors"); got != want {
 		t.Errorf("table = %q, want %q", got, want)
 	}
 }
