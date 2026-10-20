@@ -20,6 +20,7 @@ var carriers = map[string]string{
 	"hierarchy":              "Hierarchy",
 	"level":                  "Level",
 	"group_type":             "GroupType",
+	"group_join_request":     "GroupJoinRequest",
 	"code_sequence":          "CodeSequence",
 }
 
@@ -38,6 +39,10 @@ var storeOwned = map[string]bool{
 	"Hierarchy.code":                   true,
 	"Level.code":                       true,
 	"GroupType.code":                   true,
+	"GroupJoinRequest.state":           true,
+	"GroupJoinRequest.appeal":          true,
+	"GroupJoinRequest.silent":          true,
+	"GroupJoinRequest.decided_by":      true,
 }
 
 var editFields = map[string]dispatch.FieldDoc{

@@ -19,7 +19,7 @@ func TestBlueprintParses(t *testing.T) {
 	}
 	want := []string{
 		"actor", "actor_group_assignment", "actor_role_assignment", "code_sequence",
-		"group", "group_type", "hierarchy", "level", "role_kind",
+		"group", "group_join_request", "group_type", "hierarchy", "level", "role_kind",
 	}
 	if got := b.Roles(); !reflect.DeepEqual(got, want) {
 		t.Errorf("roles = %v, want %v", got, want)
@@ -168,7 +168,7 @@ func TestEveryColumnTheRowStructsHeldIsDeclared(t *testing.T) {
 				t.Errorf("%s stored %q and the blueprint declares no field for it", role, c)
 			}
 		}
-		total += len(o.Fields)
+		total += len(o.Fields) - len(columnsDeclaredSince[role])
 	}
 	if total != 63 {
 		t.Errorf("the blueprint declares %d fields, and the row structs carried 63", total)

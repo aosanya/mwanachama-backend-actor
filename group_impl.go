@@ -18,6 +18,12 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if g.Name == "" {
 		return Group{}, fmt.Errorf("%w: Group.Name is required", ErrInvalidGroup)
 	}
+	if g.JoinMode == "" {
+		g.JoinMode = models.JoinConfirmed
+	}
+	if !models.ValidJoinMode(g.JoinMode) {
+		return Group{}, fmt.Errorf("%w: %w", ErrInvalidGroup, ErrInvalidJoinMode)
+	}
 	properties := models.DefaultGroupProperties()
 	if err := models.ValidateAttributes(properties, g.Attributes); err != nil {
 		return Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)

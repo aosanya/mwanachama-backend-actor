@@ -21,6 +21,8 @@ type (
 	Hierarchy            = models.Hierarchy
 	Level                = models.Level
 	GroupType            = models.GroupType
+	GroupJoinRequest     = models.GroupJoinRequest
+	JoinOutcome          = models.JoinOutcome
 )
 
 const TimeLayout = models.TimeLayout
@@ -72,6 +74,16 @@ type UserManager interface {
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
 
 	HomeCounts(ctx context.Context) (map[string]int, error)
+
+	SetGroupJoinMode(ctx context.Context, groupID, mode string) (Group, error)
+	SetGroupHidden(ctx context.Context, groupID string, hidden bool) (Group, error)
+	ListJoinableGroups(ctx context.Context, actorID string) ([]Group, error)
+	JoinGroup(ctx context.Context, groupID, actorID, message string) (JoinOutcome, error)
+	GetJoinRequest(ctx context.Context, id string) (GroupJoinRequest, error)
+	ListJoinRequestsForGroup(ctx context.Context, groupID string, pendingOnly bool) ([]GroupJoinRequest, error)
+	ListJoinRequestsForActor(ctx context.Context, actorID string) ([]GroupJoinRequest, error)
+	ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error)
+	DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool) (GroupJoinRequest, error)
 
 	CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error)
 	ListRoleKinds(ctx context.Context) ([]RoleKind, error)

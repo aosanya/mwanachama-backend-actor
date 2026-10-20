@@ -21,6 +21,9 @@ func Provision(db *gorm.DB, s *spec.Spec) error {
 	if err := renameLegacy(db, s); err != nil {
 		return err
 	}
+	if err := addColumnsDeclaredSince(db, s); err != nil {
+		return err
+	}
 	if err := spec.Migrate(db, s); err != nil {
 		return err
 	}
@@ -55,6 +58,13 @@ func upToDate(db *gorm.DB, s *spec.Spec) (bool, error) {
 		if held[name] {
 			return false, nil
 		}
+	}
+	missing, err := columnsDeclaredSinceMissing(db, s)
+	if err != nil {
+		return false, err
+	}
+	if missing {
+		return false, nil
 	}
 
 	for _, c := range codedRoles {
@@ -388,4 +398,73 @@ func declaresColumn(o spec.Object, column string) bool {
 		}
 	}
 	return false
+}
+
+var columnsDeclaredSince = map[string][]string{
+	roleGroup: {"join_mode", "hidden"},
+}
+
+func columnsDeclaredSinceMissing(db *gorm.DB, s *spec.Spec) (bool, error) {
+	for role, columns := range columnsDeclaredSince {
+		table := tableFor(s, role)
+		for _, column := range columns {
+			held, err := hasColumn(db, table, column)
+			if err != nil {
+				return false, err
+			}
+			if !held {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func addColumnsDeclaredSince(db *gorm.DB, s *spec.Spec) error {
+	for role, columns := range columnsDeclaredSince {
+		table := tableFor(s, role)
+		if table == "" || !db.Migrator().HasTable(table) {
+			continue
+		}
+		o := mustObject(s, role)
+		for _, column := range columns {
+			held, err := hasColumn(db, table, column)
+			if err != nil {
+				return err
+			}
+			if held {
+				continue
+			}
+			definition, err := addedColumnDefinition(o, column)
+			if err != nil {
+				return err
+			}
+			stmt := fmt.Sprintf("alter table %s add column %s", table, definition)
+			if err := db.Exec(stmt).Error; err != nil {
+				return fmt.Errorf("actor: add %s.%s: %w", table, column, err)
+			}
+		}
+	}
+	return nil
+}
+
+func addedColumnDefinition(o spec.Object, column string) (string, error) {
+	for _, f := range o.Fields {
+		if f.Name != column {
+			continue
+		}
+		switch f.Type {
+		case spec.TypeBool:
+			value := f.Default
+			if value == "" {
+				value = "false"
+			}
+			return fmt.Sprintf("%s boolean default %s", f.Name, value), nil
+		case spec.TypeString, spec.TypeText, spec.TypeEnum:
+			return fmt.Sprintf("%s text default '%s'", f.Name, strings.ReplaceAll(f.Default, "'", "''")), nil
+		default:
+			return "", fmt.Errorf("actor: %s.%s is a %s, which adding a column does not cover", o.Name, f.Name, f.Type)
+		}
+	}
+	return "", fmt.Errorf("actor: %s declares no field %s to add", o.Name, column)
 }

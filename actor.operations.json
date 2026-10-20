@@ -21,7 +21,12 @@
     "ErrLevelWornByGroups": 409,
     "ErrLevelHasRoleKinds": 409,
     "ErrGroupTypeWornByGroups": 409,
-    "ErrDuplicateDefaultAnchor": 409
+    "ErrDuplicateDefaultAnchor": 409,
+    "ErrInvalidJoinMode": 400,
+    "ErrInvalidJoinRequest": 400,
+    "ErrJoinMessageTooLong": 400,
+    "ErrJoinRequestNotFound": 404,
+    "ErrJoinRequestDecided": 409
   },
   "operations": {
     "create_actor": {
@@ -424,6 +429,236 @@
         }
       ],
       "tool": "actor_home_counts"
+    },
+    "set_group_join_mode": {
+      "method": "PUT",
+      "path": "/groups/{group_id}/join-mode",
+      "call": "SetGroupJoinMode",
+      "action": "actor.group.set_join_mode",
+      "title": "Set group join mode",
+      "description": "Choose how actors join a group: open lets them in at once, confirmed holds each request for a decision.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose join mode is changing."
+        },
+        {
+          "from": "body",
+          "as": "join_mode",
+          "required": true,
+          "description": "open or confirmed."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_group_join_mode"
+    },
+    "set_group_hidden": {
+      "method": "PUT",
+      "path": "/groups/{group_id}/hidden",
+      "call": "SetGroupHidden",
+      "action": "actor.group.set_hidden",
+      "title": "Hide or show group",
+      "description": "Mark a group hidden, so it is reached only by invitation and never listed as joinable, or show it again.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group to hide or show."
+        },
+        {
+          "from": "body",
+          "as": "hidden",
+          "description": "true to hide the group, false to show it."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_group_hidden"
+    },
+    "list_joinable_groups": {
+      "method": "GET",
+      "path": "/groups/joinable",
+      "call": "ListJoinableGroups",
+      "action": "actor.group.list_joinable",
+      "title": "List joinable groups",
+      "description": "The groups the calling actor is not registered at, leaving out hidden ones, oldest first.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_joinable_groups"
+    },
+    "join_group": {
+      "method": "POST",
+      "path": "/groups/{group_id}/join",
+      "call": "JoinGroup",
+      "action": "actor.group.join",
+      "title": "Join group",
+      "description": "Join a group as the calling actor. An open group registers the actor at once; a confirmed one records a pending request, and asking again after a decline makes it an appeal.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group to join."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor joining, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "message",
+          "description": "A note to whoever decides the request, at most 500 characters. Ignored by an open group."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_join_group"
+    },
+    "list_join_requests_for_group": {
+      "method": "GET",
+      "path": "/groups/{group_id}/join-requests",
+      "call": "ListJoinRequestsForGroup",
+      "action": "actor.join_request.list_for_group",
+      "title": "List group join requests",
+      "description": "The join requests made to one group, oldest first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose requests to list."
+        },
+        {
+          "from": "query",
+          "as": "pending_only",
+          "description": "true to list only the requests still waiting for a decision."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_join_requests_for_group"
+    },
+    "list_my_join_requests": {
+      "method": "GET",
+      "path": "/join-requests/mine",
+      "call": "ListJoinRequestsForActor",
+      "action": "actor.join_request.list_mine",
+      "title": "List my join requests",
+      "description": "Every join request the calling actor has made, in any state, oldest first.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_my_join_requests"
+    },
+    "get_join_request": {
+      "method": "GET",
+      "path": "/join-requests/{request_id}",
+      "call": "GetJoinRequest",
+      "action": "actor.join_request.read",
+      "title": "Get join request",
+      "description": "Fetch one join request by id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "request_id",
+          "description": "The request to fetch."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_join_request"
+    },
+    "approve_join_request": {
+      "method": "POST",
+      "path": "/join-requests/{request_id}/approve",
+      "call": "ApproveJoinRequest",
+      "action": "actor.join_request.approve",
+      "title": "Approve join request",
+      "description": "Approve a pending join request, which registers the actor at the group in the same write.",
+      "args": [
+        {
+          "from": "path",
+          "as": "request_id",
+          "description": "The pending request to approve."
+        },
+        {
+          "from": "caller",
+          "as": "decided_by",
+          "description": "Who approved it, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_approve_join_request"
+    },
+    "decline_join_request": {
+      "method": "POST",
+      "path": "/join-requests/{request_id}/decline",
+      "call": "DeclineJoinRequest",
+      "action": "actor.join_request.decline",
+      "title": "Decline join request",
+      "description": "Decline a pending join request. The request is kept, and the actor may ask again as an appeal.",
+      "args": [
+        {
+          "from": "path",
+          "as": "request_id",
+          "description": "The pending request to decline."
+        },
+        {
+          "from": "caller",
+          "as": "decided_by",
+          "description": "Who declined it, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "silent",
+          "description": "true to decline quietly, so the actor is told nothing."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_decline_join_request"
     },
     "create_role_kind": {
       "method": "POST",

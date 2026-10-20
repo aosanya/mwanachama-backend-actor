@@ -44,6 +44,11 @@ var sentinels = map[string]error{
 	"ErrLevelHasRoleKinds":      mwanachamaactor.ErrLevelHasRoleKinds,
 	"ErrGroupTypeWornByGroups":  mwanachamaactor.ErrGroupTypeWornByGroups,
 	"ErrDuplicateDefaultAnchor": mwanachamaactor.ErrDuplicateDefaultAnchor,
+	"ErrInvalidJoinMode":        mwanachamaactor.ErrInvalidJoinMode,
+	"ErrInvalidJoinRequest":     mwanachamaactor.ErrInvalidJoinRequest,
+	"ErrJoinMessageTooLong":     mwanachamaactor.ErrJoinMessageTooLong,
+	"ErrJoinRequestNotFound":    mwanachamaactor.ErrJoinRequestNotFound,
+	"ErrJoinRequestDecided":     mwanachamaactor.ErrJoinRequestDecided,
 }
 
 type Mount struct {

@@ -115,6 +115,21 @@
           "description": "True when an actor who is not already registered may find this group and ask to join."
         },
         {
+          "name": "join_mode",
+          "type": "enum",
+          "description": "How an actor joins: open writes the registration at once, confirmed holds a join request until the group's deciders approve it. A new group starts confirmed.",
+          "values": [
+            "open",
+            "confirmed"
+          ],
+          "default": "confirmed"
+        },
+        {
+          "name": "hidden",
+          "type": "bool",
+          "description": "True when the group is reached only by invitation: it is never listed as joinable and a join or a join request to it answers as a missing group."
+        },
+        {
           "name": "anchor_level_override_id",
           "type": "string",
           "description": "The level that anchors this group's subtree, where it differs from the hierarchy's default anchor. Empty means the default applies."
@@ -485,6 +500,102 @@
           "description": "Finds the noun for one level, which is the lookup a group's label makes.",
           "fields": [
             "level_id"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "group_join_request",
+      "description": "One actor's request to join one confirmed group. There is at most one per pair: asking again after a decline updates it and marks it an appeal rather than adding another.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store. A request is decided by id.",
+          "primary": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group the actor asked to join.",
+          "required": true
+        },
+        {
+          "name": "actor_id",
+          "type": "string",
+          "description": "The actor who asked.",
+          "required": true
+        },
+        {
+          "name": "state",
+          "type": "enum",
+          "description": "Where the request stands: pending until someone decides it, then approved or declined. Asking again returns it to pending.",
+          "values": [
+            "pending",
+            "approved",
+            "declined"
+          ],
+          "required": true
+        },
+        {
+          "name": "appeal",
+          "type": "bool",
+          "description": "True once the actor has asked again after being declined. It stays true while that appeal is pending and through its decision."
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "description": "What the actor wrote when asking, at most 500 characters. Asking again replaces it."
+        },
+        {
+          "name": "silent",
+          "type": "bool",
+          "description": "True when a decline was made quietly, so the host raises nothing that tells the actor. Meaningless on any other state."
+        },
+        {
+          "name": "requested_at",
+          "type": "timestamp",
+          "description": "When the actor asked. An appeal keeps the first ask's time; asking again after an approval starts a fresh one."
+        },
+        {
+          "name": "decided_by",
+          "type": "string",
+          "description": "The actor who approved or declined the request. Empty while it is pending, and empty on an approval the group's open policy made by itself."
+        },
+        {
+          "name": "decided_at",
+          "type": "timestamp",
+          "description": "When the request was approved or declined. Empty while it is pending."
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the row was last written."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "pair",
+          "description": "One request per actor and group, which is what makes asking again an update rather than a second request.",
+          "fields": [
+            "group_id",
+            "actor_id"
+          ],
+          "unique": true
+        },
+        {
+          "name": "group_state",
+          "description": "Lists one group's pending requests, which is the read its deciders make.",
+          "fields": [
+            "group_id",
+            "state"
+          ]
+        },
+        {
+          "name": "actor",
+          "description": "Lists one actor's requests, which is how the joinable list knows which groups it has already asked.",
+          "fields": [
+            "actor_id"
           ]
         }
       ]

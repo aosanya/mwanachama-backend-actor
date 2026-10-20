@@ -52,6 +52,12 @@
       "description": "The agency's own noun for the nodes at one level."
     },
     {
+      "role": "group_join_request",
+      "name": "group_join_request",
+      "table": "group_join_requests",
+      "description": "A member's request to join a node of the structure that needs approval."
+    },
+    {
       "role": "code_sequence",
       "name": "code_sequence",
       "table": "code_sequences",

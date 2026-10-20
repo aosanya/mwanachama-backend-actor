@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 47 {
-		t.Errorf("the declared table has %d routes, want 47", len(table))
+	if len(table) != 56 {
+		t.Errorf("the declared table has %d routes, want 56", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 47 {
-		t.Errorf("the declared table publishes %d tools, want 47", len(tools))
+	if len(tools) != 56 {
+		t.Errorf("the declared table publishes %d tools, want 56", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {
@@ -282,5 +282,53 @@ func TestEveryDeclaredActionIsUniqueAndNamespaced(t *testing.T) {
 			t.Errorf("action %q is claimed twice", rt.Action)
 		}
 		seen[rt.Action] = true
+	}
+}
+
+func TestJoiningOverTheWireTakesTheActorFromTheCaller(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	asker, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 4"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	caller := asker.ID
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller:          func(context.Context) string { return caller },
+		CheckReferences: true,
+	}))
+
+	status, body := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/join", map[string]any{
+		"message":  "I live here.",
+		"actor_id": "body-supplied-actor",
+	})
+	if status != http.StatusOK {
+		t.Fatalf("join = %d, want 200 (body %v)", status, body)
+	}
+	request, _ := body["request"].(map[string]any)
+	if body["status"] != "requested" || request["actor_id"] != asker.ID {
+		t.Fatalf("join = %v, want a request from the caller", body)
+	}
+
+	caller = "leader-1"
+	status, body = do(t, srv, http.MethodPost, "/join-requests/"+request["id"].(string)+"/decline", map[string]any{
+		"silent": true,
+	})
+	if status != http.StatusOK || body["state"] != "declined" || body["silent"] != true || body["decided_by"] != "leader-1" {
+		t.Fatalf("decline = %d %v, want a silent decline by the caller", status, body)
+	}
+
+	status, body = do(t, srv, http.MethodPost, "/join-requests/"+request["id"].(string)+"/approve", nil)
+	if status != http.StatusConflict {
+		t.Errorf("approving a declined request = %d %v, want 409", status, body)
+	}
+
+	status, body = do(t, srv, http.MethodPut, "/groups/"+group.ID+"/join-mode", map[string]any{"join_mode": "anyone"})
+	if status != http.StatusBadRequest {
+		t.Errorf("an unknown join mode = %d %v, want 400", status, body)
 	}
 }

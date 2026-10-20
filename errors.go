@@ -45,3 +45,13 @@ var ErrInvalidGroupType = errors.New("mwanachamaactor: invalid group type")
 var ErrGroupTypeWornByGroups = errors.New("mwanachamaactor: this group type still carries groups, so it cannot be removed")
 
 var ErrDuplicateDefaultAnchor = errors.New("mwanachamaactor: hierarchy already has a default anchor level")
+
+var ErrInvalidJoinMode = errors.New("mwanachamaactor: join mode must be open or confirmed")
+
+var ErrInvalidJoinRequest = errors.New("mwanachamaactor: invalid join request")
+
+var ErrJoinMessageTooLong = errors.New("mwanachamaactor: a join request's message is at most 500 characters")
+
+var ErrJoinRequestNotFound = errors.New("mwanachamaactor: join request not found")
+
+var ErrJoinRequestDecided = errors.New("mwanachamaactor: join request is not pending, so it cannot be decided")
