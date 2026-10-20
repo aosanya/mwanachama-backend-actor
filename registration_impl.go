@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"gorm.io/datatypes"
 
@@ -134,6 +135,40 @@ func (m *userManager) HomeCounts(ctx context.Context) (map[string]int, error) {
 	out := map[string]int{}
 	for _, r := range rows {
 		out[r.GroupID]++
+	}
+	return out, nil
+}
+
+func (m *userManager) ListMyGroups(ctx context.Context, actorID string) ([]Group, error) {
+	out := []Group{}
+	actorID = strings.TrimSpace(actorID)
+	if actorID == "" {
+		return out, nil
+	}
+	held, err := m.ListGroupsForActor(ctx, actorID)
+	if err != nil {
+		return nil, fmt.Errorf("ListMyGroups: %w", err)
+	}
+	if len(held) == 0 {
+		return out, nil
+	}
+	ids := make([]string, len(held))
+	for i, a := range held {
+		ids[i] = a.GroupID
+	}
+	q := m.store.Query(ctx, roleGroup).Where("deleted = ?", false).Where("id IN ?", ids)
+	groups, err := specstore.List[Group](m.store, q, roleGroup)
+	if err != nil {
+		return nil, fmt.Errorf("ListMyGroups: %w", err)
+	}
+	byID := make(map[string]Group, len(groups))
+	for _, g := range groups {
+		byID[g.ID] = g
+	}
+	for _, a := range held {
+		if g, ok := byID[a.GroupID]; ok {
+			out = append(out, g)
+		}
 	}
 	return out, nil
 }

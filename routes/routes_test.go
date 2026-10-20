@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 64 {
-		t.Errorf("the declared table has %d routes, want 64", len(table))
+	if len(table) != 65 {
+		t.Errorf("the declared table has %d routes, want 65", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 64 {
-		t.Errorf("the declared table publishes %d tools, want 64", len(tools))
+	if len(tools) != 65 {
+		t.Errorf("the declared table publishes %d tools, want 65", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {
@@ -454,5 +454,82 @@ func TestOverTheWireOnlyALeaderDecidesAndTheLeaderReadsWhatTheyLead(t *testing.T
 	}
 	if resp.StatusCode != http.StatusOK || len(led) != 1 || led[0]["id"] != group.ID {
 		t.Fatalf("led = %d %v, want only %s for the caller, whatever the query names", resp.StatusCode, led, group.ID)
+	}
+}
+
+func getList(t *testing.T, srv *httptest.Server, path string, body any) (int, string, []map[string]any) {
+	t.Helper()
+	raw, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	req, err := http.NewRequest(http.MethodGet, srv.URL+path, bytes.NewReader(raw))
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("GET %s: %v", path, err)
+	}
+	defer resp.Body.Close()
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var out []map[string]any
+	_ = json.Unmarshal(buf.Bytes(), &out)
+	return resp.StatusCode, buf.String(), out
+}
+
+func TestOverTheWireACallerReadsOnlyTheirOwnGroups(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	amina, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	baraka, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Baraka"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	mine, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 4"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	theirs, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 5"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: amina.ID, GroupID: mine.ID}); err != nil {
+		t.Fatalf("AssignGroup: %v", err)
+	}
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: baraka.ID, GroupID: theirs.ID}); err != nil {
+		t.Fatalf("AssignGroup: %v", err)
+	}
+	caller := amina.ID
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller:          func(context.Context) string { return caller },
+		CheckReferences: true,
+	}))
+
+	status, raw, groups := getList(t, srv, "/groups/mine?actor_id="+baraka.ID, map[string]any{"actor_id": baraka.ID})
+	if status != http.StatusOK || len(groups) != 1 || groups[0]["id"] != mine.ID || groups[0]["name"] != "Ward 4" {
+		t.Fatalf("GET /groups/mine = %d %s, want only %s for the caller, whatever the query or body names", status, raw, mine.ID)
+	}
+
+	stranger, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Chausiku"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	caller = stranger.ID
+	status, raw, groups = getList(t, srv, "/groups/mine", nil)
+	if status != http.StatusOK || len(groups) != 0 || bytes.TrimSpace([]byte(raw))[0] != '[' {
+		t.Fatalf("GET /groups/mine with no registrations = %d %s, want an empty list", status, raw)
+	}
+
+	status, body := do(t, srv, http.MethodGet, "/groups/"+mine.ID, nil)
+	if status != http.StatusOK || body["id"] != mine.ID {
+		t.Fatalf("GET /groups/{id} beside /groups/mine = %d %v, want the group", status, body)
 	}
 }

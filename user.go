@@ -73,6 +73,8 @@ type UserManager interface {
 
 	ListGroupsForActor(ctx context.Context, actorID string) ([]ActorGroupAssignment, error)
 
+	ListMyGroups(ctx context.Context, actorID string) ([]Group, error)
+
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
 
 	HomeCounts(ctx context.Context) (map[string]int, error)

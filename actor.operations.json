@@ -531,6 +531,27 @@
       ],
       "tool": "actor_list_led_groups"
     },
+    "list_my_groups": {
+      "method": "GET",
+      "path": "/groups/mine",
+      "call": "ListMyGroups",
+      "action": "actor.group.list_mine",
+      "title": "List my groups",
+      "description": "Every group the calling actor is registered in, not deleted, oldest registration first.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_my_groups"
+    },
     "join_group": {
       "method": "POST",
       "path": "/groups/{group_id}/join",
