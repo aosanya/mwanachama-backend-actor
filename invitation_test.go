@@ -30,8 +30,8 @@ func TestAcceptingAnInvitationRegistersAtAHiddenGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
-	if inv.State != models.InvitationPending || inv.InvitedBy != "leader-1" || inv.InvitedAt == "" || inv.ExpiresAt != "" {
-		t.Fatalf("invitation = %+v, want pending from leader-1 that never lapses", inv)
+	if inv.State != models.InvitationPending || inv.InvitedBy != "leader-1" || inv.InvitedAt == "" || inv.ExpiresAt == "" {
+		t.Fatalf("invitation = %+v, want pending from leader-1 with an expiry", inv)
 	}
 	if registered(t, mgr, a.ID, g.ID) {
 		t.Fatal("an invitation alone registered the actor")

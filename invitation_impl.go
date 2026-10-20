@@ -20,10 +20,14 @@ func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, invit
 	if groupID == "" || actorID == "" || invitedBy == "" {
 		return GroupInvitation{}, fmt.Errorf("%w: a group, an actor and whoever invites are required", ErrInvalidInvitation)
 	}
-	now := NowRFC3339()
+	issuedAt := time.Now().UTC()
+	now := issuedAt.Format(TimeLayout)
 	expires, err := invitationExpiry(expiresAt, now)
 	if err != nil {
 		return GroupInvitation{}, err
+	}
+	if expires == "" {
+		expires = issuedAt.Add(m.invitationLifetime).Format(TimeLayout)
 	}
 	if _, err := m.GetGroup(ctx, groupID); err != nil {
 		return GroupInvitation{}, err

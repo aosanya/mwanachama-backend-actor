@@ -715,7 +715,7 @@
         {
           "from": "body",
           "as": "expires_at",
-          "description": "When the invitation lapses, as an RFC 3339 time in the future. Omit it for an invitation that never lapses."
+          "description": "When the invitation lapses, as an RFC 3339 time in the future. Omit it and the invitation lapses after the host's invitation lifetime, 14 days unless the host sets another."
         }
       ],
       "returns": [

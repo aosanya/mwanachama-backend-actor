@@ -652,7 +652,7 @@
         {
           "name": "expires_at",
           "type": "timestamp",
-          "description": "When the invitation lapses, as the issuer chose. Empty means it never lapses. A lapsed invitation cannot be accepted and is invited again rather than revived."
+          "description": "When the invitation lapses: the issuer's date, or the issue time plus the host's invitation lifetime when the issuer names none. Empty only on a row issued before that default, which never lapses. A lapsed invitation cannot be accepted and is invited again rather than revived."
         },
         {
           "name": "answered_at",

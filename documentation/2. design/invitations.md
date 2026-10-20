@@ -18,7 +18,7 @@ A new role, `group_invitation`:
 | `state` | `pending`, `accepted` or `declined`. |
 | `invited_by` | Who issued it, bound from the caller on the route table. |
 | `invited_at` | When it was issued. |
-| `expires_at` | When it lapses, as the issuer chose. Empty means it never lapses. |
+| `expires_at` | When it lapses: the issuer's date, or the issue time plus the invitation lifetime (ACT16). Empty only on a row issued before ACT16, which never lapses. |
 | `answered_at` | When the actor accepted or declined. Empty while pending. |
 | `last_updated` | The last write. |
 
@@ -27,7 +27,8 @@ A new role, `group_invitation`:
 1. An empty group, actor or issuer is `ErrInvalidInvitation`. So is an
    `expires_at` that is not an RFC 3339 time, or is not in the future; a
    valid one is stored in UTC in the module's fixed-width `TimeLayout`, so
-   it compares as text against `NowRFC3339()`.
+   it compares as text against `NowRFC3339()`. An empty one becomes the
+   issue time plus the manager's invitation lifetime (below).
 2. A missing or deleted group is `ErrGroupNotFound`. An issuer who does not
    lead the group is then `ErrNotGroupLeader` (403, ACT15).
 3. A missing actor is `ErrActorNotFound`. The host ensures the actor first
@@ -68,11 +69,37 @@ The answering actor is bound from the caller.
 records it; an invitation is lapsed when it is pending and its `expires_at`
 has passed, which `GroupInvitation.Lapsed(now)` and `Open(now)` compute.
 
-**How long an invitation lasts is the caller's.** No document states a
-duration, so the module takes none of its own: the issuer, or the host on its
-behalf, supplies `expires_at`, and leaving it out makes an invitation that
-never lapses. A product default belongs to the host or the member app, and is
-for the owner to set.
+### How long an invitation lasts (ACT16, 2026-10-20)
+
+Owner, member app decision 81: an invitation's lifetime is a system setting,
+starting at 14 days. Until ACT16 an invitation lapsed only when its issuer
+set `expires_at`, and one without a date never lapsed.
+
+This module is a library with no environment of its own, so the setting is
+the host's to supply when it builds the manager:
+
+```go
+mgr, err := mwanachamaactor.NewUserManager(db, s,
+	mwanachamaactor.WithInvitationLifetime(lifetime))
+```
+
+- No option means `DefaultInvitationLifetime`, 14 days.
+- A lifetime of zero or less is refused by `NewUserManager`, so a typo in a
+  host's configuration cannot quietly make every invitation lapse on issue.
+  There is no setting for "never lapses"; decision 81 asks for none.
+- An invitation issued without `expires_at` is stored with the issue time
+  plus the lifetime, computed from the same clock reading as `invited_at`,
+  so the two always differ by exactly the lifetime.
+- An invitation issued with its own `expires_at` keeps it, longer or shorter
+  than the lifetime.
+- Renewing an invitation (inviting the same actor again) without a date
+  restarts the lifetime from the renewal.
+- The lifetime is read at issue and written into the row. Changing the
+  setting moves no invitation already issued, and rows issued before ACT16
+  with an empty `expires_at` still never lapse.
+
+wakala-api reads it from `INVITATION_LIFETIME`; see its
+`documentation/2. design/actor-mount.md`.
 
 ### Only the group's leaders invite
 

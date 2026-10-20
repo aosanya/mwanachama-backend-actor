@@ -3,6 +3,7 @@ package mwanachamaactor
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -136,11 +137,20 @@ type UserManager interface {
 }
 
 type userManager struct {
-	db    *gorm.DB
-	store *store
+	db                 *gorm.DB
+	store              *store
+	invitationLifetime time.Duration
 }
 
-func NewUserManager(db *gorm.DB, s *spec.Spec) (UserManager, error) {
+const DefaultInvitationLifetime = 14 * 24 * time.Hour
+
+type Option func(*userManager)
+
+func WithInvitationLifetime(d time.Duration) Option {
+	return func(m *userManager) { m.invitationLifetime = d }
+}
+
+func NewUserManager(db *gorm.DB, s *spec.Spec, opts ...Option) (UserManager, error) {
 	if db == nil {
 		return nil, fmt.Errorf("NewUserManager: db must not be nil")
 	}
@@ -148,7 +158,14 @@ func NewUserManager(db *gorm.DB, s *spec.Spec) (UserManager, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &userManager{db: db, store: st}, nil
+	m := &userManager{db: db, store: st, invitationLifetime: DefaultInvitationLifetime}
+	for _, opt := range opts {
+		opt(m)
+	}
+	if m.invitationLifetime <= 0 {
+		return nil, fmt.Errorf("NewUserManager: an invitation lifetime must be positive, got %s", m.invitationLifetime)
+	}
+	return m, nil
 }
 
 func (m *userManager) table(role string) string { return m.store.Table(role) }
