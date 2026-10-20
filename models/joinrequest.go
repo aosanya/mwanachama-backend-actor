@@ -23,6 +23,7 @@ type GroupJoinRequest struct {
 	Message     string `json:"message"`
 	Silent      bool   `json:"silent"`
 	RequestedAt string `json:"requested_at"`
+	AskedAt     string `json:"asked_at"`
 	DecidedBy   string `json:"decided_by,omitempty"`
 	DecidedAt   string `json:"decided_at,omitempty"`
 	LastUpdated string `json:"last_updated"`

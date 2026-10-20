@@ -55,6 +55,7 @@ A new role, `group_join_request`:
 | `message` | What the actor wrote, at most 500 characters (`ErrJoinMessageTooLong`), trimmed. |
 | `silent` | Set on a quiet decline (decision 58). |
 | `requested_at` | The first ask. An appeal keeps it; asking again after an approval starts afresh. |
+| `asked_at` | The last ask: the first one, an appeal, or asking again while pending. A decision leaves it alone, so on a decided request it is still the time the actor last saw while it was pending. A host showing a quiet decline as still pending shows this time (member app decision 113). Added to an existing table by `Provision`, empty on rows written before it. |
 | `decided_by`, `decided_at` | Who decided and when. Empty while pending. |
 | `last_updated` | The last write. |
 

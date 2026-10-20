@@ -138,6 +138,7 @@ func (m *userManager) askToJoin(ctx context.Context, groupID, actorID, message s
 				State:       models.JoinRequestPending,
 				Message:     message,
 				RequestedAt: now,
+				AskedAt:     now,
 				LastUpdated: now,
 			}
 			row, err := encode(m.object(roleGroupJoinRequest), out)
@@ -154,6 +155,7 @@ func (m *userManager) askToJoin(ctx context.Context, groupID, actorID, message s
 				"message":      out.Message,
 				"silent":       out.Silent,
 				"requested_at": out.RequestedAt,
+				"asked_at":     out.AskedAt,
 				"decided_by":   out.DecidedBy,
 				"decided_at":   out.DecidedAt,
 				"last_updated": out.LastUpdated,
@@ -181,6 +183,7 @@ func askedAgain(r GroupJoinRequest, message, now string) GroupJoinRequest {
 	r.Silent = false
 	r.DecidedBy = ""
 	r.DecidedAt = ""
+	r.AskedAt = now
 	r.LastUpdated = now
 	return r
 }

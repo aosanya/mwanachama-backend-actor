@@ -401,8 +401,9 @@ func declaresColumn(o spec.Object, column string) bool {
 }
 
 var columnsDeclaredSince = map[string][]string{
-	roleGroup:    {"join_mode", "hidden"},
-	roleRoleKind: {"leads_group"},
+	roleGroup:            {"join_mode", "hidden"},
+	roleRoleKind:         {"leads_group"},
+	roleGroupJoinRequest: {"asked_at"},
 }
 
 func columnsDeclaredSinceMissing(db *gorm.DB, s *spec.Spec) (bool, error) {
@@ -461,7 +462,7 @@ func addedColumnDefinition(o spec.Object, column string) (string, error) {
 				value = "false"
 			}
 			return fmt.Sprintf("%s boolean default %s", f.Name, value), nil
-		case spec.TypeString, spec.TypeText, spec.TypeEnum:
+		case spec.TypeString, spec.TypeText, spec.TypeEnum, spec.TypeTimestamp:
 			return fmt.Sprintf("%s text default '%s'", f.Name, strings.ReplaceAll(f.Default, "'", "''")), nil
 		default:
 			return "", fmt.Errorf("actor: %s.%s is a %s, which adding a column does not cover", o.Name, f.Name, f.Type)

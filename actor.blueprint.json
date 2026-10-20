@@ -563,6 +563,11 @@
           "description": "When the actor asked. An appeal keeps the first ask's time; asking again after an approval starts a fresh one."
         },
         {
+          "name": "asked_at",
+          "type": "timestamp",
+          "description": "When the actor last asked: the first ask, or the latest time they asked again. A decision leaves it alone, so it is the time the actor last saw on a request still pending."
+        },
+        {
           "name": "decided_by",
           "type": "string",
           "description": "The actor who approved or declined the request. Empty while it is pending, and empty on an approval the group's open policy made by itself."
