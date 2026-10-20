@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 56 {
-		t.Errorf("the declared table has %d routes, want 56", len(table))
+	if len(table) != 62 {
+		t.Errorf("the declared table has %d routes, want 62", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 56 {
-		t.Errorf("the declared table publishes %d tools, want 56", len(tools))
+	if len(tools) != 62 {
+		t.Errorf("the declared table publishes %d tools, want 62", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {
@@ -330,5 +330,54 @@ func TestJoiningOverTheWireTakesTheActorFromTheCaller(t *testing.T) {
 	status, body = do(t, srv, http.MethodPut, "/groups/"+group.ID+"/join-mode", map[string]any{"join_mode": "anyone"})
 	if status != http.StatusBadRequest {
 		t.Errorf("an unknown join mode = %d %v, want 400", status, body)
+	}
+}
+
+func TestAnInvitationOverTheWireTakesIssuerAndAnswererFromTheCaller(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	invited, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Elders"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if _, err := mgr.SetGroupHidden(ctx, group.ID, true); err != nil {
+		t.Fatalf("SetGroupHidden: %v", err)
+	}
+	caller := "leader-1"
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller:          func(context.Context) string { return caller },
+		CheckReferences: true,
+	}))
+
+	status, body := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{
+		"actor_id":   invited.ID,
+		"invited_by": "body-supplied-leader",
+	})
+	if status != http.StatusCreated || body["invited_by"] != "leader-1" || body["state"] != "pending" {
+		t.Fatalf("invite = %d %v, want a pending invitation from the caller", status, body)
+	}
+	id := body["id"].(string)
+
+	status, _ = do(t, srv, http.MethodPost, "/invitations/"+id+"/accept", nil)
+	if status != http.StatusNotFound {
+		t.Errorf("the issuer accepting = %d, want 404", status)
+	}
+
+	caller = invited.ID
+	status, body = do(t, srv, http.MethodPost, "/invitations/"+id+"/accept", map[string]any{"actor_id": "someone-else"})
+	if status != http.StatusOK || body["state"] != "accepted" {
+		t.Fatalf("accept = %d %v, want accepted", status, body)
+	}
+	status, _ = do(t, srv, http.MethodPost, "/invitations/"+id+"/decline", nil)
+	if status != http.StatusConflict {
+		t.Errorf("declining an accepted invitation = %d, want 409", status)
+	}
+	status, body = do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": invited.ID})
+	if status != http.StatusConflict {
+		t.Errorf("inviting a registered actor = %d %v, want 409", status, body)
 	}
 }

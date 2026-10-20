@@ -55,3 +55,13 @@ var ErrJoinMessageTooLong = errors.New("mwanachamaactor: a join request's messag
 var ErrJoinRequestNotFound = errors.New("mwanachamaactor: join request not found")
 
 var ErrJoinRequestDecided = errors.New("mwanachamaactor: join request is not pending, so it cannot be decided")
+
+var ErrInvalidInvitation = errors.New("mwanachamaactor: invalid invitation")
+
+var ErrInvitationNotFound = errors.New("mwanachamaactor: invitation not found")
+
+var ErrInvitationAnswered = errors.New("mwanachamaactor: invitation is not pending, so it cannot be answered")
+
+var ErrInvitationLapsed = errors.New("mwanachamaactor: invitation has lapsed")
+
+var ErrAlreadyInGroup = errors.New("mwanachamaactor: the actor is already registered at this group")

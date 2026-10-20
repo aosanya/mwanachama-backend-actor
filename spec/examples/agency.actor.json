@@ -58,6 +58,12 @@
       "description": "A member's request to join a node of the structure that needs approval."
     },
     {
+      "role": "group_invitation",
+      "name": "group_invitation",
+      "table": "group_invitations",
+      "description": "An invitation from a node's leaders to one person to join it, which is how a hidden node is reached."
+    },
+    {
       "role": "code_sequence",
       "name": "code_sequence",
       "table": "code_sequences",

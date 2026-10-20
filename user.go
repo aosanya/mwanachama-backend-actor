@@ -23,6 +23,7 @@ type (
 	GroupType            = models.GroupType
 	GroupJoinRequest     = models.GroupJoinRequest
 	JoinOutcome          = models.JoinOutcome
+	GroupInvitation      = models.GroupInvitation
 )
 
 const TimeLayout = models.TimeLayout
@@ -84,6 +85,13 @@ type UserManager interface {
 	ListJoinRequestsForActor(ctx context.Context, actorID string) ([]GroupJoinRequest, error)
 	ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error)
 	DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool) (GroupJoinRequest, error)
+
+	InviteToGroup(ctx context.Context, groupID, actorID, invitedBy, expiresAt string) (GroupInvitation, error)
+	GetInvitation(ctx context.Context, id string) (GroupInvitation, error)
+	ListInvitationsForGroup(ctx context.Context, groupID string, openOnly bool) ([]GroupInvitation, error)
+	ListInvitationsForActor(ctx context.Context, actorID string) ([]GroupInvitation, error)
+	AcceptInvitation(ctx context.Context, id, actorID string) (GroupInvitation, error)
+	DeclineInvitation(ctx context.Context, id, actorID string) (GroupInvitation, error)
 
 	CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error)
 	ListRoleKinds(ctx context.Context) ([]RoleKind, error)

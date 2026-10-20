@@ -601,6 +601,93 @@
       ]
     },
     {
+      "role": "group_invitation",
+      "description": "One invitation from a group's leaders to one actor to join that group, which is how a hidden group is reached. There is at most one per pair: inviting again updates it rather than adding another. Accepting registers the actor; declining or letting it lapse registers nothing.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store. An invitation is answered by id.",
+          "primary": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group the actor is invited to.",
+          "required": true
+        },
+        {
+          "name": "actor_id",
+          "type": "string",
+          "description": "The actor invited. Only this actor may accept or decline.",
+          "required": true
+        },
+        {
+          "name": "state",
+          "type": "enum",
+          "description": "Where the invitation stands: pending until the actor answers, then accepted or declined. Inviting again returns it to pending. A lapsed invitation stays pending and is never written to by lapsing.",
+          "values": [
+            "pending",
+            "accepted",
+            "declined"
+          ],
+          "required": true
+        },
+        {
+          "name": "invited_by",
+          "type": "string",
+          "description": "The actor who issued the invitation, taken from the caller. Inviting again replaces it.",
+          "required": true
+        },
+        {
+          "name": "invited_at",
+          "type": "timestamp",
+          "description": "When the invitation was issued. Inviting again replaces it."
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp",
+          "description": "When the invitation lapses, as the issuer chose. Empty means it never lapses. A lapsed invitation cannot be accepted and is invited again rather than revived."
+        },
+        {
+          "name": "answered_at",
+          "type": "timestamp",
+          "description": "When the actor accepted or declined. Empty while it is pending."
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the row was last written."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "pair",
+          "description": "One invitation per actor and group, which is what makes inviting again an update rather than a second invitation.",
+          "fields": [
+            "group_id",
+            "actor_id"
+          ],
+          "unique": true
+        },
+        {
+          "name": "group_state",
+          "description": "Lists one group's invitations by state, which is the read its leaders make.",
+          "fields": [
+            "group_id",
+            "state"
+          ]
+        },
+        {
+          "name": "actor",
+          "description": "Lists one actor's invitations, which is the read the invited actor makes.",
+          "fields": [
+            "actor_id"
+          ]
+        }
+      ]
+    },
+    {
       "role": "code_sequence",
       "description": "One counter per coded type, holding the next number its code will take. Written by a compare-and-set so two concurrent creates cannot mint the same code.",
       "fields": [

@@ -102,20 +102,24 @@ func (m *userManager) joinOpen(ctx context.Context, groupID, actorID string) (Jo
 		if err != nil {
 			return err
 		}
-		return tx.Table(m.table(roleGroupJoinRequest)).
-			Where("group_id = ? AND actor_id = ? AND state = ?", groupID, actorID, models.JoinRequestPending).
-			Updates(map[string]any{
-				"state":        models.JoinRequestApproved,
-				"silent":       false,
-				"decided_by":   "",
-				"decided_at":   now,
-				"last_updated": now,
-			}).Error
+		return m.settlePendingJoinRequest(tx, groupID, actorID, now)
 	})
 	if err != nil {
 		return JoinOutcome{}, fmt.Errorf("JoinGroup: %w", err)
 	}
 	return JoinOutcome{Status: models.JoinedNow, Assignment: &assignment}, nil
+}
+
+func (m *userManager) settlePendingJoinRequest(tx *gorm.DB, groupID, actorID, now string) error {
+	return tx.Table(m.table(roleGroupJoinRequest)).
+		Where("group_id = ? AND actor_id = ? AND state = ?", groupID, actorID, models.JoinRequestPending).
+		Updates(map[string]any{
+			"state":        models.JoinRequestApproved,
+			"silent":       false,
+			"decided_by":   "",
+			"decided_at":   now,
+			"last_updated": now,
+		}).Error
 }
 
 func (m *userManager) askToJoin(ctx context.Context, groupID, actorID, message string, retryOnRace bool) (JoinOutcome, error) {

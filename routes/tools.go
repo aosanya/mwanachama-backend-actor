@@ -21,6 +21,7 @@ var carriers = map[string]string{
 	"level":                  "Level",
 	"group_type":             "GroupType",
 	"group_join_request":     "GroupJoinRequest",
+	"group_invitation":       "GroupInvitation",
 	"code_sequence":          "CodeSequence",
 }
 
@@ -43,6 +44,8 @@ var storeOwned = map[string]bool{
 	"GroupJoinRequest.appeal":          true,
 	"GroupJoinRequest.silent":          true,
 	"GroupJoinRequest.decided_by":      true,
+	"GroupInvitation.state":            true,
+	"GroupInvitation.invited_by":       true,
 }
 
 var editFields = map[string]dispatch.FieldDoc{

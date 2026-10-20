@@ -133,7 +133,7 @@ no request can join somebody else or decide in somebody else's name.
 
 ## Not here
 
-- Invitations to hidden groups (ACT14).
+- Invitations to hidden groups: ACT14, [invitations.md](invitations.md).
 - Withdrawing a request, and leaving a group beyond the existing
   `Deregister`.
 - The private chat a request carries (decision 63) is comm's (CM36).

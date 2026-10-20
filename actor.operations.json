@@ -26,7 +26,12 @@
     "ErrInvalidJoinRequest": 400,
     "ErrJoinMessageTooLong": 400,
     "ErrJoinRequestNotFound": 404,
-    "ErrJoinRequestDecided": 409
+    "ErrJoinRequestDecided": 409,
+    "ErrInvalidInvitation": 400,
+    "ErrInvitationNotFound": 404,
+    "ErrInvitationAnswered": 409,
+    "ErrInvitationLapsed": 409,
+    "ErrAlreadyInGroup": 409
   },
   "operations": {
     "create_actor": {
@@ -659,6 +664,164 @@
         }
       ],
       "tool": "actor_decline_join_request"
+    },
+    "invite_to_group": {
+      "method": "POST",
+      "path": "/groups/{group_id}/invitations",
+      "call": "InviteToGroup",
+      "action": "actor.invitation.create",
+      "status": 201,
+      "title": "Invite to group",
+      "description": "Invite one actor to join a group, which is how a hidden group is reached. Inviting the same actor again renews the one invitation. Accepting registers the actor; declining or letting it lapse registers nothing.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group to invite the actor to."
+        },
+        {
+          "from": "body",
+          "as": "actor_id",
+          "required": true,
+          "description": "The actor to invite."
+        },
+        {
+          "from": "caller",
+          "as": "invited_by",
+          "description": "Who issued the invitation, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "expires_at",
+          "description": "When the invitation lapses, as an RFC 3339 time in the future. Omit it for an invitation that never lapses."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_invite_to_group"
+    },
+    "list_group_invitations": {
+      "method": "GET",
+      "path": "/groups/{group_id}/invitations",
+      "call": "ListInvitationsForGroup",
+      "action": "actor.invitation.list_for_group",
+      "title": "List group invitations",
+      "description": "The invitations issued for one group, oldest first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose invitations to list."
+        },
+        {
+          "from": "query",
+          "as": "open_only",
+          "description": "true to list only the invitations still pending and not lapsed."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_group_invitations"
+    },
+    "list_my_invitations": {
+      "method": "GET",
+      "path": "/invitations/mine",
+      "call": "ListInvitationsForActor",
+      "action": "actor.invitation.list_mine",
+      "title": "List my invitations",
+      "description": "Every invitation the calling actor has received, in any state and lapsed or not, oldest first.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_my_invitations"
+    },
+    "get_invitation": {
+      "method": "GET",
+      "path": "/invitations/{invitation_id}",
+      "call": "GetInvitation",
+      "action": "actor.invitation.read",
+      "title": "Get invitation",
+      "description": "Fetch one invitation by id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "invitation_id",
+          "description": "The invitation to fetch."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_invitation"
+    },
+    "accept_invitation": {
+      "method": "POST",
+      "path": "/invitations/{invitation_id}/accept",
+      "call": "AcceptInvitation",
+      "action": "actor.invitation.accept",
+      "title": "Accept invitation",
+      "description": "Accept a pending invitation as the invited actor, which registers the actor at the group in the same write. A lapsed invitation cannot be accepted.",
+      "args": [
+        {
+          "from": "path",
+          "as": "invitation_id",
+          "description": "The pending invitation to accept."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The invited actor, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_accept_invitation"
+    },
+    "decline_invitation": {
+      "method": "POST",
+      "path": "/invitations/{invitation_id}/decline",
+      "call": "DeclineInvitation",
+      "action": "actor.invitation.decline",
+      "title": "Decline invitation",
+      "description": "Decline a pending invitation as the invited actor. Nothing is registered, and the group's leaders may invite again.",
+      "args": [
+        {
+          "from": "path",
+          "as": "invitation_id",
+          "description": "The pending invitation to decline."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The invited actor, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_decline_invitation"
     },
     "create_role_kind": {
       "method": "POST",
