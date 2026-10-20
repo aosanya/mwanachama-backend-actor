@@ -99,3 +99,22 @@ operations (56 → 62), issuer and answerer bound from the caller.
 clean; only new `UserManager` methods, so wakala-api builds against it. For
 WK99: the six actions need gating, and who counts as a leader is still the
 owner's question.
+
+## ACT15 — a role kind can lead its group — 2026-10-20
+
+Owner, member app decision 71. efb1d5d gives `role_kind` a declared
+`leads_group` (off by default; `Provision` adds the column to an existing
+table, so every existing kind reads as not leading), set on `CreateRoleKind`
+or later through `SetRoleKindLeadsGroup` (`PUT /role-kinds/{kind_id}/leads-group`,
+`actor.role_kind.set_leads_group`). An actor leads a group while holding an
+active seat of a leading kind in that group, and only there. New
+`IsGroupLeader` for a host's own gate and a declared `ListLedGroups`
+(`GET /groups/led`, `actor.group.list_led`, caller-bound). `ApproveJoinRequest`,
+`DeclineJoinRequest` and `InviteToGroup` refuse a non-leader with
+`ErrNotGroupLeader` (403) after the missing-row 404; a refused decision writes
+nothing, and a refused invite never reveals whether the invited actor exists.
+No operator bypass (WK112's note: refuse anyone else). `group-leaders.md`.
+`go build`, `go vet`, `go test ./...` green, gofmt clean. wakala-api 93cd95e
+seats the owner as Chair in its two decision tests and has `resident-groups`
+check the owner's refusal; admitting leaders at its gate is WK112.
+
