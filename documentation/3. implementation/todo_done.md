@@ -132,3 +132,18 @@ ACT16 with no date still never lapse (no backfill). `invitations.md` gains
 reads `INVITATION_LIFETIME` (`14d` or a Go duration; unset is 14 days; invalid
 stops the boot) and hands it to every agency's directory; self-test
 `invitation-lifetime` 12/12.
+
+## ACT17 — a member reads their own groups — 2026-10-20
+
+Owner, member app decision 99. Landed as 47ab4c3: `list_my_groups`
+(`GET /groups/mine`, action `actor.group.list_mine`, MCP tool
+`actor_list_my_groups`) over `ListMyGroups(ctx, actorID)`. The actor comes
+from the session only; it returns every group the caller is registered in,
+name included, oldest registration first, covering open joins, approved
+requests, accepted invitations and operator registrations; pending requests
+and deleted groups are left out, hidden groups stay. `list_groups_for_actor`
+is unchanged. Design page: `documentation/2. design/my-groups.md`. Verified:
+`go build ./... && go vet ./... && go test ./...` ok (root, models, routes),
+`gofmt -l` clean; wakala-api builds and tests against it with only its three
+board-pinned reds (WK65, WK80, WK84). Residents are admitted by wakala-api WK120.
+
