@@ -50,7 +50,7 @@ func (k RoleKind) Retired() bool { return k.RetiredAt != "" }
 type EndReason string
 
 const (
-	EndedByRevocation EndReason = "revoked"
+	EndedByRevocation  EndReason = "revoked"
 	EndedByResignation EndReason = "resigned"
 	EndedByEviction    EndReason = "evicted"
 	EndedByDeparture   EndReason = "deregistered"
