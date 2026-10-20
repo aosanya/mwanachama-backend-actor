@@ -118,3 +118,17 @@ No operator bypass (WK112's note: refuse anyone else). `group-leaders.md`.
 seats the owner as Chair in its two decision tests and has `resident-groups`
 check the owner's refusal; admitting leaders at its gate is WK112.
 
+## ACT16 — an invitation's lifetime is a system setting — 2026-10-20
+
+Owner, member app decision 81. 4123c8c gives `NewUserManager` options
+(`NewUserManager(db, s, opts ...Option)`, existing callers unchanged):
+`WithInvitationLifetime(d)`, `DefaultInvitationLifetime` 14 days, a
+non-positive lifetime refused at construction. `InviteToGroup` without
+`expires_at` stores the issue time plus the lifetime; an issuer's own date is
+kept, and a renewal without a date restarts it. Invitations issued before
+ACT16 with no date still never lapse (no backfill). `invitations.md` gains
+"How long an invitation lasts (ACT16)"; `invitation_lifetime_test.go`.
+`go build`, `go vet`, `go test ./...` green, gofmt clean. wakala-api b7515fe
+reads `INVITATION_LIFETIME` (`14d` or a Go duration; unset is 14 days; invalid
+stops the boot) and hands it to every agency's directory; self-test
+`invitation-lifetime` 12/12.
