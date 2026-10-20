@@ -85,6 +85,8 @@ type UserManager interface {
 	ListJoinRequestsForActor(ctx context.Context, actorID string) ([]GroupJoinRequest, error)
 	ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error)
 	DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool) (GroupJoinRequest, error)
+	IsGroupLeader(ctx context.Context, groupID, actorID string) (bool, error)
+	ListLedGroups(ctx context.Context, actorID string) ([]Group, error)
 
 	InviteToGroup(ctx context.Context, groupID, actorID, invitedBy, expiresAt string) (GroupInvitation, error)
 	GetInvitation(ctx context.Context, id string) (GroupInvitation, error)
@@ -98,6 +100,7 @@ type UserManager interface {
 	GetRoleKind(ctx context.Context, id string) (RoleKind, error)
 	RetireRoleKind(ctx context.Context, kindID, actorID string) (RoleKind, error)
 	UnretireRoleKind(ctx context.Context, kindID string) (RoleKind, error)
+	SetRoleKindLeadsGroup(ctx context.Context, kindID string, leads bool) (RoleKind, error)
 
 	GrantRole(ctx context.Context, a ActorRoleAssignment) (ActorRoleAssignment, error)
 	GetRoleAssignment(ctx context.Context, id string) (ActorRoleAssignment, error)

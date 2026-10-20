@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 62 {
-		t.Errorf("the declared table has %d routes, want 62", len(table))
+	if len(table) != 64 {
+		t.Errorf("the declared table has %d routes, want 64", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 62 {
-		t.Errorf("the declared table publishes %d tools, want 62", len(tools))
+	if len(tools) != 64 {
+		t.Errorf("the declared table publishes %d tools, want 64", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {
@@ -314,6 +314,7 @@ func TestJoiningOverTheWireTakesTheActorFromTheCaller(t *testing.T) {
 		t.Fatalf("join = %v, want a request from the caller", body)
 	}
 
+	seatLeader(t, mgr, group.ID, "leader-1")
 	caller = "leader-1"
 	status, body = do(t, srv, http.MethodPost, "/join-requests/"+request["id"].(string)+"/decline", map[string]any{
 		"silent": true,
@@ -347,6 +348,7 @@ func TestAnInvitationOverTheWireTakesIssuerAndAnswererFromTheCaller(t *testing.T
 	if _, err := mgr.SetGroupHidden(ctx, group.ID, true); err != nil {
 		t.Fatalf("SetGroupHidden: %v", err)
 	}
+	seatLeader(t, mgr, group.ID, "leader-1")
 	caller := "leader-1"
 	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
 		Caller:          func(context.Context) string { return caller },
@@ -376,8 +378,81 @@ func TestAnInvitationOverTheWireTakesIssuerAndAnswererFromTheCaller(t *testing.T
 	if status != http.StatusConflict {
 		t.Errorf("declining an accepted invitation = %d, want 409", status)
 	}
+	caller = "leader-1"
 	status, body = do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": invited.ID})
 	if status != http.StatusConflict {
 		t.Errorf("inviting a registered actor = %d %v, want 409", status, body)
+	}
+}
+
+func seatLeader(t *testing.T, mgr mwanachamaactor.UserManager, groupID, actorID string) {
+	t.Helper()
+	ctx := context.Background()
+	kind, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Chair", LeadsGroup: true})
+	if err != nil {
+		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: actorID, GroupID: groupID, KindID: kind.ID}); err != nil {
+		t.Fatalf("GrantRole: %v", err)
+	}
+}
+
+func TestOverTheWireOnlyALeaderDecidesAndTheLeaderReadsWhatTheyLead(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	asker, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 4"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	kind, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Secretary"})
+	if err != nil {
+		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "secretary", GroupID: group.ID, KindID: kind.ID}); err != nil {
+		t.Fatalf("GrantRole: %v", err)
+	}
+	caller := asker.ID
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller:          func(context.Context) string { return caller },
+		CheckReferences: true,
+	}))
+	_, body := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/join", map[string]any{})
+	request, _ := body["request"].(map[string]any)
+	requestID, _ := request["id"].(string)
+
+	caller = "secretary"
+	status, body := do(t, srv, http.MethodPost, "/join-requests/"+requestID+"/approve", nil)
+	if status != http.StatusForbidden {
+		t.Fatalf("a non-leader approving = %d %v, want 403", status, body)
+	}
+	status, body = do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": asker.ID})
+	if status != http.StatusForbidden {
+		t.Fatalf("a non-leader inviting = %d %v, want 403", status, body)
+	}
+
+	status, body = do(t, srv, http.MethodPut, "/role-kinds/"+kind.ID+"/leads-group", map[string]any{"leads_group": true})
+	if status != http.StatusOK || body["leads_group"] != true {
+		t.Fatalf("marking the kind = %d %v, want it leading", status, body)
+	}
+	status, body = do(t, srv, http.MethodPost, "/join-requests/"+requestID+"/approve", nil)
+	if status != http.StatusOK || body["decided_by"] != "secretary" {
+		t.Fatalf("the leader approving = %d %v, want approved by the caller", status, body)
+	}
+
+	resp, err := http.Get(srv.URL + "/groups/led?actor_id=" + asker.ID)
+	if err != nil {
+		t.Fatalf("GET /groups/led: %v", err)
+	}
+	defer resp.Body.Close()
+	var led []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&led); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK || len(led) != 1 || led[0]["id"] != group.ID {
+		t.Fatalf("led = %d %v, want only %s for the caller, whatever the query names", resp.StatusCode, led, group.ID)
 	}
 }

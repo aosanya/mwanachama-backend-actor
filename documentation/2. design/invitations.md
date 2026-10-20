@@ -28,12 +28,13 @@ A new role, `group_invitation`:
    `expires_at` that is not an RFC 3339 time, or is not in the future; a
    valid one is stored in UTC in the module's fixed-width `TimeLayout`, so
    it compares as text against `NowRFC3339()`.
-2. A missing or deleted group is `ErrGroupNotFound`, a missing actor
-   `ErrActorNotFound`. The host ensures the actor first (WK100's
-   `EnsureActor`).
-3. An actor already registered at the group is `ErrAlreadyInGroup` (409);
+2. A missing or deleted group is `ErrGroupNotFound`. An issuer who does not
+   lead the group is then `ErrNotGroupLeader` (403, ACT15).
+3. A missing actor is `ErrActorNotFound`. The host ensures the actor first
+   (WK100's `EnsureActor`).
+4. An actor already registered at the group is `ErrAlreadyInGroup` (409);
    there is nothing to invite them to.
-4. A first invitation inserts it pending. Inviting the same actor again, in
+5. A first invitation inserts it pending. Inviting the same actor again, in
    any state, updates the one row back to pending with the new issuer,
    issue time and expiry and clears `answered_at`. That is how a lapsed or
    declined invitation is renewed.
@@ -73,13 +74,14 @@ behalf, supplies `expires_at`, and leaving it out makes an invitation that
 never lapses. A product default belongs to the host or the member app, and is
 for the owner to set.
 
-### Who may invite is the host's to check
+### Only the group's leaders invite
 
-Decision 56 says a group's leaders issue invitations, and this module has role
-kinds and seats per group but no definition of which kinds make a leader (the
-same open question ACT13 left for deciding join requests). `InviteToGroup`
-therefore records the issuer from the caller and checks nothing about it; the
-mount gates `actor.invitation.create` and `actor.invitation.list_for_group`.
+Decision 56 says a group's leaders issue invitations. `InviteToGroup` records
+the issuer from the caller and, since ACT15, refuses one who does not lead the
+group with `ErrNotGroupLeader` (403), checked after the group is found and
+before the invited actor is looked up. What makes a leader is in
+[group-leaders.md](group-leaders.md). The mount still gates
+`actor.invitation.create` and `actor.invitation.list_for_group`.
 
 ### Reads
 

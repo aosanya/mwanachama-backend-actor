@@ -127,6 +127,8 @@ func TestARequestToAConfirmedGroupGrantsNothingUntilApproved(t *testing.T) {
 		t.Fatalf("pending = %v, %v; want exactly one", pending, err)
 	}
 
+	seatLeader(t, mgr, g.ID, "leader-1")
+	seatLeader(t, mgr, g.ID, "leader-2")
 	approved, err := mgr.ApproveJoinRequest(ctx, req.ID, "leader-1")
 	if err != nil {
 		t.Fatalf("ApproveJoinRequest: %v", err)
@@ -154,6 +156,7 @@ func TestADeclinedActorMayAskAgainAsAnAppeal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("JoinGroup: %v", err)
 	}
+	seatLeader(t, mgr, g.ID, "leader-1")
 	declined, err := mgr.DeclineJoinRequest(ctx, first.Request.ID, "leader-1", true)
 	if err != nil {
 		t.Fatalf("DeclineJoinRequest: %v", err)

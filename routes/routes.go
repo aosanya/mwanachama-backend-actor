@@ -54,6 +54,7 @@ var sentinels = map[string]error{
 	"ErrInvitationAnswered":     mwanachamaactor.ErrInvitationAnswered,
 	"ErrInvitationLapsed":       mwanachamaactor.ErrInvitationLapsed,
 	"ErrAlreadyInGroup":         mwanachamaactor.ErrAlreadyInGroup,
+	"ErrNotGroupLeader":         mwanachamaactor.ErrNotGroupLeader,
 }
 
 type Mount struct {

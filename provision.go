@@ -401,7 +401,8 @@ func declaresColumn(o spec.Object, column string) bool {
 }
 
 var columnsDeclaredSince = map[string][]string{
-	roleGroup: {"join_mode", "hidden"},
+	roleGroup:    {"join_mode", "hidden"},
+	roleRoleKind: {"leads_group"},
 }
 
 func columnsDeclaredSinceMissing(db *gorm.DB, s *spec.Spec) (bool, error) {

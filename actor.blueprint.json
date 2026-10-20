@@ -263,6 +263,11 @@
           "description": "True when the seat stands in for another group rather than governing its own."
         },
         {
+          "name": "leads_group",
+          "type": "bool",
+          "description": "True when a seat of this kind makes its holder one of the group's leaders, who decide its join requests and invite to it. Set by the agency; off by default."
+        },
+        {
           "name": "level_id",
           "type": "string",
           "description": "The level this kind may be granted at. Empty means any level."

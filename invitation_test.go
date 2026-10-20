@@ -16,6 +16,8 @@ func seedHidden(t *testing.T, mgr mwanachamaactor.UserManager) (mwanachamaactor.
 	if _, err := mgr.SetGroupHidden(context.Background(), g.ID, true); err != nil {
 		t.Fatalf("SetGroupHidden: %v", err)
 	}
+	seatLeader(t, mgr, g.ID, "leader-1")
+	seatLeader(t, mgr, g.ID, "leader-2")
 	return g, a
 }
 
@@ -186,6 +188,7 @@ func TestAcceptingSettlesAPendingJoinRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("JoinGroup: %v", err)
 	}
+	seatLeader(t, mgr, g.ID, "leader-1")
 	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)

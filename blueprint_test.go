@@ -139,7 +139,7 @@ func TestEveryColumnTheRowStructsHeldIsDeclared(t *testing.T) {
 		roleActor:                {"id", "code", "display_name", "is_agentic", "attributes", "created_at", "last_updated", "deleted"},
 		roleGroup:                {"id", "code", "hierarchy_id", "level_id", "parent_id", "name", "discoverable", "anchor_level_override_id", "node_type", "attributes", "created_at", "last_updated", "deleted"},
 		roleActorGroupAssignment: {"actor_id", "group_id", "created_at", "last_updated", "deleted", "attributes"},
-		roleRoleKind:             {"id", "code", "name", "capabilities", "description", "is_delegate", "level_id", "retired_at", "retired_by"},
+		roleRoleKind:             {"id", "code", "name", "capabilities", "description", "is_delegate", "leads_group", "level_id", "retired_at", "retired_by"},
 		roleActorRoleAssignment:  {"id", "actor_id", "group_id", "kind_id", "active", "granted_at", "granted_by", "ended_at", "ended_reason"},
 		roleHierarchy:            {"id", "code", "name"},
 		roleLevel:                {"id", "code", "hierarchy_id", "name", "depth", "is_default_anchor"},

@@ -95,12 +95,12 @@ transaction. An empty `decidedBy` is `ErrInvalidJoinRequest`.
 host raises comm's decline event (CM33) for a decline whose `silent` is
 false, and raises nothing for one that is true.
 
-**Who may decide is the host's to check.** Decision 57 says a group's
-leaders decide, and this module has role kinds and seats per group but no
-definition of which kinds make a leader. The deciding methods therefore take
-the decider as an argument (bound from the caller on the route table) and
-check nothing about it; the mount gates `actor.join_request.approve` and
-`actor.join_request.decline`.
+**Only the group's leaders decide** (decision 57). The deciding methods take
+the decider as an argument, bound from the caller on the route table, and
+since ACT15 refuse one who does not lead the request's group with
+`ErrNotGroupLeader` (403), writing nothing. What makes a leader is in
+[group-leaders.md](group-leaders.md). The mount still gates
+`actor.join_request.approve` and `actor.join_request.decline`.
 
 ### Reads
 

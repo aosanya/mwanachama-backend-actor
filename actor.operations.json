@@ -31,7 +31,8 @@
     "ErrInvitationNotFound": 404,
     "ErrInvitationAnswered": 409,
     "ErrInvitationLapsed": 409,
-    "ErrAlreadyInGroup": 409
+    "ErrAlreadyInGroup": 409,
+    "ErrNotGroupLeader": 403
   },
   "operations": {
     "create_actor": {
@@ -509,6 +510,27 @@
       ],
       "tool": "actor_list_joinable_groups"
     },
+    "list_led_groups": {
+      "method": "GET",
+      "path": "/groups/led",
+      "call": "ListLedGroups",
+      "action": "actor.group.list_led",
+      "title": "List groups I lead",
+      "description": "Every group the calling actor leads, through an active seat of a role kind that leads its group, oldest first.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_led_groups"
+    },
     "join_group": {
       "method": "POST",
       "path": "/groups/{group_id}/join",
@@ -927,6 +949,32 @@
         }
       ],
       "tool": "actor_unretire_role_kind"
+    },
+    "set_role_kind_leads_group": {
+      "method": "PUT",
+      "path": "/role-kinds/{kind_id}/leads-group",
+      "call": "SetRoleKindLeadsGroup",
+      "action": "actor.role_kind.set_leads_group",
+      "title": "Set whether a role kind leads its group",
+      "description": "Mark a role kind as leading its group, so every active seat of it makes the holder one of that group's leaders, or clear the mark.",
+      "args": [
+        {
+          "from": "path",
+          "as": "kind_id",
+          "description": "The kind to mark or clear."
+        },
+        {
+          "from": "body",
+          "as": "leads_group",
+          "description": "true to make the kind's holders leaders of their group, false to stop."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_role_kind_leads_group"
     },
     "grant_role": {
       "method": "POST",

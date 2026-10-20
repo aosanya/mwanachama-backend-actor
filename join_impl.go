@@ -277,6 +277,9 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 	}
 	now := NowRFC3339()
 	err = m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := m.mustLead(tx, req.GroupID, decidedBy); err != nil {
+			return err
+		}
 		taken := tx.Table(m.table(roleGroupJoinRequest)).
 			Where("id = ? AND state = ?", id, models.JoinRequestPending).
 			Updates(map[string]any{
@@ -298,8 +301,8 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 		_, err := m.register(ctx, tx, req.ActorID, req.GroupID, now)
 		return err
 	})
-	if errors.Is(err, ErrJoinRequestDecided) {
-		return GroupJoinRequest{}, ErrJoinRequestDecided
+	if errors.Is(err, ErrJoinRequestDecided) || errors.Is(err, ErrNotGroupLeader) {
+		return GroupJoinRequest{}, err
 	}
 	if err != nil {
 		return GroupJoinRequest{}, fmt.Errorf("decide join request: %w", err)

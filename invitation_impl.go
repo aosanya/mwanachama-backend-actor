@@ -28,6 +28,12 @@ func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, invit
 	if _, err := m.GetGroup(ctx, groupID); err != nil {
 		return GroupInvitation{}, err
 	}
+	if err := m.mustLead(m.db.WithContext(ctx), groupID, invitedBy); err != nil {
+		if errors.Is(err, ErrNotGroupLeader) {
+			return GroupInvitation{}, err
+		}
+		return GroupInvitation{}, fmt.Errorf("InviteToGroup: %w", err)
+	}
 	if _, err := m.GetActor(ctx, actorID); err != nil {
 		return GroupInvitation{}, err
 	}
