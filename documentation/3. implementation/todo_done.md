@@ -80,3 +80,22 @@ says which role kinds make a group leader, so the decide operations check
 nothing and the host must gate them; whether a quietly declined member keeps
 seeing Requested is a product call; `hidden` sits beside the older
 `discoverable`.
+
+## ACT14 — an invitation to a hidden group — 2026-10-20
+
+Owner, member app decision 56. 7d8ecab adds a declared `group_invitation`
+object, at most one per group and actor. `InviteToGroup` records the issuer
+from the caller and, like ACT13's decider, checks nothing about whether
+they lead the group. `AcceptInvitation` writes the registration in the same
+transaction and settles any pending join request; `DeclineInvitation` records
+the decline and registers nothing; only the invited actor may answer, anyone
+else gets 404. `expires_at` is optional and caller-supplied (no document
+names a duration, so none was invented); a lapsed invitation is refused
+(409) and left out of the open list. Inviting again renews the row; inviting
+an actor already in the group is `ErrAlreadyInGroup` (409). Six declared
+operations (56 → 62), issuer and answerer bound from the caller.
+`invitations.md`; `invitation_test.go` and a route test through a real mux.
+`go build`, `go vet`, `go test ./...` green in the main checkout, gofmt
+clean; only new `UserManager` methods, so wakala-api builds against it. For
+WK99: the six actions need gating, and who counts as a leader is still the
+owner's question.
