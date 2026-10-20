@@ -401,6 +401,7 @@ func declaresColumn(o spec.Object, column string) bool {
 }
 
 var columnsDeclaredSince = map[string][]string{
+	roleActor:            {"first_name", "last_name"},
 	roleGroup:            {"join_mode", "hidden"},
 	roleRoleKind:         {"leads_group"},
 	roleGroupJoinRequest: {"asked_at"},

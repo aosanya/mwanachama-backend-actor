@@ -25,6 +25,16 @@
           "description": "What to call this actor on screen. The only name the domain promises to show."
         },
         {
+          "name": "first_name",
+          "type": "string",
+          "description": "The actor's given name, as they gave it. Empty until they give one. Not what a screen shows by default: display_name is."
+        },
+        {
+          "name": "last_name",
+          "type": "string",
+          "description": "The actor's family name, as they gave it. Empty until they give one. Not what a screen shows by default: display_name is."
+        },
+        {
           "name": "is_agentic",
           "type": "bool",
           "description": "True when the actor is an agent rather than a person, so a caller can tell a human seat from a machine one."

@@ -165,6 +165,23 @@ func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName s
 	return current, nil
 }
 
+func (m *userManager) SetActorName(ctx context.Context, id, firstName, lastName string) (Actor, error) {
+	current, err := m.GetActor(ctx, id)
+	if err != nil {
+		return Actor{}, err
+	}
+	now := NowRFC3339()
+	err = m.store.Query(ctx, roleActor).Where("id = ?", id).
+		Updates(map[string]any{"first_name": firstName, "last_name": lastName, "last_updated": now}).Error
+	if err != nil {
+		return Actor{}, fmt.Errorf("SetActorName: %w", err)
+	}
+	current.FirstName = firstName
+	current.LastName = lastName
+	current.LastUpdated = now
+	return current, nil
+}
+
 func (m *userManager) ListActors(ctx context.Context) ([]Actor, error) {
 	q := m.store.Query(ctx, roleActor).Where("deleted = ?", false).Order("id")
 	out, err := specstore.List[Actor](m.store, q, roleActor)

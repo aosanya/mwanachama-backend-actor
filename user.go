@@ -51,6 +51,8 @@ type UserManager interface {
 
 	SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error)
 
+	SetActorName(ctx context.Context, id, firstName, lastName string) (Actor, error)
+
 	ListActors(ctx context.Context) ([]Actor, error)
 
 	CreateGroup(ctx context.Context, g Group) (Group, error)
