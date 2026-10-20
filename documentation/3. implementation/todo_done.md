@@ -51,3 +51,32 @@ gateway side to keep compiling.
 ## ACT2 — renaming a GroupType no longer defeats `DeleteGroupType`'s guard — 2026-09-21
 
 Took the rename-cascade option from the row: `EditGroupType` (`grouptype_impl.go`) now updates the type and, when the name changed, sets `node_type` to the new name on every Group in the type's hierarchy that carried the old one, in one transaction. Groups follow their type, so the guard, which reads the current name, keeps seeing them. **This changes documented behaviour**: `EditGroupType` used to write only Name/Singular/Plural/LevelID and leave `Group.NodeType` alone as free text; its doc comment now says a rename carries the hierarchy's Groups across. The cascade is scoped to the type's own hierarchy, but `DeleteGroupType`'s count still spans all hierarchies, as before. The alternatives (guard by id, or refuse a rename while worn) were not taken. The pin became `TestDeleteGroupType_StillRefusedAfterRename`: the Group's `NodeType` becomes the new name, the delete is refused, and the type still exists. Verified: `go build ./... && go vet ./... && go test ./...` and `go test -tags=integration ./...` green (the raced tests also under `-race`); `gofmt -l .` reports only `models/role.go`, untouched and already unformatted.
+
+## ACT13 — a group can be joined: join policy, hidden flag and join request — 2026-10-20
+
+The repo is already a declared domain (blueprint, operations, specstore; ACT5's
+shape landed, though this board and CLAUDE.md still describe `gormstore/`), so
+the change is declared. `Group` gains `join_mode` (`open`/`confirmed`,
+`CreateGroup` fills `confirmed` and refuses anything else) and `hidden`, set
+through the new `SetGroupJoinMode` and `SetGroupHidden`; `EditGroup` is
+unchanged. A new `group_join_request` role holds group, actor, state
+(`pending`/`approved`/`declined`), `appeal`, `message` (≤ 500), `silent`,
+`requested_at`, `decided_by`, `decided_at`, unique on (group, actor).
+`JoinGroup` registers at once on an open group, writes or updates the one
+request on a confirmed group, turns a declined request into an appeal keeping
+its first `requested_at`, and answers `ErrGroupNotFound` for a hidden group.
+`ApproveJoinRequest` writes the registration in the same transaction; a
+decided request is `ErrJoinRequestDecided` (409). `DeclineJoinRequest` stores
+`silent`, so the host raises CM33's decline event only when it is false.
+`ListJoinableGroups` returns groups not deleted, not hidden and not
+registered. Nine declared operations (47 → 56), actor and decider bound from
+the caller. `Provision` adds the two group columns to an existing table;
+existing groups read back `confirmed` and not hidden. `joining-groups.md`;
+`join_test.go` and a route test through a real mux. Commits e00a3ed (a gofmt
+fix to `models/role.go` already failing on main) and e454a48. `go test ./...`
+green in the main checkout, gofmt clean; wakala-api builds against it, red
+only on its deliberate `_OpenHole_` tests. For WK99 and the owner: nothing
+says which role kinds make a group leader, so the decide operations check
+nothing and the host must gate them; whether a quietly declined member keeps
+seeing Requested is a product call; `hidden` sits beside the older
+`discoverable`.
