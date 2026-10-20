@@ -48,3 +48,23 @@ Group  ──has_actor──────► Actor (inverse of registered_at)
 - **Gap 4 (route/test parity):** unaffected by this repo directly — the
   gateway's `member.Repository`/`chapter.Repository` interfaces are
   unchanged; parity is a gateway-side adapter concern.
+
+## An actor whose id the host already holds (WK100, 2026-10-20)
+
+`CreateActor` always mints the id, so a host whose people already carry an
+id elsewhere (wakala-api's sign-in user id) had no way to make that same id
+an actor, and `AssignGroup` refuses an actor id with no actor row.
+`EnsureActor(ctx, id)` is the one seam for that:
+
+- It returns the actor stored under `id` if there is one, and otherwise
+  creates it under exactly that id, with a minted `Code`, no display name
+  and no attributes. An empty id is `ErrInvalidActor`.
+- It is safe to call on every request and from two callers at once. Both
+  callers may miss on the read; the primary key lets only one insert land,
+  the other's `ErrDuplicateID` is answered by reading the winner back, so
+  neither caller fails and one row exists
+  (`TestEnsureActor_TwoConcurrentFirstCallsBothSucceedWithOneActor`, which
+  holds both callers past the read with a query barrier).
+- It runs no attribute validation, because it writes none.
+- It is not on the declared route table: a caller-chosen id is the host's
+  decision, never a request's.

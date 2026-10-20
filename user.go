@@ -37,6 +37,8 @@ func NowRFC3339() string { return models.NowRFC3339() }
 type UserManager interface {
 	CreateActor(ctx context.Context, a Actor) (Actor, error)
 
+	EnsureActor(ctx context.Context, id string) (Actor, error)
+
 	GetActor(ctx context.Context, id string) (Actor, error)
 
 	GetActors(ctx context.Context, ids []string) ([]Actor, error)

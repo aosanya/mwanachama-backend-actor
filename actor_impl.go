@@ -26,6 +26,36 @@ func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error)
 	}
 
 	act.ID = newSpecID()
+	return m.insertActor(ctx, act)
+}
+
+func (m *userManager) EnsureActor(ctx context.Context, id string) (Actor, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return Actor{}, fmt.Errorf("%w: an actor needs an id", ErrInvalidActor)
+	}
+	held, err := m.GetActor(ctx, id)
+	if err == nil {
+		return held, nil
+	}
+	if !errors.Is(err, ErrActorNotFound) {
+		return Actor{}, fmt.Errorf("EnsureActor: %w", err)
+	}
+	created, err := m.insertActor(ctx, Actor{ID: id})
+	if err == nil {
+		return created, nil
+	}
+	if !errors.Is(err, ErrDuplicateID) {
+		return Actor{}, fmt.Errorf("EnsureActor: %w", err)
+	}
+	held, err = m.GetActor(ctx, id)
+	if err != nil {
+		return Actor{}, fmt.Errorf("EnsureActor: %w", err)
+	}
+	return held, nil
+}
+
+func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error) {
 	act.CreatedAt = NowRFC3339()
 	act.LastUpdated = act.CreatedAt
 	act.Deleted = false
