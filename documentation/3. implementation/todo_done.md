@@ -255,6 +255,6 @@ gains `forms_week_split` (bool, default `true`), added to existing tables by
 MCP tools `actor_get_my_forms_week_split`, `actor_set_my_forms_week_split`)
 bind the actor from the caller and answer `{actor_id, forms_week_split}`; a
 caller with no actor record reads `true` and a set answers 404 (74 routes).
-`forms-week-split.md` added beside `group-priority.md`. Mounting it is WK150
+`forms-week-split.md` added beside `group-priority.md`. Mounting it is WK151
 (week split), which must grant both actions to residents. Verified: `go build`,
 `go vet`, `go test ./...` ok here; wakala-api builds and vets against it.
