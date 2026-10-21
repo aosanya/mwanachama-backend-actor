@@ -588,6 +588,11 @@
           "description": "When the request was approved or declined. Empty while it is pending."
         },
         {
+          "name": "decline_reason",
+          "type": "text",
+          "description": "Why a leader declined the request, at most 500 characters, for the actor to read. Optional, never set on a quiet decline, and cleared when the actor asks again."
+        },
+        {
           "name": "last_updated",
           "type": "timestamp",
           "description": "When the row was last written."

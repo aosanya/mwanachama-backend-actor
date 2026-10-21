@@ -114,11 +114,12 @@ func (m *userManager) settlePendingJoinRequest(tx *gorm.DB, groupID, actorID, no
 	return tx.Table(m.table(roleGroupJoinRequest)).
 		Where("group_id = ? AND actor_id = ? AND state = ?", groupID, actorID, models.JoinRequestPending).
 		Updates(map[string]any{
-			"state":        models.JoinRequestApproved,
-			"silent":       false,
-			"decided_by":   "",
-			"decided_at":   now,
-			"last_updated": now,
+			"state":          models.JoinRequestApproved,
+			"silent":         false,
+			"decided_by":     "",
+			"decided_at":     now,
+			"decline_reason": "",
+			"last_updated":   now,
 		}).Error
 }
 
@@ -150,15 +151,16 @@ func (m *userManager) askToJoin(ctx context.Context, groupID, actorID, message s
 		out = askedAgain(existing, message, now)
 		return tx.Table(m.table(roleGroupJoinRequest)).Where("id = ?", out.ID).
 			Updates(map[string]any{
-				"state":        out.State,
-				"appeal":       out.Appeal,
-				"message":      out.Message,
-				"silent":       out.Silent,
-				"requested_at": out.RequestedAt,
-				"asked_at":     out.AskedAt,
-				"decided_by":   out.DecidedBy,
-				"decided_at":   out.DecidedAt,
-				"last_updated": out.LastUpdated,
+				"state":          out.State,
+				"appeal":         out.Appeal,
+				"message":        out.Message,
+				"silent":         out.Silent,
+				"requested_at":   out.RequestedAt,
+				"asked_at":       out.AskedAt,
+				"decided_by":     out.DecidedBy,
+				"decided_at":     out.DecidedAt,
+				"decline_reason": out.DeclineReason,
+				"last_updated":   out.LastUpdated,
 			}).Error
 	})
 	if err != nil {
@@ -183,6 +185,7 @@ func askedAgain(r GroupJoinRequest, message, now string) GroupJoinRequest {
 	r.Silent = false
 	r.DecidedBy = ""
 	r.DecidedAt = ""
+	r.DeclineReason = ""
 	r.AskedAt = now
 	r.LastUpdated = now
 	return r
@@ -262,14 +265,21 @@ func (m *userManager) listJoinRequests(q *gorm.DB, op string) ([]GroupJoinReques
 }
 
 func (m *userManager) ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error) {
-	return m.decide(ctx, id, decidedBy, models.JoinRequestApproved, false)
+	return m.decide(ctx, id, decidedBy, models.JoinRequestApproved, false, "")
 }
 
-func (m *userManager) DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool) (GroupJoinRequest, error) {
-	return m.decide(ctx, id, decidedBy, models.JoinRequestDeclined, silent)
+func (m *userManager) DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool, reason string) (GroupJoinRequest, error) {
+	reason = strings.TrimSpace(reason)
+	if reason != "" && silent {
+		return GroupJoinRequest{}, ErrQuietDeclineReason
+	}
+	if utf8.RuneCountInString(reason) > models.MaxDeclineReasonLength {
+		return GroupJoinRequest{}, ErrDeclineReasonTooLong
+	}
+	return m.decide(ctx, id, decidedBy, models.JoinRequestDeclined, silent, reason)
 }
 
-func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, silent bool) (GroupJoinRequest, error) {
+func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, silent bool, reason string) (GroupJoinRequest, error) {
 	decidedBy = strings.TrimSpace(decidedBy)
 	if decidedBy == "" {
 		return GroupJoinRequest{}, fmt.Errorf("%w: a decision needs whoever made it", ErrInvalidJoinRequest)
@@ -286,11 +296,12 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 		taken := tx.Table(m.table(roleGroupJoinRequest)).
 			Where("id = ? AND state = ?", id, models.JoinRequestPending).
 			Updates(map[string]any{
-				"state":        state,
-				"silent":       silent,
-				"decided_by":   decidedBy,
-				"decided_at":   now,
-				"last_updated": now,
+				"state":          state,
+				"silent":         silent,
+				"decided_by":     decidedBy,
+				"decided_at":     now,
+				"decline_reason": reason,
+				"last_updated":   now,
 			})
 		if taken.Error != nil {
 			return taken.Error
@@ -314,6 +325,7 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 	req.Silent = silent
 	req.DecidedBy = decidedBy
 	req.DecidedAt = now
+	req.DeclineReason = reason
 	req.LastUpdated = now
 	return req, nil
 }

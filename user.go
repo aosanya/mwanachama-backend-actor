@@ -89,7 +89,7 @@ type UserManager interface {
 	ListJoinRequestsForGroup(ctx context.Context, groupID string, pendingOnly bool) ([]GroupJoinRequest, error)
 	ListJoinRequestsForActor(ctx context.Context, actorID string) ([]GroupJoinRequest, error)
 	ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error)
-	DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool) (GroupJoinRequest, error)
+	DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool, reason string) (GroupJoinRequest, error)
 	IsGroupLeader(ctx context.Context, groupID, actorID string) (bool, error)
 	ListLedGroups(ctx context.Context, actorID string) ([]Group, error)
 

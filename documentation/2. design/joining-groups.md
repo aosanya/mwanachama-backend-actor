@@ -57,6 +57,7 @@ A new role, `group_join_request`:
 | `requested_at` | The first ask. An appeal keeps it; asking again after an approval starts afresh. |
 | `asked_at` | The last ask: the first one, an appeal, or asking again while pending. A decision leaves it alone, so on a decided request it is still the time the actor last saw while it was pending. A host showing a quiet decline as still pending shows this time (member app decision 113). Added to an existing table by `Provision`, empty on rows written before it. |
 | `decided_by`, `decided_at` | Who decided and when. Empty while pending. |
+| `decline_reason` | Why a leader declined, for the actor to read (ACT19). Optional, at most 500 characters, trimmed. Never set on a quiet decline, and cleared when the actor asks again. Added to an existing table by `Provision`, empty on rows written before it. |
 | `last_updated` | The last write. |
 
 ### `JoinGroup(ctx, groupID, actorID, message)`
@@ -86,7 +87,7 @@ index lets one insert land, and the loser retries once onto the update path.
 ### Deciding
 
 `ApproveJoinRequest(ctx, id, decidedBy)` and
-`DeclineJoinRequest(ctx, id, decidedBy, silent)`. Each moves the request out
+`DeclineJoinRequest(ctx, id, decidedBy, silent, reason)`. Each moves the request out
 of `pending` with a conditional write, so a request decided twice, or
 decided by two leaders at once, is decided once and the other gets
 `ErrJoinRequestDecided` (409). Approval writes the registration in the same
@@ -95,6 +96,23 @@ transaction. An empty `decidedBy` is `ErrInvalidJoinRequest`.
 `silent` is stored and nothing more: this module raises no notification. The
 host raises comm's decline event (CM33) for a decline whose `silent` is
 false, and raises nothing for one that is true.
+
+### A reason on a decline (ACT19, 2026-10-21)
+
+A leader may say why they declined (member app decision 133). The decline
+route takes an optional body field, `reason`, which is trimmed and kept on
+the request as `decline_reason`, and every read of the request returns it,
+so the applicant sees it on their own reads (`GET /join-requests/mine` and
+`GET /join-requests/{request_id}`). The host shows it with the Inbox notice
+and on Join Group (member app MF66).
+
+- A reason longer than 500 characters is `ErrDeclineReasonTooLong` (400).
+- A reason with `silent: true` is `ErrQuietDeclineReason` (400), and nothing
+  is written: a quiet decline tells the actor nothing, so it has no reason to
+  carry. A blank reason is no reason, and a quiet decline accepts it.
+- Asking again clears it, whether the ask is an appeal after a decline or a
+  fresh ask after an approval; so does an open group's policy settling a
+  pending request.
 
 **Only the group's leaders decide** (decision 57). The deciding methods take
 the decider as an argument, bound from the caller on the route table, and

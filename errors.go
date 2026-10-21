@@ -56,6 +56,10 @@ var ErrJoinRequestNotFound = errors.New("mwanachamaactor: join request not found
 
 var ErrJoinRequestDecided = errors.New("mwanachamaactor: join request is not pending, so it cannot be decided")
 
+var ErrDeclineReasonTooLong = errors.New("mwanachamaactor: a decline's reason is at most 500 characters")
+
+var ErrQuietDeclineReason = errors.New("mwanachamaactor: a quiet decline tells the actor nothing, so it carries no reason")
+
 var ErrInvalidInvitation = errors.New("mwanachamaactor: invalid invitation")
 
 var ErrInvitationNotFound = errors.New("mwanachamaactor: invitation not found")

@@ -27,6 +27,8 @@
     "ErrJoinMessageTooLong": 400,
     "ErrJoinRequestNotFound": 404,
     "ErrJoinRequestDecided": 409,
+    "ErrDeclineReasonTooLong": 400,
+    "ErrQuietDeclineReason": 400,
     "ErrInvalidInvitation": 400,
     "ErrInvitationNotFound": 404,
     "ErrInvitationAnswered": 409,
@@ -720,6 +722,11 @@
           "from": "body",
           "as": "silent",
           "description": "true to decline quietly, so the actor is told nothing."
+        },
+        {
+          "from": "body",
+          "as": "reason",
+          "description": "Why the request is declined, at most 500 characters, kept on the request for the actor to read. Optional, and refused with silent, since a quiet decline tells the actor nothing."
         }
       ],
       "returns": [

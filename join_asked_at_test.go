@@ -27,7 +27,7 @@ func TestAskedAtIsTheLastAskAndADecisionLeavesItAlone(t *testing.T) {
 	}
 
 	time.Sleep(2 * time.Millisecond)
-	declined, err := mgr.DeclineJoinRequest(ctx, first.Request.ID, "leader-1", true)
+	declined, err := mgr.DeclineJoinRequest(ctx, first.Request.ID, "leader-1", true, "")
 	if err != nil {
 		t.Fatalf("DeclineJoinRequest: %v", err)
 	}

@@ -318,6 +318,14 @@ func TestJoiningOverTheWireTakesTheActorFromTheCaller(t *testing.T) {
 	caller = "leader-1"
 	status, body = do(t, srv, http.MethodPost, "/join-requests/"+request["id"].(string)+"/decline", map[string]any{
 		"silent": true,
+		"reason": "Not now.",
+	})
+	if status != http.StatusBadRequest {
+		t.Fatalf("a quiet decline with a reason = %d %v, want 400", status, body)
+	}
+
+	status, body = do(t, srv, http.MethodPost, "/join-requests/"+request["id"].(string)+"/decline", map[string]any{
+		"silent": true,
 	})
 	if status != http.StatusOK || body["state"] != "declined" || body["silent"] != true || body["decided_by"] != "leader-1" {
 		t.Fatalf("decline = %d %v, want a silent decline by the caller", status, body)
@@ -582,5 +590,40 @@ func TestOverTheWireALeaderInvitesByTheCodeTheInviteeReadsAsTheirOwn(t *testing.
 	status, _ = do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": invited.ID, "actor_code": code})
 	if status != http.StatusBadRequest {
 		t.Errorf("naming the invitee twice = %d, want 400", status)
+	}
+}
+
+func TestADeclineReasonCrossesTheWireToTheApplicant(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	asker, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 4"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	caller := asker.ID
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller: func(context.Context) string { return caller },
+	}))
+	_, body := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/join", map[string]any{"message": "Please."})
+	request, _ := body["request"].(map[string]any)
+	id, _ := request["id"].(string)
+
+	seatLeader(t, mgr, group.ID, "leader-1")
+	caller = "leader-1"
+	status, body := do(t, srv, http.MethodPost, "/join-requests/"+id+"/decline", map[string]any{
+		"reason": "This group is for residents of Ward 4.",
+	})
+	if status != http.StatusOK || body["decline_reason"] != "This group is for residents of Ward 4." {
+		t.Fatalf("decline = %d %v, want the reason returned", status, body)
+	}
+
+	caller = asker.ID
+	status, body = do(t, srv, http.MethodGet, "/join-requests/"+id, nil)
+	if status != http.StatusOK || body["decline_reason"] != "This group is for residents of Ward 4." {
+		t.Errorf("the applicant's read = %d %v, want the reason", status, body)
 	}
 }

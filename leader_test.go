@@ -129,7 +129,7 @@ func TestOnlyALeaderDecidesAJoinRequest(t *testing.T) {
 		if _, err := mgr.ApproveJoinRequest(ctx, out.Request.ID, decider); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
 			t.Errorf("%s approving err = %v, want ErrNotGroupLeader", decider, err)
 		}
-		if _, err := mgr.DeclineJoinRequest(ctx, out.Request.ID, decider, false); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
+		if _, err := mgr.DeclineJoinRequest(ctx, out.Request.ID, decider, false, ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
 			t.Errorf("%s declining err = %v, want ErrNotGroupLeader", decider, err)
 		}
 	}

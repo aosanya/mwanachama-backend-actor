@@ -157,7 +157,7 @@ func TestADeclinedActorMayAskAgainAsAnAppeal(t *testing.T) {
 		t.Fatalf("JoinGroup: %v", err)
 	}
 	seatLeader(t, mgr, g.ID, "leader-1")
-	declined, err := mgr.DeclineJoinRequest(ctx, first.Request.ID, "leader-1", true)
+	declined, err := mgr.DeclineJoinRequest(ctx, first.Request.ID, "leader-1", true, "")
 	if err != nil {
 		t.Fatalf("DeclineJoinRequest: %v", err)
 	}
@@ -204,7 +204,7 @@ func TestADecisionNamesWhoMadeIt(t *testing.T) {
 	if _, err := mgr.ApproveJoinRequest(ctx, out.Request.ID, " "); !errors.Is(err, mwanachamaactor.ErrInvalidJoinRequest) {
 		t.Errorf("approve with no decider err = %v, want ErrInvalidJoinRequest", err)
 	}
-	if _, err := mgr.DeclineJoinRequest(ctx, "missing", "leader-1", false); !errors.Is(err, mwanachamaactor.ErrJoinRequestNotFound) {
+	if _, err := mgr.DeclineJoinRequest(ctx, "missing", "leader-1", false, ""); !errors.Is(err, mwanachamaactor.ErrJoinRequestNotFound) {
 		t.Errorf("decline of a missing request err = %v, want ErrJoinRequestNotFound", err)
 	}
 }

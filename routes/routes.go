@@ -47,6 +47,8 @@ var sentinels = map[string]error{
 	"ErrInvalidJoinMode":        mwanachamaactor.ErrInvalidJoinMode,
 	"ErrInvalidJoinRequest":     mwanachamaactor.ErrInvalidJoinRequest,
 	"ErrJoinMessageTooLong":     mwanachamaactor.ErrJoinMessageTooLong,
+	"ErrDeclineReasonTooLong":   mwanachamaactor.ErrDeclineReasonTooLong,
+	"ErrQuietDeclineReason":     mwanachamaactor.ErrQuietDeclineReason,
 	"ErrJoinRequestNotFound":    mwanachamaactor.ErrJoinRequestNotFound,
 	"ErrJoinRequestDecided":     mwanachamaactor.ErrJoinRequestDecided,
 	"ErrInvalidInvitation":      mwanachamaactor.ErrInvalidInvitation,

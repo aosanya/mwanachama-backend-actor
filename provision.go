@@ -404,7 +404,7 @@ var columnsDeclaredSince = map[string][]string{
 	roleActor:            {"first_name", "last_name"},
 	roleGroup:            {"join_mode", "hidden"},
 	roleRoleKind:         {"leads_group"},
-	roleGroupJoinRequest: {"asked_at"},
+	roleGroupJoinRequest: {"asked_at", "decline_reason"},
 }
 
 func columnsDeclaredSinceMissing(db *gorm.DB, s *spec.Spec) (bool, error) {
