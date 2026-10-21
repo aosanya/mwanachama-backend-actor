@@ -244,3 +244,17 @@ value 400 (`ErrInvalidPriority`). `ListMyGroups` returns `[]MyGroup`, the
 group plus `priority` (72 routes). `group-priority.md` added. Mounting it is
 WK147. Verified: `go build`, `go vet`, `go test ./...` ok here; wakala-api
 builds and vets, `go test ./...` only `_OpenHole_`/`_OpenBug_` reds.
+
+## ACT24 — a member's own Forms week-split choice — 2026-10-21
+
+Owner, member app decision 196. e41bce5 (merged as e83379d): the `actor` object
+gains `forms_week_split` (bool, default `true`), added to existing tables by
+`Provision`, so older rows read back `true`; `CreateActor`/`EnsureActor` write
+`true`. `GET`/`PUT /actors/mine/forms-week-split`
+(`actor.actor.read_my_forms_week_split`, `actor.actor.set_my_forms_week_split`;
+MCP tools `actor_get_my_forms_week_split`, `actor_set_my_forms_week_split`)
+bind the actor from the caller and answer `{actor_id, forms_week_split}`; a
+caller with no actor record reads `true` and a set answers 404 (74 routes).
+`forms-week-split.md` added beside `group-priority.md`. Mounting it is WK150
+(week split), which must grant both actions to residents. Verified: `go build`,
+`go vet`, `go test ./...` ok here; wakala-api builds and vets against it.
