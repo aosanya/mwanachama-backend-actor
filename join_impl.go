@@ -313,6 +313,9 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 		if taken.RowsAffected == 0 {
 			return ErrJoinRequestDecided
 		}
+		if err := m.recordDecision(tx, req, state, silent, decidedBy, now, reason); err != nil {
+			return err
+		}
 		if state != models.JoinRequestApproved {
 			return nil
 		}

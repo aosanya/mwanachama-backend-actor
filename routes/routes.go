@@ -50,6 +50,7 @@ var sentinels = map[string]error{
 	"ErrDeclineReasonTooLong":   mwanachamaactor.ErrDeclineReasonTooLong,
 	"ErrQuietDeclineReason":     mwanachamaactor.ErrQuietDeclineReason,
 	"ErrJoinRequestNotFound":    mwanachamaactor.ErrJoinRequestNotFound,
+	"ErrJoinDecisionNotFound":   mwanachamaactor.ErrJoinDecisionNotFound,
 	"ErrJoinRequestDecided":     mwanachamaactor.ErrJoinRequestDecided,
 	"ErrInvalidInvitation":      mwanachamaactor.ErrInvalidInvitation,
 	"ErrInvitationNotFound":     mwanachamaactor.ErrInvitationNotFound,

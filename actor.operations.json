@@ -35,7 +35,8 @@
     "ErrInvitationLapsed": 409,
     "ErrAlreadyInGroup": 409,
     "ErrNotGroupLeader": 403,
-    "ErrInvalidCodeFormat": 400
+    "ErrInvalidCodeFormat": 400,
+    "ErrJoinDecisionNotFound": 404
   },
   "operations": {
     "create_actor": {
@@ -733,6 +734,32 @@
         }
       ],
       "tool": "actor_get_join_request"
+    },
+    "get_my_join_decision": {
+      "method": "GET",
+      "path": "/join-decisions/{decision_id}",
+      "call": "GetMyJoinDecision",
+      "action": "actor.join_decision.read_mine",
+      "title": "Get my join decision",
+      "description": "Fetch one decision made on the calling actor's own join request, by id. A quiet decision, another actor's decision and an unknown id all answer as missing.",
+      "args": [
+        {
+          "from": "path",
+          "as": "decision_id",
+          "description": "The decision to fetch."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_my_join_decision"
     },
     "approve_join_request": {
       "method": "POST",

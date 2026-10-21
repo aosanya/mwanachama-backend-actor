@@ -58,6 +58,12 @@
       "description": "A member's request to join a node of the structure that needs approval."
     },
     {
+      "role": "join_decision",
+      "name": "join_decision",
+      "table": "join_decisions",
+      "description": "One approval or decline of a member's request to join, kept as it was made."
+    },
+    {
       "role": "group_invitation",
       "name": "group_invitation",
       "table": "group_invitations",

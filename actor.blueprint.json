@@ -666,6 +666,82 @@
       ]
     },
     {
+      "role": "join_decision",
+      "description": "One approval or decline made on a join request, kept as its own record. A request decided, appealed and decided again holds one record per decision, and none is ever rewritten.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store. The applicant reads a told decision by id.",
+          "primary": true
+        },
+        {
+          "name": "request_id",
+          "type": "string",
+          "description": "The join request this decision was made on.",
+          "required": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group the request was made to.",
+          "required": true
+        },
+        {
+          "name": "actor_id",
+          "type": "string",
+          "description": "The actor who asked, and the only one who may read a told decision.",
+          "required": true
+        },
+        {
+          "name": "state",
+          "type": "enum",
+          "description": "What was decided.",
+          "values": [
+            "approved",
+            "declined"
+          ],
+          "required": true
+        },
+        {
+          "name": "silent",
+          "type": "bool",
+          "description": "True when the decision was made quietly. A quiet decision is never shown to the actor, who reads it as missing."
+        },
+        {
+          "name": "decided_by",
+          "type": "string",
+          "description": "The actor who made the decision."
+        },
+        {
+          "name": "decided_at",
+          "type": "timestamp",
+          "description": "When the decision was made."
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "description": "Why a leader declined, at most 500 characters, as written at the time. Empty on an approval and on a quiet decline."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "request",
+          "description": "Lists one request's decisions in order.",
+          "fields": [
+            "request_id"
+          ]
+        },
+        {
+          "name": "actor",
+          "description": "Finds one actor's decisions, the read the applicant makes.",
+          "fields": [
+            "actor_id"
+          ]
+        }
+      ]
+    },
+    {
       "role": "group_invitation",
       "description": "One invitation from a group's leaders to one actor to join that group, which is how a hidden group is reached. There is at most one per pair: inviting again updates it rather than adding another. Accepting registers the actor; declining or letting it lapse registers nothing.",
       "fields": [

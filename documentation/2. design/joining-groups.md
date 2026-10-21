@@ -210,3 +210,25 @@ no request can join somebody else or decide in somebody else's name.
 - Withdrawing a request, and leaving a group beyond the existing
   `Deregister`.
 - The private chat a request carries (decision 63) is comm's (CM36).
+
+## Every decision is kept (ACT22, member app decision 184)
+
+Each approve or decline on a join request writes a `join_decision` record in
+the same transaction as the request's own update: the request, group and
+actor, the state decided, whether it was quiet, who decided, when, and the
+reason as it was written. Records are only ever inserted. An appeal still
+returns the request to pending and clears its `decline_reason`, and the next
+decision still overwrites the request's decision fields, so the request
+carries its latest decision while the records carry all of them.
+
+`ListJoinDecisions(request_id)` lists a request's records oldest first, quiet
+ones included; it is a manager call for the host and has no address of its
+own. The applicant reads one record through `GET /join-decisions/{decision_id}`
+(`actor.join_decision.read_mine`, `GetMyJoinDecision`), with the actor bound
+from the caller. A quiet decision, another actor's decision and an unknown id
+all answer `ErrJoinDecisionNotFound` (404), so a quiet decline cannot be told
+apart from a record that does not exist.
+
+The approval an open group's policy makes by itself when a member with a
+pending request joins (`settlePendingJoinRequest`) writes no record: nobody
+decided it.

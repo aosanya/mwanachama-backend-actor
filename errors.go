@@ -54,6 +54,8 @@ var ErrJoinMessageTooLong = errors.New("mwanachamaactor: a join request's messag
 
 var ErrJoinRequestNotFound = errors.New("mwanachamaactor: join request not found")
 
+var ErrJoinDecisionNotFound = errors.New("mwanachamaactor: join decision not found")
+
 var ErrJoinRequestDecided = errors.New("mwanachamaactor: join request is not pending, so it cannot be decided")
 
 var ErrDeclineReasonTooLong = errors.New("mwanachamaactor: a decline's reason is at most 500 characters")

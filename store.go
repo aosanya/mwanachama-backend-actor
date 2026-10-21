@@ -22,6 +22,7 @@ const (
 	roleLevel                = "level"
 	roleGroupType            = "group_type"
 	roleGroupJoinRequest     = "group_join_request"
+	roleJoinDecision         = "join_decision"
 	roleGroupInvitation      = "group_invitation"
 	roleCodeSequence         = "code_sequence"
 	roleCodeFormat           = "code_format"
@@ -38,6 +39,7 @@ func carriers() map[string]any {
 		roleLevel:                models.Level{},
 		roleGroupType:            models.GroupType{},
 		roleGroupJoinRequest:     models.GroupJoinRequest{},
+		roleJoinDecision:         models.JoinDecision{},
 		roleGroupInvitation:      models.GroupInvitation{},
 		roleCodeSequence:         models.CodeSequence{},
 		roleCodeFormat:           models.CodeFormat{},
