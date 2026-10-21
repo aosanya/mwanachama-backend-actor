@@ -194,3 +194,23 @@ code (ACT20)", hidden rule amended in `invitations.md`. Declared table 68
 routes and tools with ACT18. Verified: `go build`, `go vet`, `gofmt`,
 `go test ./...` ok; wakala-api builds and tests with only board-pinned reds.
 Mounting it is WK134.
+
+## ACT21 — random member and group codes — 2026-10-21
+
+Owner, member app decisions 179–181. 1917879 (merged as ee621e2): actors and
+groups gain `public_code`, `M-`/`G-` and N hyphen-joined groups of three from
+an alphabet with no look-alikes, drawn with crypto/rand at creation, unique per
+agency behind a partial unique index; a collision redraws with one more group
+(eight in a row is an error). N comes from a new `code_format` role (default 3,
+1–12 allowed, a bound the agent chose and documented in `public-codes.md`),
+read on every draw, through `GET`/`PUT /code-format`
+(`actor.code_format.read`/`.set`, MCP tools too; 70 routes). `Provision`
+backfills every actor and group, deleted rows included. Invite-by-code (ACT18)
+and find/join-by-code (ACT20) match `public_code` only; `AC-<n>`/`G-<n>` answer
+as unknown. `invitations.md`, `joining-groups.md` updated;
+`models/schema_generated_test.go` hand-edited for Group (developer's
+`structure.json` still needs `public_code`). wakala-api c8dcbbf moves the
+`resident-invitations` self-test onto the new code, 9bbeada one join-by-code
+test. Verified: `go build`, `go vet`, `go test ./...` ok here; wakala-api
+`go test ./...` only board-pinned reds, `make self-test` only the known
+failures. Mounting the setting and owner-gating it is WK143.
