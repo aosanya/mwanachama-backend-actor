@@ -258,3 +258,16 @@ caller with no actor record reads `true` and a set answers 404 (74 routes).
 `forms-week-split.md` added beside `group-priority.md`. Mounting it is WK151
 (week split), which must grant both actions to residents. Verified: `go build`,
 `go vet`, `go test ./...` ok here; wakala-api builds and vets against it.
+
+## ACT25 — removing a member from a group or every group, history kept — 2026-10-21
+
+262cf4d. A declared `group_removal` record (actor, group, removed by, removed
+at). `RemoveFromGroup` deletes the registration (so every group and
+caller-bound read answers as for a stranger), ends the actor's active roles
+there as an eviction and records the removal; `RemoveFromAllGroups` does it
+for every group; `ListRemovals` reads the history. The actor row is never
+touched, so past answers and messages keep their author; rejoining is an
+ordinary assignment. `removing-members.md`. Left for wakala-api WK158: the
+agency standing (instance membership) and declaring the operations' routes
+and actions. Verified: `go build`, `go vet`, `go test ./...` ok; wakala-api
+builds against it.
