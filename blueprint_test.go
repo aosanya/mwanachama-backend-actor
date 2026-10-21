@@ -19,7 +19,7 @@ func TestBlueprintParses(t *testing.T) {
 	}
 	want := []string{
 		"actor", "actor_group_assignment", "actor_role_assignment", "code_format", "code_sequence",
-		"group", "group_invitation", "group_join_request", "group_type", "hierarchy", "join_decision", "level", "role_kind",
+		"group", "group_invitation", "group_join_request", "group_removal", "group_type", "hierarchy", "join_decision", "level", "role_kind",
 	}
 	if got := b.Roles(); !reflect.DeepEqual(got, want) {
 		t.Errorf("roles = %v, want %v", got, want)

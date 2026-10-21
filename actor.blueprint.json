@@ -685,6 +685,50 @@
       ]
     },
     {
+      "role": "group_removal",
+      "description": "One actor taken out of one group by an operator, kept as its own record after the registration it ended is gone. The actor record stays, so what they wrote keeps its author.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "actor_id",
+          "type": "string",
+          "description": "The actor removed.",
+          "required": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group they were removed from.",
+          "required": true
+        },
+        {
+          "name": "removed_by",
+          "type": "string",
+          "description": "Who removed them, as the mount names its caller.",
+          "required": true
+        },
+        {
+          "name": "removed_at",
+          "type": "timestamp",
+          "description": "When they were removed."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "actor",
+          "description": "Lists one actor's removals, newest last.",
+          "fields": [
+            "actor_id"
+          ]
+        }
+      ]
+    },
+    {
       "role": "join_decision",
       "description": "One approval or decline made on a join request, kept as its own record. A request decided, appealed and decided again holds one record per decision, and none is ever rewritten.",
       "fields": [

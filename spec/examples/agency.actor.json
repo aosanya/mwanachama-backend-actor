@@ -58,6 +58,12 @@
       "description": "A member's request to join a node of the structure that needs approval."
     },
     {
+      "role": "group_removal",
+      "name": "group_removal",
+      "table": "group_removals",
+      "description": "One member taken out of one node of the structure, kept after the membership it ended."
+    },
+    {
       "role": "join_decision",
       "name": "join_decision",
       "table": "join_decisions",

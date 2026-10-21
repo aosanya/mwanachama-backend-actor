@@ -77,3 +77,7 @@ var ErrNotGroupLeader = errors.New("mwanachamaactor: only the group's leaders ma
 var ErrInvalidCodeFormat = errors.New("mwanachamaactor: invalid code format")
 
 var ErrInvalidPriority = errors.New("mwanachamaactor: priority must be very_high, high, normal, low or very_low")
+
+var ErrNotInGroup = errors.New("mwanachamaactor: the actor is not registered at this group")
+
+var ErrRemoverRequired = errors.New("mwanachamaactor: a removal names who removed the actor")

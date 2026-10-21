@@ -77,6 +77,9 @@ type UserManager interface {
 	AssignGroup(ctx context.Context, r ActorGroupAssignment) (ActorGroupAssignment, error)
 
 	Deregister(ctx context.Context, actorID, groupID string) (ActorGroupAssignment, bool, error)
+	RemoveFromGroup(ctx context.Context, actorID, groupID, removedBy string) (models.GroupRemoval, error)
+	RemoveFromAllGroups(ctx context.Context, actorID, removedBy string) ([]models.GroupRemoval, error)
+	ListRemovals(ctx context.Context, actorID string) ([]models.GroupRemoval, error)
 
 	ListGroupsForActor(ctx context.Context, actorID string) ([]ActorGroupAssignment, error)
 
