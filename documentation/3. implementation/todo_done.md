@@ -214,3 +214,19 @@ as unknown. `invitations.md`, `joining-groups.md` updated;
 test. Verified: `go build`, `go vet`, `go test ./...` ok here; wakala-api
 `go test ./...` only board-pinned reds, `make self-test` only the known
 failures. Mounting the setting and owner-gating it is WK143.
+
+## ACT22 — a join request keeps every decision — 2026-10-21
+
+Owner, member app decision 184. 61952b0 (merged as f9be67e): a new declared
+`join_decision` object (request, group, actor, state, silent, decided_by,
+decided_at, reason), indexed on request and actor. `decide()` inserts one
+through `recordDecision` in the same transaction as the request update, and
+never overwrites one; the request still carries its latest. The applicant
+reads their own told decisions through `GET /join-decisions/{decision_id}`
+(`actor.join_decision.read_mine`, MCP tool `actor_get_my_join_decision`, the
+actor bound from the caller); a quiet one, another actor's and an unknown id
+all answer the same 404 (`ErrJoinDecisionNotFound`). `ListJoinDecisions` is a
+manager method only (71 routes). An open group's auto-approval records
+nothing. `joining-groups.md` updated. Left for WK144: no decision id reaches
+the applicant over HTTP yet. Verified: `go build`, `go vet`, `go test ./...`
+ok here; wakala-api builds and vets, `go test ./...` only `_OpenHole_` reds.
