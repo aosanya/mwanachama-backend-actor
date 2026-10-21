@@ -63,6 +63,10 @@ func (m *userManager) ListJoinableGroups(ctx context.Context, actorID string) ([
 }
 
 func (m *userManager) JoinGroup(ctx context.Context, groupID, actorID, message string) (JoinOutcome, error) {
+	return m.join(ctx, groupID, actorID, message, false)
+}
+
+func (m *userManager) join(ctx context.Context, groupID, actorID, message string, reachedByCode bool) (JoinOutcome, error) {
 	groupID, actorID, message = strings.TrimSpace(groupID), strings.TrimSpace(actorID), strings.TrimSpace(message)
 	if groupID == "" || actorID == "" {
 		return JoinOutcome{}, fmt.Errorf("%w: a group and an actor are required", ErrInvalidJoinRequest)
@@ -74,7 +78,7 @@ func (m *userManager) JoinGroup(ctx context.Context, groupID, actorID, message s
 	if err != nil {
 		return JoinOutcome{}, err
 	}
-	if group.Hidden {
+	if group.Hidden && !reachedByCode {
 		return JoinOutcome{}, ErrGroupNotFound
 	}
 	if _, err := m.GetActor(ctx, actorID); err != nil {

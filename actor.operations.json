@@ -606,6 +606,65 @@
       ],
       "tool": "actor_join_group"
     },
+    "find_group_by_code": {
+      "method": "GET",
+      "path": "/groups/by-code",
+      "call": "FindGroupByCode",
+      "action": "actor.group.find_by_code",
+      "title": "Find group by code",
+      "description": "Find the group holding this G-<n> code, hidden ones included, with its join mode and the calling actor's state there: member, requested, declined or none. An unknown code answers as a missing group.",
+      "args": [
+        {
+          "from": "query",
+          "as": "code",
+          "required": true,
+          "description": "The group's code, such as G-12. Case and surrounding spaces are ignored."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_find_group_by_code"
+    },
+    "join_group_by_code": {
+      "method": "POST",
+      "path": "/groups/by-code/join",
+      "call": "JoinGroupByCode",
+      "action": "actor.group.join_by_code",
+      "title": "Join group by code",
+      "description": "Join the group holding this code as the calling actor, hidden ones included, following its join mode exactly as joining by id does. An unknown code answers as a missing group.",
+      "args": [
+        {
+          "from": "body",
+          "as": "code",
+          "required": true,
+          "description": "The group's code, such as G-12. Case and surrounding spaces are ignored."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor joining, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "message",
+          "description": "A note to whoever decides the request, at most 500 characters. Ignored by an open group."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_join_group_by_code"
+    },
     "list_join_requests_for_group": {
       "method": "GET",
       "path": "/groups/{group_id}/join-requests",

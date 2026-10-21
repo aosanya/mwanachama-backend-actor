@@ -24,6 +24,7 @@ type (
 	GroupType            = models.GroupType
 	GroupJoinRequest     = models.GroupJoinRequest
 	JoinOutcome          = models.JoinOutcome
+	GroupByCode          = models.GroupByCode
 	GroupInvitation      = models.GroupInvitation
 )
 
@@ -85,6 +86,8 @@ type UserManager interface {
 	SetGroupHidden(ctx context.Context, groupID string, hidden bool) (Group, error)
 	ListJoinableGroups(ctx context.Context, actorID string) ([]Group, error)
 	JoinGroup(ctx context.Context, groupID, actorID, message string) (JoinOutcome, error)
+	FindGroupByCode(ctx context.Context, code, actorID string) (GroupByCode, error)
+	JoinGroupByCode(ctx context.Context, code, actorID, message string) (JoinOutcome, error)
 	GetJoinRequest(ctx context.Context, id string) (GroupJoinRequest, error)
 	ListJoinRequestsForGroup(ctx context.Context, groupID string, pendingOnly bool) ([]GroupJoinRequest, error)
 	ListJoinRequestsForActor(ctx context.Context, actorID string) ([]GroupJoinRequest, error)

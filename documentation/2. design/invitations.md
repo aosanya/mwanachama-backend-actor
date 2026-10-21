@@ -1,9 +1,10 @@
 # Inviting to a group (ACT14, 2026-10-20)
 
 A hidden group (ACT13, [joining-groups.md](joining-groups.md)) is never listed
-as joinable and answers a join or a join request as a missing group, so the
-only way in is an invitation. Asked for by the owner as member app decision
-56; the leader's side is drawn in `mwanachama-frontend-member`'s
+as joinable and answers a join or a join request by its id as a missing
+group, so the ways in are an invitation and, since ACT20, its code
+([joining-groups.md](joining-groups.md#finding-a-group-by-its-code-act20-2026-10-21)).
+Asked for by the owner as member app decision 56 (amended by 137); the leader's side is drawn in `mwanachama-frontend-member`'s
 `mockups/join-group.html` (M04.3, Group settings → Invite someone).
 wakala-api WK99 is the consumer.
 

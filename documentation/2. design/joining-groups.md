@@ -13,7 +13,7 @@ wakala-api WK99 is the consumer.
 | Field | Values | Default | Meaning |
 |---|---|---|---|
 | `join_mode` | `open`, `confirmed` | `confirmed` | `open` registers a joining actor at once; `confirmed` holds a join request until it is decided. |
-| `hidden` | bool | `false` | A hidden group is reached only by invitation (ACT14): it is never listed as joinable, and a join or a request to it answers exactly as a missing group, `ErrGroupNotFound`. |
+| `hidden` | bool | `false` | A hidden group is reached by invitation (ACT14) or by its code (ACT20): it is never listed as joinable, and a join or a request to it by its id answers exactly as a missing group, `ErrGroupNotFound`. |
 
 The stored values are `open` and `confirmed`. The member app words them
 "Anyone can join" and "Approval needed"; that wording is the app's, never
@@ -124,7 +124,8 @@ since ACT15 refuse one who does not lead the request's group with
 ### Reads
 
 - `ListJoinableGroups(ctx, actorID)`: every group that is not deleted, not
-  hidden and has no registration for the actor, oldest first. A group the
+  hidden and has no registration for the actor, oldest first. Each carries
+  its `code`, which the member app shows under the group's name (ACT20). A group the
   actor has a pending request at stays in the list; the screen shows it as
   Requested by reading the actor's requests.
 - `ListJoinRequestsForActor(ctx, actorID)`: the actor's requests in every
@@ -132,6 +133,53 @@ since ACT15 refuse one who does not lead the request's group with
   member app shows for it is the host's choice.
 - `ListJoinRequestsForGroup(ctx, groupID, pendingOnly)` and
   `GetJoinRequest(ctx, id)`.
+
+## Finding a group by its code (ACT20, 2026-10-21)
+
+Every group carries a code, `G-<n>`, minted when it is created from the
+instance's own counter and never rewritten, so it is counted per agency
+(member app decision 136). Decision 137 lets a member type a group's code on
+Join Group to find it, hidden groups included, and amends decision 56: a
+hidden group is reached by an invitation or by its code. wakala-api WK134 is
+the consumer.
+
+### `FindGroupByCode(ctx, code, actorID)`
+
+Answers a `GroupByCode`: the `group` (hidden or not), its `join_mode`, and
+the calling actor's `state` there:
+
+| `state` | When | `request` |
+|---|---|---|
+| `member` | The actor is registered at the group. | absent |
+| `requested` | The actor's join request is pending. | the request |
+| `declined` | The actor's join request was declined, quietly or not. | the request, whose `silent` says which |
+| `none` | Anything else, including an approved request the actor has since left. | absent |
+
+A quiet decline reads as `declined` with the request carried, for the same
+reason `ListJoinRequestsForActor` returns it: what the member app shows for
+it is the host's choice (decision 113). An open invitation is not a state
+here; the invited actor reads it from their own invitations.
+
+The code is matched after trimming and upper-casing, so `g-12` finds `G-12`.
+An empty code, a code no group holds, a deleted group's code and a code from
+another agency all answer `ErrGroupNotFound`, the missing-group 404
+(decision 125). The last needs nothing of its own: each agency is its own
+instance with its own group table, so another agency's group is simply not
+there, and since codes are counted per agency, the same `G-<n>` typed in two
+agencies names two different groups.
+
+### `JoinGroupByCode(ctx, code, actorID, message)`
+
+Resolves the code exactly as above and then joins the group it found exactly
+as `JoinGroup` does, following its join mode: an open group registers at
+once, a confirmed one records or updates the one request (an appeal after a
+decline), and an actor already registered gets `member`. The one difference
+is that the group may be hidden. `JoinGroup` by id still answers a hidden
+group as missing, so a group's id never reaches it; its code does.
+
+Codes are short and sequential, so a hidden group is findable by anybody in
+its agency who tries codes in turn. That is the owner's decision 137, not an
+oversight: hidden keeps a group off the list, it does not make it secret.
 
 ## Route table
 
@@ -141,6 +189,8 @@ since ACT15 refuse one who does not lead the request's group with
 | PUT | `/groups/{group_id}/hidden` | `actor.group.set_hidden` | |
 | GET | `/groups/joinable` | `actor.group.list_joinable` | `actor_id` |
 | POST | `/groups/{group_id}/join` | `actor.group.join` | `actor_id` |
+| GET | `/groups/by-code?code=` | `actor.group.find_by_code` | `actor_id` |
+| POST | `/groups/by-code/join` | `actor.group.join_by_code` | `actor_id` |
 | GET | `/groups/{group_id}/join-requests` | `actor.join_request.list_for_group` | |
 | GET | `/join-requests/mine` | `actor.join_request.list_mine` | `actor_id` |
 | GET | `/join-requests/{request_id}` | `actor.join_request.read` | |

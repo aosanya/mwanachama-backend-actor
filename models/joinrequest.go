@@ -39,3 +39,17 @@ type JoinOutcome struct {
 	Request    *GroupJoinRequest     `json:"request,omitempty"`
 	Assignment *ActorGroupAssignment `json:"assignment,omitempty"`
 }
+
+const (
+	CallerIsMember  = "member"
+	CallerRequested = "requested"
+	CallerDeclined  = "declined"
+	CallerIsOutside = "none"
+)
+
+type GroupByCode struct {
+	Group    Group             `json:"group"`
+	JoinMode string            `json:"join_mode"`
+	State    string            `json:"state"`
+	Request  *GroupJoinRequest `json:"request,omitempty"`
+}
