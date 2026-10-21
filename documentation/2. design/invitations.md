@@ -22,16 +22,18 @@ A new role, `group_invitation`:
 | `answered_at` | When the actor accepted or declined. Empty while pending. |
 | `last_updated` | The last write. |
 
-### `InviteToGroup(ctx, groupID, actorID, invitedBy, expiresAt)`
+### `InviteToGroup(ctx, groupID, actorID, actorCode, invitedBy, expiresAt)`
 
-1. An empty group, actor or issuer is `ErrInvalidInvitation`. So is an
+1. An empty group or issuer is `ErrInvalidInvitation`, and so is an invitee
+   named by neither `actorID` nor `actorCode`, or by both (see
+   [Inviting by member code](#inviting-by-member-code-act18-2026-10-21)). So is an
    `expires_at` that is not an RFC 3339 time, or is not in the future; a
    valid one is stored in UTC in the module's fixed-width `TimeLayout`, so
    it compares as text against `NowRFC3339()`. An empty one becomes the
    issue time plus the manager's invitation lifetime (below).
 2. A missing or deleted group is `ErrGroupNotFound`. An issuer who does not
    lead the group is then `ErrNotGroupLeader` (403, ACT15).
-3. A missing actor is `ErrActorNotFound`. The host ensures the actor first
+3. A missing actor is `ErrActorNotFound`, whether named by id or by code. The host ensures the actor first
    (WK100's `EnsureActor`).
 4. An actor already registered at the group is `ErrAlreadyInGroup` (409);
    there is nothing to invite them to.
@@ -110,6 +112,36 @@ before the invited actor is looked up. What makes a leader is in
 [group-leaders.md](group-leaders.md). The mount still gates
 `actor.invitation.create` and `actor.invitation.list_for_group`.
 
+### Inviting by member code (ACT18, 2026-10-21)
+
+Member app decisions 132 and 136: a leader invites someone by their member
+code, and that code is the actor's existing `code`, `AC-<n>`, minted once per
+agency and never rewritten. A leader in the member app cannot see the
+agency's actor ids, but the invitee can read their own code out to them.
+
+- `invite_to_group` takes the invitee in the body as `actor_id` or as
+  `actor_code`, exactly one of them. Neither or both is
+  `ErrInvalidInvitation` (400).
+- A code is matched after trimming surrounding spaces and upper-casing, so
+  `" ac-12 "` finds `AC-12`. It is matched only among the agency's own
+  actors, since each agency's actors are their own table set, and a deleted
+  actor's code finds nobody.
+- A code naming nobody is `ErrActorNotFound`, the same refusal and the same
+  body as an unknown `actor_id`, so a code cannot be told apart from an id by
+  how it fails.
+- The leader check still runs before the invitee is looked up, so a
+  non-leader learns nothing about which codes exist.
+- Everything after the lookup is unchanged: the stored invitation carries the
+  resolved `actor_id`, and inviting by code renews the same one row an
+  invitation by id would.
+
+The invitee reads their own code through `get_my_actor`
+(`GET /actors/mine`, `actor.actor.read_mine`), which is `GetActor` with the
+actor bound from the caller. It answers the caller's whole actor record,
+`code` included, and a caller with no actor row yet answers
+`ErrActorNotFound` (404) rather than having one minted by a read; the host
+ensures the actor as it does elsewhere.
+
 ### Reads
 
 - `ListInvitationsForGroup(ctx, groupID, openOnly)`: a group's invitations,
@@ -124,6 +156,7 @@ before the invited actor is looked up. What makes a leader is in
 | Method | Path | Action | Bound from the session |
 |---|---|---|---|
 | POST | `/groups/{group_id}/invitations` | `actor.invitation.create` | `invited_by` |
+| GET | `/actors/mine` | `actor.actor.read_mine` | `actor_id` |
 | GET | `/groups/{group_id}/invitations` | `actor.invitation.list_for_group` | |
 | GET | `/invitations/mine` | `actor.invitation.list_mine` | `actor_id` |
 | GET | `/invitations/{invitation_id}` | `actor.invitation.read` | |

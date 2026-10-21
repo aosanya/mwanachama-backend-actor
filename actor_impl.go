@@ -128,6 +128,22 @@ func (m *userManager) GetActor(ctx context.Context, id string) (Actor, error) {
 	return out, nil
 }
 
+func (m *userManager) getActorByCode(ctx context.Context, code string) (Actor, error) {
+	var out Actor
+	q := m.store.Query(ctx, roleActor).Where("code = ?", normalizeCode(code)).Where("deleted = ?", false)
+	if err := m.store.Take(q, roleActor, &out, ErrActorNotFound); err != nil {
+		if errors.Is(err, ErrActorNotFound) {
+			return Actor{}, ErrActorNotFound
+		}
+		return Actor{}, fmt.Errorf("getActorByCode: %w", err)
+	}
+	return out, nil
+}
+
+func normalizeCode(code string) string {
+	return strings.ToUpper(strings.TrimSpace(code))
+}
+
 func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, error) {
 	out := []Actor{}
 	seen := map[string]bool{}

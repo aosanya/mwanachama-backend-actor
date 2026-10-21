@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 65 {
-		t.Errorf("the declared table has %d routes, want 65", len(table))
+	if len(table) != 66 {
+		t.Errorf("the declared table has %d routes, want 66", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 65 {
-		t.Errorf("the declared table publishes %d tools, want 65", len(tools))
+	if len(tools) != 66 {
+		t.Errorf("the declared table publishes %d tools, want 66", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {
@@ -531,5 +531,56 @@ func TestOverTheWireACallerReadsOnlyTheirOwnGroups(t *testing.T) {
 	status, body := do(t, srv, http.MethodGet, "/groups/"+mine.ID, nil)
 	if status != http.StatusOK || body["id"] != mine.ID {
 		t.Fatalf("GET /groups/{id} beside /groups/mine = %d %v, want the group", status, body)
+	}
+}
+
+func TestOverTheWireALeaderInvitesByTheCodeTheInviteeReadsAsTheirOwn(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	invited, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Amina"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Elders"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if _, err := mgr.SetGroupHidden(ctx, group.ID, true); err != nil {
+		t.Fatalf("SetGroupHidden: %v", err)
+	}
+	seatLeader(t, mgr, group.ID, "leader-1")
+	caller := invited.ID
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller:          func(context.Context) string { return caller },
+		CheckReferences: true,
+	}))
+
+	status, body := do(t, srv, http.MethodGet, "/actors/mine", nil)
+	if status != http.StatusOK || body["id"] != invited.ID || body["code"] != invited.Code {
+		t.Fatalf("my actor = %d %v, want %s carrying %s", status, body, invited.ID, invited.Code)
+	}
+	code := body["code"].(string)
+
+	caller = "nobody-yet"
+	status, _ = do(t, srv, http.MethodGet, "/actors/mine", nil)
+	if status != http.StatusNotFound {
+		t.Errorf("a caller with no actor reading their own = %d, want 404", status)
+	}
+
+	caller = "leader-1"
+	status, body = do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_code": code})
+	if status != http.StatusCreated || body["actor_id"] != invited.ID || body["invited_by"] != "leader-1" {
+		t.Fatalf("invite by code = %d %v, want an invitation for %s from the caller", status, body, invited.ID)
+	}
+
+	status, unknown := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_code": "AC-9999"})
+	statusByID, unknownByID := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": "missing"})
+	if status != http.StatusNotFound || statusByID != http.StatusNotFound || fmt.Sprint(unknown) != fmt.Sprint(unknownByID) {
+		t.Errorf("unknown code = %d %v, unknown id = %d %v, want the same 404", status, unknown, statusByID, unknownByID)
+	}
+
+	status, _ = do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": invited.ID, "actor_code": code})
+	if status != http.StatusBadRequest {
+		t.Errorf("naming the invitee twice = %d, want 400", status)
 	}
 }

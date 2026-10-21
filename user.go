@@ -93,7 +93,7 @@ type UserManager interface {
 	IsGroupLeader(ctx context.Context, groupID, actorID string) (bool, error)
 	ListLedGroups(ctx context.Context, actorID string) ([]Group, error)
 
-	InviteToGroup(ctx context.Context, groupID, actorID, invitedBy, expiresAt string) (GroupInvitation, error)
+	InviteToGroup(ctx context.Context, groupID, actorID, actorCode, invitedBy, expiresAt string) (GroupInvitation, error)
 	GetInvitation(ctx context.Context, id string) (GroupInvitation, error)
 	ListInvitationsForGroup(ctx context.Context, groupID string, openOnly bool) ([]GroupInvitation, error)
 	ListInvitationsForActor(ctx context.Context, actorID string) ([]GroupInvitation, error)

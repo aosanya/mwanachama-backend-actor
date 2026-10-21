@@ -150,10 +150,10 @@ func TestOnlyALeaderInvites(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	g, a := seedJoin(t, mgr, models.JoinConfirmed)
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "stranger", ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "stranger", ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
 		t.Fatalf("a non-leader inviting err = %v, want ErrNotGroupLeader", err)
 	}
-	if _, err := mgr.InviteToGroup(ctx, g.ID, "missing", "stranger", ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, "missing", "", "stranger", ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
 		t.Errorf("a non-leader inviting a missing actor err = %v, want ErrNotGroupLeader, so actors cannot be probed", err)
 	}
 	invitations, err := mgr.ListInvitationsForActor(ctx, a.ID)
@@ -161,7 +161,7 @@ func TestOnlyALeaderInvites(t *testing.T) {
 		t.Fatalf("invitations = %v, %v; want none written", invitations, err)
 	}
 	seatLeader(t, mgr, g.ID, "chair")
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "chair", ""); err != nil {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "chair", ""); err != nil {
 		t.Fatalf("the group's leader inviting: %v", err)
 	}
 }

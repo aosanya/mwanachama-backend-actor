@@ -78,6 +78,27 @@
       ],
       "tool": "actor_get_actor"
     },
+    "get_my_actor": {
+      "method": "GET",
+      "path": "/actors/mine",
+      "call": "GetActor",
+      "action": "actor.actor.read_mine",
+      "title": "Read my actor",
+      "description": "Read the calling actor's own record, which carries their member code (\"AC-<n>\") to read out or share so a leader can invite them by it. An actor with no record answers as a missing one.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_my_actor"
+    },
     "get_actors": {
       "method": "GET",
       "path": "/actors/batch",
@@ -725,8 +746,12 @@
         {
           "from": "body",
           "as": "actor_id",
-          "required": true,
-          "description": "The actor to invite."
+          "description": "The actor to invite, by id. Give this or actor_code, not both."
+        },
+        {
+          "from": "body",
+          "as": "actor_code",
+          "description": "The actor to invite, by their member code (\"AC-<n>\", case and surrounding spaces ignored), for a leader who cannot see actor ids. Give this or actor_id, not both. A code naming nobody is refused exactly as an unknown actor_id is."
         },
         {
           "from": "caller",

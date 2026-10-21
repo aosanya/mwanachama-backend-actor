@@ -15,10 +15,14 @@ import (
 	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, invitedBy, expiresAt string) (GroupInvitation, error) {
+func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, actorCode, invitedBy, expiresAt string) (GroupInvitation, error) {
 	groupID, actorID, invitedBy = strings.TrimSpace(groupID), strings.TrimSpace(actorID), strings.TrimSpace(invitedBy)
-	if groupID == "" || actorID == "" || invitedBy == "" {
+	actorCode = normalizeCode(actorCode)
+	if groupID == "" || invitedBy == "" {
 		return GroupInvitation{}, fmt.Errorf("%w: a group, an actor and whoever invites are required", ErrInvalidInvitation)
+	}
+	if (actorID == "") == (actorCode == "") {
+		return GroupInvitation{}, fmt.Errorf("%w: name the invitee by actor_id or by actor_code, exactly one of them", ErrInvalidInvitation)
 	}
 	issuedAt := time.Now().UTC()
 	now := issuedAt.Format(TimeLayout)
@@ -38,9 +42,11 @@ func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, invit
 		}
 		return GroupInvitation{}, fmt.Errorf("InviteToGroup: %w", err)
 	}
-	if _, err := m.GetActor(ctx, actorID); err != nil {
+	invitee, err := m.inviteeOf(ctx, actorID, actorCode)
+	if err != nil {
 		return GroupInvitation{}, err
 	}
+	actorID = invitee.ID
 	_, found, err := m.findAssignment(ctx, actorID, groupID)
 	if err != nil {
 		return GroupInvitation{}, fmt.Errorf("InviteToGroup: %w", err)
@@ -57,6 +63,13 @@ func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, invit
 		ExpiresAt:   expires,
 		LastUpdated: now,
 	}, true)
+}
+
+func (m *userManager) inviteeOf(ctx context.Context, actorID, actorCode string) (Actor, error) {
+	if actorCode != "" {
+		return m.getActorByCode(ctx, actorCode)
+	}
+	return m.GetActor(ctx, actorID)
 }
 
 func invitationExpiry(expiresAt, now string) (string, error) {

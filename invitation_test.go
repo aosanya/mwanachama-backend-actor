@@ -26,7 +26,7 @@ func TestAcceptingAnInvitationRegistersAtAHiddenGroup(t *testing.T) {
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
 
-	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", "")
+	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestDecliningAnInvitationRegistersNothing(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
-	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", "")
+	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestDecliningAnInvitationRegistersNothing(t *testing.T) {
 		t.Errorf("accepting a declined invitation err = %v, want ErrInvitationAnswered", err)
 	}
 
-	again, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-2", "")
+	again, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-2", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup again: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestALapsedInvitationCannotBeAnsweredAndWritesNothing(t *testing.T) {
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
 	expires := time.Now().Add(500 * time.Millisecond).UTC().Format(time.RFC3339Nano)
-	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", expires)
+	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", expires)
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -136,7 +136,7 @@ func TestOnlyTheInvitedActorMayAnswer(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
-	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", "")
+	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -156,26 +156,26 @@ func TestAnInvitationIsRefusedWhereItCannotMean(t *testing.T) {
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
 
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", ""); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "", ""); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
 		t.Errorf("no issuer err = %v, want ErrInvalidInvitation", err)
 	}
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", "next week"); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", "next week"); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
 		t.Errorf("an unreadable expiry err = %v, want ErrInvalidInvitation", err)
 	}
 	past := time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", past); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", past); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
 		t.Errorf("an expiry in the past err = %v, want ErrInvalidInvitation", err)
 	}
-	if _, err := mgr.InviteToGroup(ctx, "missing", a.ID, "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrGroupNotFound) {
+	if _, err := mgr.InviteToGroup(ctx, "missing", a.ID, "", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrGroupNotFound) {
 		t.Errorf("a missing group err = %v, want ErrGroupNotFound", err)
 	}
-	if _, err := mgr.InviteToGroup(ctx, g.ID, "missing", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrActorNotFound) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, "missing", "", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrActorNotFound) {
 		t.Errorf("a missing actor err = %v, want ErrActorNotFound", err)
 	}
 	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID}); err != nil {
 		t.Fatalf("AssignGroup: %v", err)
 	}
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrAlreadyInGroup) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrAlreadyInGroup) {
 		t.Errorf("inviting a registered actor err = %v, want ErrAlreadyInGroup", err)
 	}
 }
@@ -189,7 +189,7 @@ func TestAcceptingSettlesAPendingJoinRequest(t *testing.T) {
 		t.Fatalf("JoinGroup: %v", err)
 	}
 	seatLeader(t, mgr, g.ID, "leader-1")
-	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", "")
+	inv, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}

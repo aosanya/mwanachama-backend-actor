@@ -44,7 +44,7 @@ func TestAnInvitationWithNoDateLapsesAfterFourteenDaysByDefault(t *testing.T) {
 	mgr := newTestManager(t)
 	g, a := seedHidden(t, mgr)
 
-	inv, err := mgr.InviteToGroup(context.Background(), g.ID, a.ID, "leader-1", "")
+	inv, err := mgr.InviteToGroup(context.Background(), g.ID, a.ID, "", "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestTheHostSetsTheInvitationLifetime(t *testing.T) {
 	}
 	g, a := seedHidden(t, mgr)
 
-	inv, err := mgr.InviteToGroup(context.Background(), g.ID, a.ID, "leader-1", "")
+	inv, err := mgr.InviteToGroup(context.Background(), g.ID, a.ID, "", "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestAnInvitationWithItsOwnDateKeepsIt(t *testing.T) {
 	g, a := seedHidden(t, mgr)
 	own := time.Now().Add(30 * 24 * time.Hour).UTC()
 
-	inv, err := mgr.InviteToGroup(context.Background(), g.ID, a.ID, "leader-1", own.Format(time.RFC3339Nano))
+	inv, err := mgr.InviteToGroup(context.Background(), g.ID, a.ID, "", "leader-1", own.Format(time.RFC3339Nano))
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
@@ -110,12 +110,12 @@ func TestRenewingAnInvitationWithNoDateRestartsTheLifetime(t *testing.T) {
 	}
 	g, a := seedHidden(t, mgr)
 	ctx := context.Background()
-	first, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-1", time.Now().Add(time.Hour).UTC().Format(time.RFC3339Nano))
+	first, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-1", time.Now().Add(time.Hour).UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		t.Fatalf("InviteToGroup: %v", err)
 	}
 
-	again, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "leader-2", "")
+	again, err := mgr.InviteToGroup(ctx, g.ID, a.ID, "", "leader-2", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup again: %v", err)
 	}
