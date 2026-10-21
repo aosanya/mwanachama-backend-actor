@@ -68,6 +68,12 @@
       "name": "code_sequence",
       "table": "code_sequences",
       "description": "The counters behind every coded type's stable identifier."
+    },
+    {
+      "role": "code_format",
+      "name": "code_format",
+      "table": "code_formats",
+      "description": "How the agency's member and group codes are drawn."
     }
   ]
 }

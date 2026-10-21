@@ -66,6 +66,10 @@ func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error)
 			return err
 		}
 		act.Code = code
+		act.PublicCode, err = mintPublicCode(ctx, tx, m.publicCodeTables(), roleActor, actorCodePrefix)
+		if err != nil {
+			return err
+		}
 		row, err := encode(m.object(roleActor), act)
 		if err != nil {
 			return err
@@ -129,8 +133,12 @@ func (m *userManager) GetActor(ctx context.Context, id string) (Actor, error) {
 }
 
 func (m *userManager) getActorByCode(ctx context.Context, code string) (Actor, error) {
+	code = normalizePublicCode(code)
+	if code == "" {
+		return Actor{}, ErrActorNotFound
+	}
 	var out Actor
-	q := m.store.Query(ctx, roleActor).Where("code = ?", normalizeCode(code)).Where("deleted = ?", false)
+	q := m.store.Query(ctx, roleActor).Where("public_code = ?", code).Where("deleted = ?", false)
 	if err := m.store.Take(q, roleActor, &out, ErrActorNotFound); err != nil {
 		if errors.Is(err, ErrActorNotFound) {
 			return Actor{}, ErrActorNotFound
@@ -138,10 +146,6 @@ func (m *userManager) getActorByCode(ctx context.Context, code string) (Actor, e
 		return Actor{}, fmt.Errorf("getActorByCode: %w", err)
 	}
 	return out, nil
-}
-
-func normalizeCode(code string) string {
-	return strings.ToUpper(strings.TrimSpace(code))
 }
 
 func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, error) {

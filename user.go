@@ -26,6 +26,7 @@ type (
 	JoinOutcome          = models.JoinOutcome
 	GroupByCode          = models.GroupByCode
 	GroupInvitation      = models.GroupInvitation
+	CodeFormat           = models.CodeFormat
 )
 
 const TimeLayout = models.TimeLayout
@@ -87,6 +88,8 @@ type UserManager interface {
 	ListJoinableGroups(ctx context.Context, actorID string) ([]Group, error)
 	JoinGroup(ctx context.Context, groupID, actorID, message string) (JoinOutcome, error)
 	FindGroupByCode(ctx context.Context, code, actorID string) (GroupByCode, error)
+	CodeFormat(ctx context.Context) (CodeFormat, error)
+	SetCodeFormat(ctx context.Context, groupCount int) (CodeFormat, error)
 	JoinGroupByCode(ctx context.Context, code, actorID, message string) (JoinOutcome, error)
 	GetJoinRequest(ctx context.Context, id string) (GroupJoinRequest, error)
 	ListJoinRequestsForGroup(ctx context.Context, groupID string, pendingOnly bool) ([]GroupJoinRequest, error)

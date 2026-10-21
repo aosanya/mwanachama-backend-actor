@@ -13,11 +13,11 @@ func TestALeaderInvitesByTheInviteesMemberCode(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
-	if !strings.HasPrefix(a.Code, "AC-") {
-		t.Fatalf("seeded actor code = %q, want AC-<n>", a.Code)
+	if !strings.HasPrefix(a.PublicCode, "M-") {
+		t.Fatalf("seeded actor public code = %q, want M- and random groups", a.PublicCode)
 	}
 
-	typed := "  " + strings.ToLower(a.Code) + " "
+	typed := "  " + strings.ToLower(a.PublicCode) + " "
 	inv, err := mgr.InviteToGroup(ctx, g.ID, "", typed, "leader-1", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup by code: %v", err)
@@ -42,7 +42,7 @@ func TestInvitingByIDAndByCodeRenewTheSameInvitation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InviteToGroup by id: %v", err)
 	}
-	byCode, err := mgr.InviteToGroup(ctx, g.ID, "", a.Code, "leader-2", "")
+	byCode, err := mgr.InviteToGroup(ctx, g.ID, "", a.PublicCode, "leader-2", "")
 	if err != nil {
 		t.Fatalf("InviteToGroup by code: %v", err)
 	}
@@ -54,10 +54,12 @@ func TestInvitingByIDAndByCodeRenewTheSameInvitation(t *testing.T) {
 func TestAnUnknownMemberCodeIsRefusedLikeAnUnknownActor(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
-	g, _ := seedHidden(t, mgr)
+	g, a := seedHidden(t, mgr)
 
-	if _, err := mgr.InviteToGroup(ctx, g.ID, "", "AC-9999", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrActorNotFound) {
-		t.Errorf("an unknown code err = %v, want ErrActorNotFound", err)
+	for _, code := range []string{"M-222-333-444", a.Code, "AC-9999"} {
+		if _, err := mgr.InviteToGroup(ctx, g.ID, "", code, "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrActorNotFound) {
+			t.Errorf("code %q err = %v, want ErrActorNotFound", code, err)
+		}
 	}
 	if _, err := mgr.InviteToGroup(ctx, g.ID, "missing", "", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrActorNotFound) {
 		t.Errorf("an unknown id err = %v, want ErrActorNotFound", err)
@@ -72,7 +74,7 @@ func TestAnInviteeIsNamedByExactlyOneOfIDAndCode(t *testing.T) {
 	if _, err := mgr.InviteToGroup(ctx, g.ID, "", "  ", "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
 		t.Errorf("no invitee err = %v, want ErrInvalidInvitation", err)
 	}
-	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, a.Code, "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, a.ID, a.PublicCode, "leader-1", ""); !errors.Is(err, mwanachamaactor.ErrInvalidInvitation) {
 		t.Errorf("both id and code err = %v, want ErrInvalidInvitation", err)
 	}
 }
@@ -82,7 +84,7 @@ func TestACodeInviteStillNeedsALeader(t *testing.T) {
 	ctx := context.Background()
 	g, a := seedHidden(t, mgr)
 
-	if _, err := mgr.InviteToGroup(ctx, g.ID, "", a.Code, "stranger", ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
+	if _, err := mgr.InviteToGroup(ctx, g.ID, "", a.PublicCode, "stranger", ""); !errors.Is(err, mwanachamaactor.ErrNotGroupLeader) {
 		t.Errorf("a non-leader inviting by code err = %v, want ErrNotGroupLeader", err)
 	}
 }

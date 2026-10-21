@@ -9,17 +9,13 @@ import (
 	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-func normalizeGroupCode(code string) string {
-	return strings.ToUpper(strings.TrimSpace(code))
-}
-
 func (m *userManager) groupByCode(ctx context.Context, code string) (Group, error) {
-	code = normalizeGroupCode(code)
+	code = normalizePublicCode(code)
 	if code == "" {
 		return Group{}, ErrGroupNotFound
 	}
 	var out Group
-	q := m.store.Query(ctx, roleGroup).Where("code = ? AND deleted = ?", code, false)
+	q := m.store.Query(ctx, roleGroup).Where("public_code = ? AND deleted = ?", code, false)
 	if err := m.store.Take(q, roleGroup, &out, ErrGroupNotFound); err != nil {
 		if errors.Is(err, ErrGroupNotFound) {
 			return Group{}, ErrGroupNotFound

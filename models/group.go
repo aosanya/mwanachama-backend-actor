@@ -10,6 +10,7 @@ func ValidJoinMode(mode string) bool { return mode == JoinOpen || mode == JoinCo
 type Group struct {
 	ID                    string `json:"id"`
 	Code                  string `json:"code"`
+	PublicCode            string `json:"public_code"`
 	HierarchyID           string `json:"hierarchy_id"`
 	LevelID               string `json:"level_id"`
 	ParentID              string `json:"parent_id,omitempty"`

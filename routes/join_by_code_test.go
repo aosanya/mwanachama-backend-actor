@@ -28,14 +28,14 @@ func TestFindingAndJoiningByCodeOverTheWireTakesTheActorFromTheCaller(t *testing
 		CheckReferences: true,
 	}))
 
-	status, body := do(t, srv, http.MethodGet, "/groups/by-code?code="+group.Code+"&actor_id=body-supplied-actor", nil)
+	status, body := do(t, srv, http.MethodGet, "/groups/by-code?code="+group.PublicCode+"&actor_id=body-supplied-actor", nil)
 	found, _ := body["group"].(map[string]any)
-	if status != http.StatusOK || found["id"] != group.ID || found["code"] != group.Code || body["join_mode"] != "confirmed" || body["state"] != "none" {
+	if status != http.StatusOK || found["id"] != group.ID || found["public_code"] != group.PublicCode || body["join_mode"] != "confirmed" || body["state"] != "none" {
 		t.Fatalf("find by code = %d %v, want the hidden group, confirmed, state none", status, body)
 	}
 
 	status, body = do(t, srv, http.MethodPost, "/groups/by-code/join", map[string]any{
-		"code":     group.Code,
+		"code":     group.PublicCode,
 		"message":  "I work here.",
 		"actor_id": "body-supplied-actor",
 	})
@@ -44,12 +44,12 @@ func TestFindingAndJoiningByCodeOverTheWireTakesTheActorFromTheCaller(t *testing
 		t.Fatalf("join by code = %d %v, want a request from the caller to the group the code found", status, body)
 	}
 
-	status, body = do(t, srv, http.MethodGet, "/groups/by-code?code="+group.Code, nil)
+	status, body = do(t, srv, http.MethodGet, "/groups/by-code?code="+group.PublicCode, nil)
 	if status != http.StatusOK || body["state"] != "requested" {
 		t.Errorf("find after asking = %d %v, want requested", status, body)
 	}
 
-	for _, code := range []string{"G-999", "nobody"} {
+	for _, code := range []string{group.Code, "G-999", "nobody"} {
 		status, body = do(t, srv, http.MethodGet, "/groups/by-code?code="+code, nil)
 		if status != http.StatusNotFound {
 			t.Errorf("find %q = %d %v, want 404", code, status, body)

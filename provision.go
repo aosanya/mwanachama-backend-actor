@@ -77,6 +77,16 @@ func upToDate(db *gorm.DB, s *spec.Spec) (bool, error) {
 			return false, nil
 		}
 	}
+	for _, c := range publicCodedRoles {
+		var uncoded int64
+		if err := db.Table(tableFor(s, c.role)).
+			Where("public_code = '' OR public_code IS NULL").Count(&uncoded).Error; err != nil {
+			return false, fmt.Errorf("actor: read the public codes in %s: %w", tableFor(s, c.role), err)
+		}
+		if uncoded > 0 {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
@@ -270,7 +280,10 @@ func seed(db *gorm.DB, s *spec.Spec) error {
 	if err := backfillCodes(db, s); err != nil {
 		return err
 	}
-	return raiseSequencesPastExistingCodes(db, s)
+	if err := raiseSequencesPastExistingCodes(db, s); err != nil {
+		return err
+	}
+	return backfillPublicCodes(db, s)
 }
 
 func backfillCodes(db *gorm.DB, s *spec.Spec) error {
@@ -296,6 +309,34 @@ func backfillCodes(db *gorm.DB, s *spec.Spec) error {
 		})
 		if err != nil {
 			return fmt.Errorf("actor: backfill codes in %s: %w", table, err)
+		}
+	}
+	return nil
+}
+
+func backfillPublicCodes(db *gorm.DB, s *spec.Spec) error {
+	tables := publicCodeTablesFor(s)
+	for _, c := range publicCodedRoles {
+		table := tables.byRole[c.role]
+		err := db.Transaction(func(tx *gorm.DB) error {
+			var ids []string
+			if err := tx.Table(table).Where("public_code = '' OR public_code IS NULL").
+				Order(backfillOrder(s, c.role)).Pluck("id", &ids).Error; err != nil {
+				return err
+			}
+			for _, id := range ids {
+				code, err := mintPublicCode(context.Background(), tx, tables, c.role, c.prefix)
+				if err != nil {
+					return err
+				}
+				if err := tx.Table(table).Where("id = ?", id).Update("public_code", code).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("actor: backfill public codes in %s: %w", table, err)
 		}
 	}
 	return nil
@@ -401,8 +442,8 @@ func declaresColumn(o spec.Object, column string) bool {
 }
 
 var columnsDeclaredSince = map[string][]string{
-	roleActor:            {"first_name", "last_name"},
-	roleGroup:            {"join_mode", "hidden"},
+	roleActor:            {"first_name", "last_name", "public_code"},
+	roleGroup:            {"join_mode", "hidden", "public_code"},
 	roleRoleKind:         {"leads_group"},
 	roleGroupJoinRequest: {"asked_at", "decline_reason"},
 }

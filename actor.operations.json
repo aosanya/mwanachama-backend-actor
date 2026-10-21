@@ -34,7 +34,8 @@
     "ErrInvitationAnswered": 409,
     "ErrInvitationLapsed": 409,
     "ErrAlreadyInGroup": 409,
-    "ErrNotGroupLeader": 403
+    "ErrNotGroupLeader": 403,
+    "ErrInvalidCodeFormat": 400
   },
   "operations": {
     "create_actor": {
@@ -86,7 +87,7 @@
       "call": "GetActor",
       "action": "actor.actor.read_mine",
       "title": "Read my actor",
-      "description": "Read the calling actor's own record, which carries their member code (\"AC-<n>\") to read out or share so a leader can invite them by it. An actor with no record answers as a missing one.",
+      "description": "Read the calling actor's own record, which carries their member code (public_code, \"M-\" and random groups such as \"M-K7P-4QX-M2T\") to read out or share so a leader can invite them by it. An actor with no record answers as a missing one.",
       "args": [
         {
           "from": "caller",
@@ -612,13 +613,13 @@
       "call": "FindGroupByCode",
       "action": "actor.group.find_by_code",
       "title": "Find group by code",
-      "description": "Find the group holding this G-<n> code, hidden ones included, with its join mode and the calling actor's state there: member, requested, declined or none. An unknown code answers as a missing group.",
+      "description": "Find the group holding this group code (public_code, \"G-\" and random groups), hidden ones included, with its join mode and the calling actor's state there: member, requested, declined or none. An unknown code, and the internal \"G-<n>\" number, answer as a missing group.",
       "args": [
         {
           "from": "query",
           "as": "code",
           "required": true,
-          "description": "The group's code, such as G-12. Case and surrounding spaces are ignored."
+          "description": "The group's code, such as G-K7P-4QX-M2T. Case and surrounding spaces are ignored."
         },
         {
           "from": "caller",
@@ -645,7 +646,7 @@
           "from": "body",
           "as": "code",
           "required": true,
-          "description": "The group's code, such as G-12. Case and surrounding spaces are ignored."
+          "description": "The group's code, such as G-K7P-4QX-M2T. Case and surrounding spaces are ignored."
         },
         {
           "from": "caller",
@@ -817,7 +818,7 @@
         {
           "from": "body",
           "as": "actor_code",
-          "description": "The actor to invite, by their member code (\"AC-<n>\", case and surrounding spaces ignored), for a leader who cannot see actor ids. Give this or actor_id, not both. A code naming nobody is refused exactly as an unknown actor_id is."
+          "description": "The actor to invite, by their member code (public_code, such as \"M-K7P-4QX-M2T\"; case and surrounding spaces ignored), for a leader who cannot see actor ids. Give this or actor_id, not both. A code naming nobody, and the internal \"AC-<n>\" number, are refused exactly as an unknown actor_id is."
         },
         {
           "from": "caller",
@@ -1645,6 +1646,42 @@
         }
       ],
       "tool": "actor_list_group_types"
+    },
+    "get_code_format": {
+      "method": "GET",
+      "path": "/code-format",
+      "call": "CodeFormat",
+      "action": "actor.code_format.read",
+      "title": "Read code format",
+      "description": "How many groups of three characters this agency's newly drawn member and group codes have. Three until an owner sets it.",
+      "args": [],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_code_format"
+    },
+    "set_code_format": {
+      "method": "PUT",
+      "path": "/code-format",
+      "call": "SetCodeFormat",
+      "action": "actor.code_format.set",
+      "title": "Set code format",
+      "description": "Set how many groups of three characters this agency's member and group codes have, from 1 to 12. It applies to codes drawn afterwards; codes already drawn keep theirs.",
+      "args": [
+        {
+          "from": "body",
+          "as": "group_count",
+          "description": "The number of three-character groups a new code has before a collision adds one."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_code_format"
     }
   }
 }

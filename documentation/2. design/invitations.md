@@ -116,20 +116,22 @@ before the invited actor is looked up. What makes a leader is in
 ### Inviting by member code (ACT18, 2026-10-21)
 
 Member app decisions 132 and 136: a leader invites someone by their member
-code, and that code is the actor's existing `code`, `AC-<n>`, minted once per
-agency and never rewritten. A leader in the member app cannot see the
-agency's actor ids, but the invitee can read their own code out to them.
+code. A leader in the member app cannot see the agency's actor ids, but the
+invitee can read their own code out to them. Since ACT21 (decisions
+179–181) that code is the actor's `public_code`, `M-` and random groups such
+as `M-K7P-4QX-M2T`, described in [public-codes.md](public-codes.md). The
+sequential `code`, `AC-<n>`, is internal and is no longer accepted.
 
 - `invite_to_group` takes the invitee in the body as `actor_id` or as
   `actor_code`, exactly one of them. Neither or both is
   `ErrInvalidInvitation` (400).
-- A code is matched after trimming surrounding spaces and upper-casing, so
-  `" ac-12 "` finds `AC-12`. It is matched only among the agency's own
-  actors, since each agency's actors are their own table set, and a deleted
-  actor's code finds nobody.
+- A code is matched against `public_code` after trimming surrounding spaces
+  and upper-casing, so `" m-k7p-4qx-m2t "` finds `M-K7P-4QX-M2T`. It is
+  matched only among the agency's own actors, since each agency's actors are
+  their own table set, and a deleted actor's code finds nobody.
 - A code naming nobody is `ErrActorNotFound`, the same refusal and the same
   body as an unknown `actor_id`, so a code cannot be told apart from an id by
-  how it fails.
+  how it fails. An internal `AC-<n>` is refused exactly the same way.
 - The leader check still runs before the invitee is looked up, so a
   non-leader learns nothing about which codes exist.
 - Everything after the lookup is unchanged: the stored invitation carries the
@@ -139,9 +141,10 @@ agency's actor ids, but the invitee can read their own code out to them.
 The invitee reads their own code through `get_my_actor`
 (`GET /actors/mine`, `actor.actor.read_mine`), which is `GetActor` with the
 actor bound from the caller. It answers the caller's whole actor record,
-`code` included, and a caller with no actor row yet answers
+`public_code` included, and a caller with no actor row yet answers
 `ErrActorNotFound` (404) rather than having one minted by a read; the host
-ensures the actor as it does elsewhere.
+ensures the actor as it does elsewhere. The record still carries the
+internal `code` as well; keeping it off a member's screen is the host's.
 
 ### Reads
 

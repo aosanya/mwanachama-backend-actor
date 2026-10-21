@@ -3,6 +3,7 @@ package models
 type Actor struct {
 	ID          string         `json:"id"`
 	Code        string         `json:"code"`
+	PublicCode  string         `json:"public_code"`
 	DisplayName string         `json:"display_name"`
 	FirstName   string         `json:"first_name"`
 	LastName    string         `json:"last_name"`

@@ -17,7 +17,7 @@ import (
 
 func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, actorCode, invitedBy, expiresAt string) (GroupInvitation, error) {
 	groupID, actorID, invitedBy = strings.TrimSpace(groupID), strings.TrimSpace(actorID), strings.TrimSpace(invitedBy)
-	actorCode = normalizeCode(actorCode)
+	actorCode = normalizePublicCode(actorCode)
 	if groupID == "" || invitedBy == "" {
 		return GroupInvitation{}, fmt.Errorf("%w: a group, an actor and whoever invites are required", ErrInvalidInvitation)
 	}

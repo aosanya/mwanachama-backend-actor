@@ -26,11 +26,11 @@ func TestACodeFindsAHiddenGroupWithItsJoinModeAndTheCallersState(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	g, a := hiddenGroup(t, mgr, models.JoinConfirmed)
-	if !strings.HasPrefix(g.Code, "G-") {
-		t.Fatalf("group code = %q, want G-<n>", g.Code)
+	if !strings.HasPrefix(g.PublicCode, "G-") || len(g.PublicCode) != len("G-AAA-BBB-CCC") {
+		t.Fatalf("group public code = %q, want G- and three random groups", g.PublicCode)
 	}
 
-	found, err := mgr.FindGroupByCode(ctx, "  "+strings.ToLower(g.Code)+" ", a.ID)
+	found, err := mgr.FindGroupByCode(ctx, "  "+strings.ToLower(g.PublicCode)+" ", a.ID)
 	if err != nil {
 		t.Fatalf("FindGroupByCode: %v", err)
 	}
@@ -41,10 +41,10 @@ func TestACodeFindsAHiddenGroupWithItsJoinModeAndTheCallersState(t *testing.T) {
 		t.Errorf("state = %q request = %v, want none", found.State, found.Request)
 	}
 
-	if _, err := mgr.JoinGroupByCode(ctx, g.Code, a.ID, "I live here."); err != nil {
+	if _, err := mgr.JoinGroupByCode(ctx, g.PublicCode, a.ID, "I live here."); err != nil {
 		t.Fatalf("JoinGroupByCode: %v", err)
 	}
-	found, err = mgr.FindGroupByCode(ctx, g.Code, a.ID)
+	found, err = mgr.FindGroupByCode(ctx, g.PublicCode, a.ID)
 	if err != nil || found.State != models.CallerRequested || found.Request == nil || !found.Request.Pending() {
 		t.Fatalf("after asking = %+v, %v, want requested with the pending request", found, err)
 	}
@@ -53,19 +53,19 @@ func TestACodeFindsAHiddenGroupWithItsJoinModeAndTheCallersState(t *testing.T) {
 	if _, err := mgr.DeclineJoinRequest(ctx, found.Request.ID, "leader-1", true, ""); err != nil {
 		t.Fatalf("DeclineJoinRequest: %v", err)
 	}
-	found, err = mgr.FindGroupByCode(ctx, g.Code, a.ID)
+	found, err = mgr.FindGroupByCode(ctx, g.PublicCode, a.ID)
 	if err != nil || found.State != models.CallerDeclined || found.Request == nil || !found.Request.Silent {
 		t.Fatalf("after a quiet decline = %+v, %v, want declined carrying the silent request", found, err)
 	}
 
-	if _, err := mgr.JoinGroupByCode(ctx, g.Code, a.ID, "Please."); err != nil {
+	if _, err := mgr.JoinGroupByCode(ctx, g.PublicCode, a.ID, "Please."); err != nil {
 		t.Fatalf("appeal by code: %v", err)
 	}
-	pending, _ := mgr.FindGroupByCode(ctx, g.Code, a.ID)
+	pending, _ := mgr.FindGroupByCode(ctx, g.PublicCode, a.ID)
 	if _, err := mgr.ApproveJoinRequest(ctx, pending.Request.ID, "leader-1"); err != nil {
 		t.Fatalf("ApproveJoinRequest: %v", err)
 	}
-	found, err = mgr.FindGroupByCode(ctx, g.Code, a.ID)
+	found, err = mgr.FindGroupByCode(ctx, g.PublicCode, a.ID)
 	if err != nil || found.State != models.CallerIsMember || found.Request != nil {
 		t.Errorf("after approval = %+v, %v, want member", found, err)
 	}
@@ -79,14 +79,14 @@ func TestJoiningByCodeFollowsTheJoinModeOfAHiddenGroup(t *testing.T) {
 	if _, err := mgr.JoinGroup(ctx, g.ID, a.ID, ""); !errors.Is(err, mwanachamaactor.ErrGroupNotFound) {
 		t.Errorf("joining a hidden group by id err = %v, want ErrGroupNotFound", err)
 	}
-	out, err := mgr.JoinGroupByCode(ctx, g.Code, a.ID, "")
+	out, err := mgr.JoinGroupByCode(ctx, g.PublicCode, a.ID, "")
 	if err != nil {
 		t.Fatalf("JoinGroupByCode: %v", err)
 	}
 	if out.Status != models.JoinedNow || !registered(t, mgr, a.ID, g.ID) {
 		t.Errorf("join by code = %+v, want joined at once", out)
 	}
-	again, err := mgr.JoinGroupByCode(ctx, g.Code, a.ID, "")
+	again, err := mgr.JoinGroupByCode(ctx, g.PublicCode, a.ID, "")
 	if err != nil || again.Status != models.AlreadyAMember {
 		t.Errorf("joining again by code = %+v, %v, want member", again, err)
 	}
@@ -126,7 +126,7 @@ func TestAnUnknownCodeAndAnotherAgencysCodeAnswerAlike(t *testing.T) {
 		t.Fatalf("CreateGroup: %v", err)
 	}
 
-	for _, code := range []string{theirs.Code, "G-999", "", "not-a-code"} {
+	for _, code := range []string{theirs.PublicCode, theirs.Code, "G-1", "G-999", "", "not-a-code"} {
 		if _, err := here.FindGroupByCode(ctx, code, a.ID); !errors.Is(err, mwanachamaactor.ErrGroupNotFound) {
 			t.Errorf("find %q err = %v, want ErrGroupNotFound", code, err)
 		}
@@ -146,7 +146,7 @@ func TestJoinableGroupsCarryTheirCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListJoinableGroups: %v", err)
 	}
-	if len(joinable) != 1 || joinable[0].Code != g.Code || !strings.HasPrefix(joinable[0].Code, "G-") {
-		t.Errorf("joinable = %+v, want the group with its G-<n> code", joinable)
+	if len(joinable) != 1 || joinable[0].PublicCode != g.PublicCode || !strings.HasPrefix(joinable[0].PublicCode, "G-") {
+		t.Errorf("joinable = %+v, want the group with its public code", joinable)
 	}
 }

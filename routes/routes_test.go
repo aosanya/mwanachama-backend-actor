@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 68 {
-		t.Errorf("the declared table has %d routes, want 68", len(table))
+	if len(table) != 70 {
+		t.Errorf("the declared table has %d routes, want 70", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 68 {
-		t.Errorf("the declared table publishes %d tools, want 68", len(tools))
+	if len(tools) != 70 {
+		t.Errorf("the declared table publishes %d tools, want 70", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {
@@ -564,10 +564,10 @@ func TestOverTheWireALeaderInvitesByTheCodeTheInviteeReadsAsTheirOwn(t *testing.
 	}))
 
 	status, body := do(t, srv, http.MethodGet, "/actors/mine", nil)
-	if status != http.StatusOK || body["id"] != invited.ID || body["code"] != invited.Code {
-		t.Fatalf("my actor = %d %v, want %s carrying %s", status, body, invited.ID, invited.Code)
+	if status != http.StatusOK || body["id"] != invited.ID || body["public_code"] != invited.PublicCode {
+		t.Fatalf("my actor = %d %v, want %s carrying %s", status, body, invited.ID, invited.PublicCode)
 	}
-	code := body["code"].(string)
+	code := body["public_code"].(string)
 
 	caller = "nobody-yet"
 	status, _ = do(t, srv, http.MethodGet, "/actors/mine", nil)
@@ -581,7 +581,12 @@ func TestOverTheWireALeaderInvitesByTheCodeTheInviteeReadsAsTheirOwn(t *testing.
 		t.Fatalf("invite by code = %d %v, want an invitation for %s from the caller", status, body, invited.ID)
 	}
 
-	status, unknown := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_code": "AC-9999"})
+	status, internal := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_code": invited.Code})
+	if status != http.StatusNotFound {
+		t.Errorf("invite by the internal code %s = %d %v, want 404", invited.Code, status, internal)
+	}
+
+	status, unknown := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_code": "M-AAA-BBB-CCC"})
 	statusByID, unknownByID := do(t, srv, http.MethodPost, "/groups/"+group.ID+"/invitations", map[string]any{"actor_id": "missing"})
 	if status != http.StatusNotFound || statusByID != http.StatusNotFound || fmt.Sprint(unknown) != fmt.Sprint(unknownByID) {
 		t.Errorf("unknown code = %d %v, unknown id = %d %v, want the same 404", status, unknown, statusByID, unknownByID)

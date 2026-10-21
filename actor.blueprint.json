@@ -14,9 +14,15 @@
         {
           "name": "code",
           "type": "string",
-          "description": "Stable human-readable identifier, \"AC-<n>\", minted once at creation and never rewritten.",
+          "description": "Internal sequential identifier, \"AC-<n>\", minted once at creation and never rewritten. Never shown to a member or accepted from one; public_code is.",
           "required": true,
           "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "public_code",
+          "type": "string",
+          "description": "The member code shown and typed: \"M-\" and random groups of three characters with no look-alikes, such as \"M-K7P-4QX-M2T\". Drawn once at creation, or by the backfill for a row older than the column, and never rewritten. Unique within the agency.",
           "immutable": true
         },
         {
@@ -78,6 +84,20 @@
             "path": "email"
           },
           "unique": true
+        },
+        {
+          "name": "public_code",
+          "description": "One member per public code, which is also the lookup an invite or a find by code makes. Rows not yet backfilled carry no code and are left out.",
+          "fields": [
+            "public_code"
+          ],
+          "unique": true,
+          "where": [
+            {
+              "field": "public_code",
+              "op": "not_empty"
+            }
+          ]
         }
       ]
     },
@@ -94,9 +114,15 @@
         {
           "name": "code",
           "type": "string",
-          "description": "Stable human-readable identifier, \"G-<n>\", minted once at creation and never rewritten by an edit.",
+          "description": "Internal sequential identifier, \"G-<n>\", minted once at creation and never rewritten by an edit. Never shown to a member or accepted from one; public_code is.",
           "required": true,
           "unique": true,
+          "immutable": true
+        },
+        {
+          "name": "public_code",
+          "type": "string",
+          "description": "The group code shown and typed: \"G-\" and random groups of three characters with no look-alikes, such as \"G-K7P-4QX-M2T\". Drawn once at creation, or by the backfill for a row older than the column, and never rewritten. Unique within the agency.",
           "immutable": true
         },
         {
@@ -183,6 +209,20 @@
           "description": "Reads one hierarchy's whole structure without touching another's.",
           "fields": [
             "hierarchy_id"
+          ]
+        },
+        {
+          "name": "public_code",
+          "description": "One group per public code, which is also the lookup an invite or a find by code makes. Rows not yet backfilled carry no code and are left out.",
+          "fields": [
+            "public_code"
+          ],
+          "unique": true,
+          "where": [
+            {
+              "field": "public_code",
+              "op": "not_empty"
+            }
           ]
         }
       ]
@@ -726,6 +766,29 @@
           "name": "next_number",
           "type": "int",
           "description": "The number the next code of this type takes. Read and advanced in one conditional write."
+        }
+      ]
+    },
+    {
+      "role": "code_format",
+      "description": "How this agency's public member and group codes are drawn. At most one row; with none, codes take three groups.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Always \"codes\": the agency holds one format.",
+          "primary": true
+        },
+        {
+          "name": "group_count",
+          "type": "int",
+          "description": "How many groups of three characters a newly drawn code has before any collision adds one. Read each time a code is drawn, so a change applies only to codes drawn afterwards.",
+          "required": true
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the format last changed."
         }
       ]
     }

@@ -125,7 +125,8 @@ since ACT15 refuse one who does not lead the request's group with
 
 - `ListJoinableGroups(ctx, actorID)`: every group that is not deleted, not
   hidden and has no registration for the actor, oldest first. Each carries
-  its `code`, which the member app shows under the group's name (ACT20). A group the
+  its `public_code`, which the member app shows under the group's name
+  (ACT20, ACT21). A group the
   actor has a pending request at stays in the list; the screen shows it as
   Requested by reading the actor's requests.
 - `ListJoinRequestsForActor(ctx, actorID)`: the actor's requests in every
@@ -136,12 +137,15 @@ since ACT15 refuse one who does not lead the request's group with
 
 ## Finding a group by its code (ACT20, 2026-10-21)
 
-Every group carries a code, `G-<n>`, minted when it is created from the
-instance's own counter and never rewritten, so it is counted per agency
-(member app decision 136). Decision 137 lets a member type a group's code on
-Join Group to find it, hidden groups included, and amends decision 56: a
-hidden group is reached by an invitation or by its code. wakala-api WK134 is
-the consumer.
+Every group carries a code a member can type. Decision 137 lets a member
+type a group's code on Join Group to find it, hidden groups included, and
+amends decision 56: a hidden group is reached by an invitation or by its
+code. wakala-api WK134 is the consumer.
+
+Since ACT21 (decisions 179–181) that code is the group's `public_code`, `G-`
+and random groups such as `G-K7P-4QX-M2T`, drawn once per group and unique
+per agency; see [public-codes.md](public-codes.md). The sequential `code`,
+`G-<n>`, which ACT20 first used here, is internal and is no longer accepted.
 
 ### `FindGroupByCode(ctx, code, actorID)`
 
@@ -160,13 +164,12 @@ reason `ListJoinRequestsForActor` returns it: what the member app shows for
 it is the host's choice (decision 113). An open invitation is not a state
 here; the invited actor reads it from their own invitations.
 
-The code is matched after trimming and upper-casing, so `g-12` finds `G-12`.
-An empty code, a code no group holds, a deleted group's code and a code from
-another agency all answer `ErrGroupNotFound`, the missing-group 404
-(decision 125). The last needs nothing of its own: each agency is its own
-instance with its own group table, so another agency's group is simply not
-there, and since codes are counted per agency, the same `G-<n>` typed in two
-agencies names two different groups.
+The code is matched against `public_code` after trimming and upper-casing,
+so `g-k7p-4qx-m2t` finds `G-K7P-4QX-M2T`. An empty code, a code no group
+holds, an internal `G-<n>`, a deleted group's code and a code from another
+agency all answer `ErrGroupNotFound`, the missing-group 404 (decision 125).
+Another agency needs nothing of its own: each agency is its own instance
+with its own group table, so another agency's group is simply not there.
 
 ### `JoinGroupByCode(ctx, code, actorID, message)`
 
@@ -177,9 +180,10 @@ decline), and an actor already registered gets `member`. The one difference
 is that the group may be hidden. `JoinGroup` by id still answers a hidden
 group as missing, so a group's id never reaches it; its code does.
 
-Codes are short and sequential, so a hidden group is findable by anybody in
-its agency who tries codes in turn. That is the owner's decision 137, not an
-oversight: hidden keeps a group off the list, it does not make it secret.
+Until ACT21 codes were short and sequential, so a hidden group was findable
+by anybody in its agency who tried codes in turn. Decision 179 closed that:
+a code is random, so it is reached by being given it. Hidden still keeps a
+group off the list rather than making it secret.
 
 ## Route table
 

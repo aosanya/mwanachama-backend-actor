@@ -71,3 +71,5 @@ var ErrInvitationLapsed = errors.New("mwanachamaactor: invitation has lapsed")
 var ErrAlreadyInGroup = errors.New("mwanachamaactor: the actor is already registered at this group")
 
 var ErrNotGroupLeader = errors.New("mwanachamaactor: only the group's leaders may do this")
+
+var ErrInvalidCodeFormat = errors.New("mwanachamaactor: invalid code format")

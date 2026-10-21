@@ -43,6 +43,10 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 			return err
 		}
 		g.Code = code
+		g.PublicCode, err = mintPublicCode(ctx, tx, m.publicCodeTables(), roleGroup, groupCodePrefix)
+		if err != nil {
+			return err
+		}
 		row, err := encode(m.object(roleGroup), g)
 		if err != nil {
 			return err

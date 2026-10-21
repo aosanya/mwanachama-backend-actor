@@ -23,12 +23,15 @@ var carriers = map[string]string{
 	"group_join_request":     "GroupJoinRequest",
 	"group_invitation":       "GroupInvitation",
 	"code_sequence":          "CodeSequence",
+	"code_format":            "CodeFormat",
 }
 
 var storeOwned = map[string]bool{
 	"Actor.code":                       true,
+	"Actor.public_code":                true,
 	"Actor.deleted":                    true,
 	"Group.code":                       true,
+	"Group.public_code":                true,
 	"Group.deleted":                    true,
 	"ActorGroupAssignment.deleted":     true,
 	"RoleKind.code":                    true,
