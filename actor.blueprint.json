@@ -254,6 +254,19 @@
           "description": "When the registration was made. The only date a registration carries."
         },
         {
+          "name": "priority",
+          "type": "enum",
+          "description": "How high the registered actor ranks this group among their own. Every registration starts at normal, a newly joined one too, and only the actor themselves changes it.",
+          "values": [
+            "very_high",
+            "high",
+            "normal",
+            "low",
+            "very_low"
+          ],
+          "default": "normal"
+        },
+        {
           "name": "last_updated",
           "type": "timestamp",
           "description": "When the row was last written."

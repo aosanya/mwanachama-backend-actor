@@ -36,7 +36,8 @@
     "ErrAlreadyInGroup": 409,
     "ErrNotGroupLeader": 403,
     "ErrInvalidCodeFormat": 400,
-    "ErrJoinDecisionNotFound": 404
+    "ErrJoinDecisionNotFound": 404,
+    "ErrInvalidPriority": 400
   },
   "operations": {
     "create_actor": {
@@ -576,6 +577,37 @@
         }
       ],
       "tool": "actor_list_my_groups"
+    },
+    "set_my_group_priority": {
+      "method": "PUT",
+      "path": "/groups/{group_id}/priority",
+      "call": "SetMyGroupPriority",
+      "action": "actor.group.set_my_priority",
+      "title": "Set my group priority",
+      "description": "Set the calling actor's own priority for one group they are registered in: very_high, high, normal, low or very_low. A group the caller is not registered in answers as a missing group.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose priority to set."
+        },
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor setting their own priority, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "priority",
+          "description": "The new priority: very_high, high, normal, low or very_low."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_my_group_priority"
     },
     "join_group": {
       "method": "POST",

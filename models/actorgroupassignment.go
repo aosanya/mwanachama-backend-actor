@@ -18,25 +18,13 @@ package models
 // exactly as before: nothing in this package enforces at-most-one-home
 // regardless of where the flag lives.
 type ActorGroupAssignment struct {
-	ActorID string `json:"actor_id"`
-	GroupID string `json:"group_id"`
-	// CreatedAt is set once, on the assignment's first AssignGroup call,
-	// and preserved across every subsequent re-assign of the same pair.
-	CreatedAt string `json:"created_at"`
-	// LastUpdated is stamped on every AssignGroup call, create or update.
-	LastUpdated string `json:"last_updated"`
-	// Deleted marks a soft-deleted assignment. Not `omitempty` — see
-	// Actor's identical field for why. Unused today: Deregister hard-deletes
-	// the row rather than setting this.
-	Deleted bool `json:"deleted"`
-
-	// Attributes is an open prop:value map for organization-declared
-	// assignment properties, validated against
-	// DefaultActorGroupAssignmentProperties the same way Actor.Attributes is
-	// validated against DefaultActorProperties — see property.go. Added
-	// 2026-09-04. `omitempty`: an absent map and an empty one mean the same
-	// thing.
-	Attributes map[string]any `json:"attributes,omitempty"`
+	ActorID     string         `json:"actor_id"`
+	GroupID     string         `json:"group_id"`
+	Priority    string         `json:"priority"`
+	CreatedAt   string         `json:"created_at"`
+	LastUpdated string         `json:"last_updated"`
+	Deleted     bool           `json:"deleted"`
+	Attributes  map[string]any `json:"attributes,omitempty"`
 }
 
 // DefaultActorGroupAssignmentProperties is the built-in property catalog
@@ -47,4 +35,27 @@ type ActorGroupAssignment struct {
 // free.
 func DefaultActorGroupAssignmentProperties() []Property {
 	return nil
+}
+
+const (
+	PriorityVeryHigh = "very_high"
+	PriorityHigh     = "high"
+	PriorityNormal   = "normal"
+	PriorityLow      = "low"
+	PriorityVeryLow  = "very_low"
+)
+
+func ValidPriority(p string) bool {
+	switch p {
+	case PriorityVeryHigh, PriorityHigh, PriorityNormal, PriorityLow, PriorityVeryLow:
+		return true
+	}
+	return false
+}
+
+func PriorityOrDefault(p string) string {
+	if p == "" {
+		return PriorityNormal
+	}
+	return p
 }

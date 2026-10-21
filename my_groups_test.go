@@ -9,7 +9,7 @@ import (
 	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-func groupIDs(groups []mwanachamaactor.Group) []string {
+func groupIDs(groups []mwanachamaactor.MyGroup) []string {
 	out := make([]string, len(groups))
 	for i, g := range groups {
 		out[i] = g.ID

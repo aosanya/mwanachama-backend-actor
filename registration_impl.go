@@ -42,8 +42,10 @@ func (m *userManager) AssignGroup(ctx context.Context, r ActorGroupAssignment) (
 	}
 	if found {
 		r.CreatedAt = existing.CreatedAt
+		r.Priority = models.PriorityOrDefault(existing.Priority)
 	} else {
 		r.CreatedAt = NowRFC3339()
+		r.Priority = models.PriorityNormal
 	}
 	r.LastUpdated = NowRFC3339()
 	r.Deleted = false
@@ -101,6 +103,7 @@ func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([
 	if err != nil {
 		return nil, fmt.Errorf("ListGroupsForActor: %w", err)
 	}
+	defaultPriorities(out)
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].CreatedAt != out[j].CreatedAt {
 			return out[i].CreatedAt < out[j].CreatedAt
@@ -116,6 +119,7 @@ func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([
 	if err != nil {
 		return nil, fmt.Errorf("ListActorsForGroup: %w", err)
 	}
+	defaultPriorities(out)
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].CreatedAt != out[j].CreatedAt {
 			return out[i].CreatedAt < out[j].CreatedAt
@@ -139,8 +143,8 @@ func (m *userManager) HomeCounts(ctx context.Context) (map[string]int, error) {
 	return out, nil
 }
 
-func (m *userManager) ListMyGroups(ctx context.Context, actorID string) ([]Group, error) {
-	out := []Group{}
+func (m *userManager) ListMyGroups(ctx context.Context, actorID string) ([]MyGroup, error) {
+	out := []MyGroup{}
 	actorID = strings.TrimSpace(actorID)
 	if actorID == "" {
 		return out, nil
@@ -167,8 +171,45 @@ func (m *userManager) ListMyGroups(ctx context.Context, actorID string) ([]Group
 	}
 	for _, a := range held {
 		if g, ok := byID[a.GroupID]; ok {
-			out = append(out, g)
+			out = append(out, MyGroup{Group: g, Priority: models.PriorityOrDefault(a.Priority)})
 		}
 	}
 	return out, nil
+}
+
+func defaultPriorities(rows []ActorGroupAssignment) {
+	for i := range rows {
+		rows[i].Priority = models.PriorityOrDefault(rows[i].Priority)
+	}
+}
+
+func (m *userManager) SetMyGroupPriority(ctx context.Context, groupID, actorID, priority string) (ActorGroupAssignment, error) {
+	priority = strings.TrimSpace(priority)
+	if !models.ValidPriority(priority) {
+		return ActorGroupAssignment{}, ErrInvalidPriority
+	}
+	actorID = strings.TrimSpace(actorID)
+	if actorID == "" {
+		return ActorGroupAssignment{}, ErrGroupNotFound
+	}
+	held, found, err := m.findAssignment(ctx, actorID, groupID)
+	if err != nil {
+		return ActorGroupAssignment{}, fmt.Errorf("SetMyGroupPriority: %w", err)
+	}
+	if !found {
+		return ActorGroupAssignment{}, ErrGroupNotFound
+	}
+	held.Priority = priority
+	held.LastUpdated = NowRFC3339()
+	row, err := encode(m.object(roleActorGroupAssignment), held)
+	if err != nil {
+		return ActorGroupAssignment{}, fmt.Errorf("SetMyGroupPriority: %w", err)
+	}
+	err = m.store.Query(ctx, roleActorGroupAssignment).
+		Where("actor_id = ? AND group_id = ?", actorID, groupID).
+		Updates(map[string]any{"priority": row["priority"], "last_updated": row["last_updated"]}).Error
+	if err != nil {
+		return ActorGroupAssignment{}, fmt.Errorf("SetMyGroupPriority: %w", err)
+	}
+	return held, nil
 }

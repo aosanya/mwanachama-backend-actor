@@ -75,3 +75,5 @@ var ErrAlreadyInGroup = errors.New("mwanachamaactor: the actor is already regist
 var ErrNotGroupLeader = errors.New("mwanachamaactor: only the group's leaders may do this")
 
 var ErrInvalidCodeFormat = errors.New("mwanachamaactor: invalid code format")
+
+var ErrInvalidPriority = errors.New("mwanachamaactor: priority must be very_high, high, normal, low or very_low")

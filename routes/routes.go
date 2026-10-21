@@ -59,6 +59,7 @@ var sentinels = map[string]error{
 	"ErrAlreadyInGroup":         mwanachamaactor.ErrAlreadyInGroup,
 	"ErrNotGroupLeader":         mwanachamaactor.ErrNotGroupLeader,
 	"ErrInvalidCodeFormat":      mwanachamaactor.ErrInvalidCodeFormat,
+	"ErrInvalidPriority":        mwanachamaactor.ErrInvalidPriority,
 }
 
 type Mount struct {
