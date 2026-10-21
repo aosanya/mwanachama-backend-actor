@@ -230,3 +230,17 @@ manager method only (71 routes). An open group's auto-approval records
 nothing. `joining-groups.md` updated. Left for WK144: no decision id reaches
 the applicant over HTTP yet. Verified: `go build`, `go vet`, `go test ./...`
 ok here; wakala-api builds and vets, `go test ./...` only `_OpenHole_` reds.
+
+## ACT23 — a member's priority for each of their groups — 2026-10-21
+
+Owner, member app decision 192. ea18fed (merged as 8b32806): `registration` gains
+an enum `priority` (`very_high`, `high`, `normal`, `low`, `very_low`,
+default `normal`), added to existing tables by `Provision`; `AssignGroup`
+writes `normal` on a new registration and keeps it on a re-assign, and older
+rows read back as `normal`. `PUT /groups/{group_id}/priority`
+(`actor.group.set_my_priority`, MCP tool `actor_set_my_group_priority`) binds
+the actor from the caller; a group the caller is not in answers 404, an unknown
+value 400 (`ErrInvalidPriority`). `ListMyGroups` returns `[]MyGroup`, the
+group plus `priority` (72 routes). `group-priority.md` added. Mounting it is
+WK147. Verified: `go build`, `go vet`, `go test ./...` ok here; wakala-api
+builds and vets, `go test ./...` only `_OpenHole_`/`_OpenBug_` reds.
