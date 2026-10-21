@@ -271,3 +271,26 @@ ordinary assignment. `removing-members.md`. Left for wakala-api WK158: the
 agency standing (instance membership) and declaring the operations' routes
 and actions. Verified: `go build`, `go vet`, `go test ./...` ok; wakala-api
 builds against it.
+
+## ACT27 — the field worker role, listed with who holds it — 2026-10-21
+
+4ef60d2 (merged as 8c7d5b5). Granting and revoking a role kind per member
+already existed; added `ListRoleHolders(ctx, kindID, activeOnly)` and
+`GET /role-kinds/{kind_id}/holders` (`actor.role_kind.list_holders`, tool
+`actor_list_role_holders`): every seat of one kind across groups with the
+holder's display name, ended seats kept in the history. `role-holders.md`.
+The field worker kind is an ordinary role kind; seeding it is wakala-api
+WK169. Verified: `go build`, `go vet`, `go test ./...` ok; wakala-api builds.
+
+## ACT28 — an agency's operators decide join requests — 2026-10-21
+
+3ffa8d9 (merged as 65db236). `OperatorApproveJoinRequest` and
+`OperatorDeclineJoinRequest` decide like the leader methods (decided once,
+history, quiet decline reasonless) without `mustLead`; declared as
+`actor.join_request.operator_approve`/`operator_decline` at
+`POST /join-requests/{request_id}/operator-approve`/`operator-decline`,
+`decided_by` from the caller. The leader path is unchanged. Left for
+wakala-api WK157: grant both actions only to the Instance's owners and
+agents. Whether leaders keep deciding stays open (WK157).
+`joining-groups.md`. Verified: `go build`, `go vet`, `go test ./...` ok
+(route and tool counts now 77 with ACT27); wakala-api builds.
