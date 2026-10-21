@@ -174,3 +174,31 @@ internal `code` as well; keeping it off a member's screen is the host's.
   comm.
 - Reading a hidden group's name for an invitee: `GetGroup` reads any group,
   and whether an invitee may is the host's gate.
+
+## Checking a list of invitations (ACT26, first half)
+
+Member app decision 221: an operator uploads a list of first name, last name,
+email and group code, previews it, and sends every good row. The preview is
+`CheckInvitationBatch(ctx, rows)`. It writes nothing and answers one check per
+row, in order, numbered from 1, each with the row as normalised (names and
+email trimmed, email lower-cased, group code normalised like any public code)
+and one status:
+
+| Status | Meaning |
+| --- | --- |
+| `missing_name` | first or last name is blank |
+| `bad_email` | not a single plain address with a dotted domain |
+| `unknown_group` | the code names no live group |
+| `duplicate` | an earlier row already names this email for this group |
+| `already_member` | an actor holding this email is registered in the group |
+| `ready` | none of the above |
+
+The checks run in that order, so a row carries its first problem only. A
+duplicate is judged on `(email, group)` after normalisation, which is also the
+key the send will be idempotent on. A ready row carries the group's id and,
+when an actor already holds the email (the `email` attribute), that actor's id.
+
+**Not built yet: the send.** An invitation is keyed on an actor, and a listed
+email often names nobody yet; and `InviteToGroup` requires the inviter to lead
+the group, while the bulk sender is an agency owner or agent. Both need the
+owner's answer before the send lands — see ACT26 on the board.

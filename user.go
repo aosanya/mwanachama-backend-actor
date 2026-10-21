@@ -29,6 +29,8 @@ type (
 	JoinOutcome          = models.JoinOutcome
 	GroupByCode          = models.GroupByCode
 	GroupInvitation      = models.GroupInvitation
+	InvitationBatchRow   = models.InvitationBatchRow
+	InvitationBatchCheck = models.InvitationBatchCheck
 	CodeFormat           = models.CodeFormat
 )
 
@@ -119,6 +121,7 @@ type UserManager interface {
 	ListInvitationsForActor(ctx context.Context, actorID string) ([]GroupInvitation, error)
 	AcceptInvitation(ctx context.Context, id, actorID string) (GroupInvitation, error)
 	DeclineInvitation(ctx context.Context, id, actorID string) (GroupInvitation, error)
+	CheckInvitationBatch(ctx context.Context, rows []InvitationBatchRow) ([]InvitationBatchCheck, error)
 
 	CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error)
 	ListRoleKinds(ctx context.Context) ([]RoleKind, error)
