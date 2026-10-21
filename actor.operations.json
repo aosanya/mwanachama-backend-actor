@@ -1326,6 +1326,32 @@
       ],
       "tool": "actor_end_role_on_departure"
     },
+    "list_role_holders": {
+      "method": "GET",
+      "path": "/role-kinds/{kind_id}/holders",
+      "call": "ListRoleHolders",
+      "action": "actor.role_kind.list_holders",
+      "title": "List who holds a role kind",
+      "description": "Every seat of one role kind, in any group, each with its holder's display name, oldest grant first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "kind_id",
+          "description": "The role kind whose holders to list."
+        },
+        {
+          "from": "query",
+          "as": "active_only",
+          "description": "true to leave out the seats that have already ended."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_role_holders"
+    },
     "list_role_assignments_for_group": {
       "method": "GET",
       "path": "/groups/{group_id}/role-assignments",

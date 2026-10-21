@@ -138,6 +138,7 @@ type UserManager interface {
 	EndRoleOnDeparture(ctx context.Context, assignmentID string) error
 	ListRoleAssignmentsForGroup(ctx context.Context, groupID string, activeOnly bool) ([]ActorRoleAssignment, error)
 	ListRoleAssignmentsForActor(ctx context.Context, actorID string, activeOnly bool) ([]ActorRoleAssignment, error)
+	ListRoleHolders(ctx context.Context, kindID string, activeOnly bool) ([]models.RoleHolder, error)
 
 	GroupDashboard(ctx context.Context, groupID string) (models.GroupDashboard, error)
 
