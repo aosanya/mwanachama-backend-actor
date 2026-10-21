@@ -121,6 +121,21 @@ since ACT15 refuse one who does not lead the request's group with
 [group-leaders.md](group-leaders.md). The mount still gates
 `actor.join_request.approve` and `actor.join_request.decline`.
 
+**An agency's operators decide too (ACT28).** An owner or agent who leads
+nothing was refused 403 by the leader path (wakala-api WK157).
+`OperatorApproveJoinRequest(ctx, id, decidedBy)` and
+`OperatorDeclineJoinRequest(ctx, id, decidedBy, silent, reason)` decide
+exactly as the leader methods do, with the same conditional write, decision
+history, registration on approval, quiet-decline-carries-no-reason rule and
+500-character limit, but ask for no leading seat. This module cannot tell an
+operator from a member, so the host vouches: the two methods sit behind
+their own actions, `actor.join_request.operator_approve` and
+`actor.join_request.operator_decline`, and a mount grants those only to the
+people it calls operators (on wakala-api, an Instance's `owner` and `agent`
+members). A mount that grants them to everybody lets any member decide any
+request. The leader path is unchanged; whether leaders keep deciding is the
+open WK157 question.
+
 ### Reads
 
 - `ListJoinableGroups(ctx, actorID)`: every group that is not deleted, not
@@ -200,6 +215,8 @@ group off the list rather than making it secret.
 | GET | `/join-requests/{request_id}` | `actor.join_request.read` | |
 | POST | `/join-requests/{request_id}/approve` | `actor.join_request.approve` | `decided_by` |
 | POST | `/join-requests/{request_id}/decline` | `actor.join_request.decline` | `decided_by` |
+| POST | `/join-requests/{request_id}/operator-approve` | `actor.join_request.operator_approve` | `decided_by` |
+| POST | `/join-requests/{request_id}/operator-decline` | `actor.join_request.operator_decline` | `decided_by` |
 
 The joining actor and the decider come from the caller, never the body, so
 no request can join somebody else or decide in somebody else's name.

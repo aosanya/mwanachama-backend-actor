@@ -902,6 +902,68 @@
       ],
       "tool": "actor_decline_join_request"
     },
+    "operator_approve_join_request": {
+      "method": "POST",
+      "path": "/join-requests/{request_id}/operator-approve",
+      "call": "OperatorApproveJoinRequest",
+      "action": "actor.join_request.operator_approve",
+      "title": "Approve join request as an operator",
+      "description": "Approve a pending join request on the agency's behalf, which registers the actor at the group in the same write. No leading seat is asked for: the mount grants this action only to the agency's operators.",
+      "args": [
+        {
+          "from": "path",
+          "as": "request_id",
+          "description": "The pending request to approve."
+        },
+        {
+          "from": "caller",
+          "as": "decided_by",
+          "description": "Who approved it, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_operator_approve_join_request"
+    },
+    "operator_decline_join_request": {
+      "method": "POST",
+      "path": "/join-requests/{request_id}/operator-decline",
+      "call": "OperatorDeclineJoinRequest",
+      "action": "actor.join_request.operator_decline",
+      "title": "Decline join request as an operator",
+      "description": "Decline a pending join request on the agency's behalf. No leading seat is asked for: the mount grants this action only to the agency's operators. The request is kept, and the actor may ask again as an appeal.",
+      "args": [
+        {
+          "from": "path",
+          "as": "request_id",
+          "description": "The pending request to decline."
+        },
+        {
+          "from": "caller",
+          "as": "decided_by",
+          "description": "Who declined it, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "silent",
+          "description": "true to decline quietly, so the actor is told nothing."
+        },
+        {
+          "from": "body",
+          "as": "reason",
+          "description": "Why the request is declined, at most 500 characters, kept on the request for the actor to read. Optional, and refused with silent, since a quiet decline tells the actor nothing."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_operator_decline_join_request"
+    },
     "invite_to_group": {
       "method": "POST",
       "path": "/groups/{group_id}/invitations",

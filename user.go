@@ -110,6 +110,8 @@ type UserManager interface {
 	ListJoinRequestsForActor(ctx context.Context, actorID string) ([]GroupJoinRequest, error)
 	ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error)
 	DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool, reason string) (GroupJoinRequest, error)
+	OperatorApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error)
+	OperatorDeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool, reason string) (GroupJoinRequest, error)
 	GetMyJoinDecision(ctx context.Context, decisionID, actorID string) (JoinDecision, error)
 	ListJoinDecisions(ctx context.Context, requestID string) ([]JoinDecision, error)
 	IsGroupLeader(ctx context.Context, groupID, actorID string) (bool, error)

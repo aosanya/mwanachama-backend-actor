@@ -269,10 +269,28 @@ func (m *userManager) listJoinRequests(q *gorm.DB, op string) ([]GroupJoinReques
 }
 
 func (m *userManager) ApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error) {
-	return m.decide(ctx, id, decidedBy, models.JoinRequestApproved, false, "")
+	return m.decide(ctx, id, decidedBy, models.JoinRequestApproved, false, "", m.mustLead)
 }
 
 func (m *userManager) DeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool, reason string) (GroupJoinRequest, error) {
+	return m.decline(ctx, id, decidedBy, silent, reason, m.mustLead)
+}
+
+func (m *userManager) OperatorApproveJoinRequest(ctx context.Context, id, decidedBy string) (GroupJoinRequest, error) {
+	return m.decide(ctx, id, decidedBy, models.JoinRequestApproved, false, "", vouchedByHost)
+}
+
+func (m *userManager) OperatorDeclineJoinRequest(ctx context.Context, id, decidedBy string, silent bool, reason string) (GroupJoinRequest, error) {
+	return m.decline(ctx, id, decidedBy, silent, reason, vouchedByHost)
+}
+
+type deciderCheck func(tx *gorm.DB, groupID, actorID string) error
+
+func vouchedByHost(*gorm.DB, string, string) error {
+	return nil
+}
+
+func (m *userManager) decline(ctx context.Context, id, decidedBy string, silent bool, reason string, mayDecide deciderCheck) (GroupJoinRequest, error) {
 	reason = strings.TrimSpace(reason)
 	if reason != "" && silent {
 		return GroupJoinRequest{}, ErrQuietDeclineReason
@@ -280,10 +298,10 @@ func (m *userManager) DeclineJoinRequest(ctx context.Context, id, decidedBy stri
 	if utf8.RuneCountInString(reason) > models.MaxDeclineReasonLength {
 		return GroupJoinRequest{}, ErrDeclineReasonTooLong
 	}
-	return m.decide(ctx, id, decidedBy, models.JoinRequestDeclined, silent, reason)
+	return m.decide(ctx, id, decidedBy, models.JoinRequestDeclined, silent, reason, mayDecide)
 }
 
-func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, silent bool, reason string) (GroupJoinRequest, error) {
+func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, silent bool, reason string, mayDecide deciderCheck) (GroupJoinRequest, error) {
 	decidedBy = strings.TrimSpace(decidedBy)
 	if decidedBy == "" {
 		return GroupJoinRequest{}, fmt.Errorf("%w: a decision needs whoever made it", ErrInvalidJoinRequest)
@@ -294,7 +312,7 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 	}
 	now := NowRFC3339()
 	err = m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := m.mustLead(tx, req.GroupID, decidedBy); err != nil {
+		if err := mayDecide(tx, req.GroupID, decidedBy); err != nil {
 			return err
 		}
 		taken := tx.Table(m.table(roleGroupJoinRequest)).
