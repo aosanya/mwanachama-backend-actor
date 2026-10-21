@@ -59,6 +59,7 @@ func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error)
 	act.CreatedAt = NowRFC3339()
 	act.LastUpdated = act.CreatedAt
 	act.Deleted = false
+	act.FormsWeekSplit = true
 
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "actor", "AC")

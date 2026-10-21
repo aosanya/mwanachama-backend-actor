@@ -51,6 +51,12 @@
           "description": "The persona: everything a domain knows about this actor beyond its name. Queried in place by path, so a domain's own vocabulary never becomes a column here."
         },
         {
+          "name": "forms_week_split",
+          "type": "bool",
+          "description": "The actor's own choice to see their waiting forms split by closing week, those closing this week apart from those closing later. On for every actor until they turn it off, a row older than the column too, and only the actor themselves changes it.",
+          "default": "true"
+        },
+        {
           "name": "created_at",
           "type": "timestamp",
           "description": "When the row was created."

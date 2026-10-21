@@ -104,6 +104,53 @@
       ],
       "tool": "actor_get_my_actor"
     },
+    "get_my_forms_week_split": {
+      "method": "GET",
+      "path": "/actors/mine/forms-week-split",
+      "call": "GetMyFormsWeekSplit",
+      "action": "actor.actor.read_my_forms_week_split",
+      "title": "Read my forms week split",
+      "description": "Whether the calling actor sees their waiting forms split into those closing this week and those closing later. On unless they turned it off, and on for an actor with no record yet.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor asking, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_my_forms_week_split"
+    },
+    "set_my_forms_week_split": {
+      "method": "PUT",
+      "path": "/actors/mine/forms-week-split",
+      "call": "SetMyFormsWeekSplit",
+      "action": "actor.actor.set_my_forms_week_split",
+      "title": "Set my forms week split",
+      "description": "Turn the calling actor's own split of waiting forms by closing week on or off. An actor with no record answers as a missing one.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor setting their own choice, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "as": "forms_week_split",
+          "description": "True to split waiting forms by closing week, false to show them as one list."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_my_forms_week_split"
+    },
     "get_actors": {
       "method": "GET",
       "path": "/actors/batch",

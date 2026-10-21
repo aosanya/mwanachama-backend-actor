@@ -16,6 +16,7 @@ type (
 	Actor                = models.Actor
 	Group                = models.Group
 	MyGroup              = models.MyGroup
+	FormsPreference      = models.FormsPreference
 	GroupEdit            = models.GroupEdit
 	ActorGroupAssignment = models.ActorGroupAssignment
 	RoleKind             = models.RoleKind
@@ -82,6 +83,10 @@ type UserManager interface {
 	ListMyGroups(ctx context.Context, actorID string) ([]MyGroup, error)
 
 	SetMyGroupPriority(ctx context.Context, groupID, actorID, priority string) (ActorGroupAssignment, error)
+
+	GetMyFormsWeekSplit(ctx context.Context, actorID string) (FormsPreference, error)
+
+	SetMyFormsWeekSplit(ctx context.Context, actorID string, formsWeekSplit bool) (FormsPreference, error)
 
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
 
