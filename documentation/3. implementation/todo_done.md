@@ -147,3 +147,50 @@ is unchanged. Design page: `documentation/2. design/my-groups.md`. Verified:
 `gofmt -l` clean; wakala-api builds and tests against it with only its three
 board-pinned reds (WK65, WK80, WK84). Residents are admitted by wakala-api WK120.
 
+## ACT18 — invite by member code — 2026-10-21
+
+Owner, member app decisions 132, 136. ddce255 (merged as 0328590):
+`invite_to_group` takes the invitee as exactly one of `actor_id` or
+`actor_code` (neither or both is `ErrInvalidInvitation`, 400);
+`InviteToGroup(ctx, groupID, actorID, actorCode, invitedBy, expiresAt)`. A
+code is trimmed and upper-cased, matches only this agency's live actors, and
+an unknown one is the same `ErrActorNotFound` 404 as an unknown id; the leader
+check still runs first. New `get_my_actor` (`GET /actors/mine`,
+`actor.actor.read_mine`, tool `actor_get_my_actor`) returns the caller's own
+record with its `code`; no actor row is a 404. `invitation_code_test.go`, a
+wire test; `invitations.md` "Inviting by member code (ACT18)". wakala-api
+c68c4f6 passes the code through; self-test `resident-invitations` 51/51.
+Verified: `go build`, `go vet`, `gofmt`, `go test ./...` ok. Granting
+`actor.actor.read_mine` to residents is WK133.
+
+## ACT19 — a reason on a join-request decline — 2026-10-21
+
+Owner, member app decision 133. b0eeaa8 (merged as f678960): new field
+`group_join_request.decline_reason` (json `decline_reason`), returned on every
+read including the applicant's own; `decline_join_request` takes an optional
+body `reason`, trimmed, at most 500 characters (`ErrDeclineReasonTooLong`);
+a reason with `silent: true` is `ErrQuietDeclineReason` (400) and writes
+nothing; an appeal, a re-ask after approval and an open group's policy
+settling a request clear it. `Provision` adds the column to an existing table.
+`join_decline_reason_test.go`, wire tests; `joining-groups.md` "A reason on a
+decline (ACT19)". wakala-api b0949cd passes it through; self-test
+`group-leaders` 60/60. Verified: `go build`, `go vet`, `gofmt`,
+`go test ./...` ok. Carrying the reason into the Inbox notice is MF66's.
+
+## ACT20 — find and join a group by its code — 2026-10-21
+
+Owner, member app decision 137. cf00803 (merged as 69a50b0, a call site
+adapted to ACT19's signature): `FindGroupByCode` answers `group` (hidden
+included, with `code`), `join_mode`, the caller's `state`
+(`member`/`requested`/`declined`/`none`) and the request when there is one;
+`JoinGroupByCode` follows the join mode exactly as `JoinGroup` does, a hidden
+group included. A code is trimmed and upper-cased; empty, unknown, deleted and
+another agency's code all answer `ErrGroupNotFound`. New operations
+`GET /groups/by-code?code=` (`actor.group.find_by_code`) and
+`POST /groups/by-code/join` (`actor.group.join_by_code`), caller-bound; listed
+joinable groups carry `code`. `join_by_code_test.go`,
+`routes/join_by_code_test.go`; `joining-groups.md` "Finding a group by its
+code (ACT20)", hidden rule amended in `invitations.md`. Declared table 68
+routes and tools with ACT18. Verified: `go build`, `go vet`, `gofmt`,
+`go test ./...` ok; wakala-api builds and tests with only board-pinned reds.
+Mounting it is WK134.
