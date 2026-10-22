@@ -306,3 +306,7 @@ falling back to the original; four declared addresses
 agency's languages is left to wakala-api; a group has no original-language
 field. Verified: `go build`, `go vet`, `gofmt`, `go test ./...` ok (route and
 tool counts 81); wakala-api builds.
+
+## ACT30 — a role kind remembers the definition role it came from — 2026-10-22
+
+Member app decision 269. 311a533 (merged as 776adf9): `role_kind.definition_role_id` in the blueprint and `models.RoleKind` (added to `columnsDeclaredSince`), `RoleKindForDefinitionRole`, and `SyncDefinitionRoles` (renames linked kinds, retires kinds whose role left the definition, leaves seats and hand-made kinds alone, idempotent); `definition-roles.md`. Open with the owner: should active seats under a dropped role end, and with what reason? If a dropped role comes back, revive the old kind or make a new one? Verified: `go build`, `go vet`, `go test ./...` ok; wakala-api builds.
