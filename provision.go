@@ -443,7 +443,8 @@ func declaresColumn(o spec.Object, column string) bool {
 
 var columnsDeclaredSince = map[string][]string{
 	roleActor:                {"first_name", "last_name", "public_code", "forms_week_split"},
-	roleGroup:                {"join_mode", "hidden", "public_code"},
+	roleGroup:                {"join_mode", "hidden", "public_code", "outline"},
+	roleLevel:                {"is_area"},
 	roleRoleKind:             {"leads_group", "definition_role_id", "outsider"},
 	roleGroupJoinRequest:     {"asked_at", "decline_reason"},
 	roleActorGroupAssignment: {"priority"},
@@ -480,7 +481,7 @@ func addColumnsDeclaredSince(db *gorm.DB, s *spec.Spec) error {
 			if held {
 				continue
 			}
-			definition, err := addedColumnDefinition(o, column)
+			definition, err := addedColumnDefinition(o, column, db.Dialector.Name())
 			if err != nil {
 				return err
 			}
@@ -493,7 +494,7 @@ func addColumnsDeclaredSince(db *gorm.DB, s *spec.Spec) error {
 	return nil
 }
 
-func addedColumnDefinition(o spec.Object, column string) (string, error) {
+func addedColumnDefinition(o spec.Object, column, dialect string) (string, error) {
 	for _, f := range o.Fields {
 		if f.Name != column {
 			continue
@@ -507,6 +508,11 @@ func addedColumnDefinition(o spec.Object, column string) (string, error) {
 			return fmt.Sprintf("%s boolean default %s", f.Name, value), nil
 		case spec.TypeString, spec.TypeText, spec.TypeEnum, spec.TypeTimestamp:
 			return fmt.Sprintf("%s text default '%s'", f.Name, strings.ReplaceAll(f.Default, "'", "''")), nil
+		case spec.TypeGeometry:
+			if dialect == "postgres" {
+				return fmt.Sprintf("%s jsonb", f.Name), nil
+			}
+			return fmt.Sprintf("%s text", f.Name), nil
 		default:
 			return "", fmt.Errorf("actor: %s.%s is a %s, which adding a column does not cover", o.Name, f.Name, f.Type)
 		}

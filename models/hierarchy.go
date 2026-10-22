@@ -33,4 +33,5 @@ type Level struct {
 	Name            string `json:"name"`
 	Depth           int    `json:"depth"`
 	IsDefaultAnchor bool   `json:"is_default_anchor,omitempty"`
+	IsArea          bool   `json:"is_area,omitempty"`
 }

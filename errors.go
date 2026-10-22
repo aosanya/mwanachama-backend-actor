@@ -92,3 +92,7 @@ var ErrInvalidTranslation = errors.New("mwanachamaactor: a translated name is re
 var ErrTranslationNotFound = errors.New("mwanachamaactor: translation not found")
 
 var ErrReviewerRequired = errors.New("mwanachamaactor: a translation is reviewed by someone")
+
+var ErrNotAnArea = errors.New("mwanachamaactor: the group's level is not an area")
+
+var ErrInvalidOutline = errors.New("mwanachamaactor: an outline is a polygon or a multipolygon")

@@ -200,6 +200,11 @@
           "name": "deleted",
           "type": "bool",
           "description": "Soft delete. A deleted row is invisible to every listing."
+        },
+        {
+          "name": "outline",
+          "type": "geometry",
+          "description": "The place a group at an area rung covers, as a polygon or multipolygon. Empty when the group carries no outline."
         }
       ],
       "indexes": [
@@ -522,6 +527,11 @@
           "name": "is_default_anchor",
           "type": "bool",
           "description": "True on the one rung per hierarchy that a subtree anchors on unless a group overrides it."
+        },
+        {
+          "name": "is_area",
+          "type": "bool",
+          "description": "True on a rung the template marks as an area: a group at it may carry a place, and a pin or an address resolves to one group at it."
         }
       ],
       "indexes": [
