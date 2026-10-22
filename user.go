@@ -32,6 +32,8 @@ type (
 	InvitationBatchRow   = models.InvitationBatchRow
 	InvitationBatchCheck = models.InvitationBatchCheck
 	CodeFormat           = models.CodeFormat
+	DefinitionRole       = models.DefinitionRole
+	DefinitionRoleSync   = models.DefinitionRoleSync
 )
 
 const TimeLayout = models.TimeLayout
@@ -136,6 +138,8 @@ type UserManager interface {
 	RetireRoleKind(ctx context.Context, kindID, actorID string) (RoleKind, error)
 	UnretireRoleKind(ctx context.Context, kindID string) (RoleKind, error)
 	SetRoleKindLeadsGroup(ctx context.Context, kindID string, leads bool) (RoleKind, error)
+	RoleKindForDefinitionRole(ctx context.Context, definitionRoleID string) (RoleKind, error)
+	SyncDefinitionRoles(ctx context.Context, roles []DefinitionRole, actorID string) (DefinitionRoleSync, error)
 
 	GrantRole(ctx context.Context, a ActorRoleAssignment) (ActorRoleAssignment, error)
 	GetRoleAssignment(ctx context.Context, id string) (ActorRoleAssignment, error)

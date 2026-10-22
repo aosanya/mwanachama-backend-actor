@@ -23,6 +23,7 @@ var ErrParentInSubtree = errors.New("mwanachamaactor: a group cannot be moved be
 var ErrParentNotFound = errors.New("mwanachamaactor: parent group not found")
 
 var ErrRoleKindNotFound = errors.New("mwanachamaactor: role kind not found")
+var ErrDefinitionRoleIDRequired = errors.New("mwanachamaactor: a definition role id is required")
 
 var ErrAssignmentNotFound = errors.New("mwanachamaactor: role assignment not found")
 

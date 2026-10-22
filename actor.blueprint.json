@@ -342,6 +342,11 @@
           "description": "The level this kind may be granted at. Empty means any level."
         },
         {
+          "name": "definition_role_id",
+          "type": "string",
+          "description": "The id of the agency definition's role this kind was published from. Empty for a kind made by hand. Publishing the definition renames the kind by this id and retires it when the role leaves the definition, keeping every seat held under it."
+        },
+        {
           "name": "retired_at",
           "type": "timestamp",
           "description": "When the kind was retired. Empty means it is still grantable — this field is what Retired() reads."
@@ -358,6 +363,13 @@
           "description": "Finds the kinds grantable at one level, which is what a grant form offers.",
           "fields": [
             "level_id"
+          ]
+        },
+        {
+          "name": "definition_role",
+          "description": "Finds the kind published from one definition role.",
+          "fields": [
+            "definition_role_id"
           ]
         }
       ]
