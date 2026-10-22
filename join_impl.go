@@ -84,6 +84,9 @@ func (m *userManager) join(ctx context.Context, groupID, actorID, message string
 	if _, err := m.GetActor(ctx, actorID); err != nil {
 		return JoinOutcome{}, err
 	}
+	if err := m.refuseOutsider(m.db.WithContext(ctx), actorID); err != nil {
+		return JoinOutcome{}, err
+	}
 	held, found, err := m.findAssignment(ctx, actorID, groupID)
 	if err != nil {
 		return JoinOutcome{}, fmt.Errorf("JoinGroup: %w", err)

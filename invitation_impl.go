@@ -47,6 +47,9 @@ func (m *userManager) InviteToGroup(ctx context.Context, groupID, actorID, actor
 		return GroupInvitation{}, err
 	}
 	actorID = invitee.ID
+	if err := m.refuseOutsider(m.db.WithContext(ctx), actorID); err != nil {
+		return GroupInvitation{}, err
+	}
 	_, found, err := m.findAssignment(ctx, actorID, groupID)
 	if err != nil {
 		return GroupInvitation{}, fmt.Errorf("InviteToGroup: %w", err)
@@ -199,6 +202,11 @@ func (m *userManager) answerInvitation(ctx context.Context, id, actorID, state s
 	}
 	if inv.ActorID != actorID {
 		return GroupInvitation{}, ErrInvitationNotFound
+	}
+	if state == models.InvitationAccepted {
+		if err := m.refuseOutsider(m.db.WithContext(ctx), actorID); err != nil {
+			return GroupInvitation{}, err
+		}
 	}
 	now := NowRFC3339()
 	if inv.State != models.InvitationPending {

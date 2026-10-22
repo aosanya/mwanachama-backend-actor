@@ -57,6 +57,7 @@ var sentinels = map[string]error{
 	"ErrInvitationAnswered":     mwanachamaactor.ErrInvitationAnswered,
 	"ErrInvitationLapsed":       mwanachamaactor.ErrInvitationLapsed,
 	"ErrAlreadyInGroup":         mwanachamaactor.ErrAlreadyInGroup,
+	"ErrOutsiderRole":           mwanachamaactor.ErrOutsiderRole,
 	"ErrNotGroupLeader":         mwanachamaactor.ErrNotGroupLeader,
 	"ErrInvalidCodeFormat":      mwanachamaactor.ErrInvalidCodeFormat,
 	"ErrInvalidPriority":        mwanachamaactor.ErrInvalidPriority,

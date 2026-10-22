@@ -34,6 +34,7 @@
     "ErrInvitationAnswered": 409,
     "ErrInvitationLapsed": 409,
     "ErrAlreadyInGroup": 409,
+    "ErrOutsiderRole": 409,
     "ErrNotGroupLeader": 403,
     "ErrInvalidCodeFormat": 400,
     "ErrJoinDecisionNotFound": 404,

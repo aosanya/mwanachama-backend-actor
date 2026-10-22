@@ -8,6 +8,7 @@ type RoleKind struct {
 	Description      string   `json:"description,omitempty"`
 	IsDelegate       bool     `json:"is_delegate,omitempty"`
 	LeadsGroup       bool     `json:"leads_group,omitempty"`
+	Outsider         bool     `json:"outsider,omitempty"`
 	LevelID          string   `json:"level_id,omitempty"`
 	DefinitionRoleID string   `json:"definition_role_id,omitempty"`
 	RetiredAt        string   `json:"retired_at,omitempty"`

@@ -71,6 +71,8 @@ var ErrInvitationAnswered = errors.New("mwanachamaactor: invitation is not pendi
 
 var ErrInvitationLapsed = errors.New("mwanachamaactor: invitation has lapsed")
 
+var ErrOutsiderRole = errors.New("mwanachamaactor: the actor holds an outsider role, so it cannot join or be invited to a group")
+
 var ErrAlreadyInGroup = errors.New("mwanachamaactor: the actor is already registered at this group")
 
 var ErrNotGroupLeader = errors.New("mwanachamaactor: only the group's leaders may do this")

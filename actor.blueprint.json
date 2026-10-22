@@ -337,6 +337,11 @@
           "description": "True when a seat of this kind makes its holder one of the group's leaders, who decide its join requests and invite to it. Set by the agency; off by default."
         },
         {
+          "name": "outsider",
+          "type": "bool",
+          "description": "True when the seat is a narrow outsider one — a client, a guardian, a bidder — whose holder sees only what is linked to them. An actor holding an active seat of such a kind is left out of member lists and counts, and cannot join or be invited to a group. Set by the agency at creation; off by default."
+        },
+        {
           "name": "level_id",
           "type": "string",
           "description": "The level this kind may be granted at. Empty means any level."
