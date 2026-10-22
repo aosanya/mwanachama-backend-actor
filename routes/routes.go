@@ -60,6 +60,10 @@ var sentinels = map[string]error{
 	"ErrNotGroupLeader":         mwanachamaactor.ErrNotGroupLeader,
 	"ErrInvalidCodeFormat":      mwanachamaactor.ErrInvalidCodeFormat,
 	"ErrInvalidPriority":        mwanachamaactor.ErrInvalidPriority,
+	"ErrInvalidLanguage":        mwanachamaactor.ErrInvalidLanguage,
+	"ErrInvalidTranslation":     mwanachamaactor.ErrInvalidTranslation,
+	"ErrTranslationNotFound":    mwanachamaactor.ErrTranslationNotFound,
+	"ErrReviewerRequired":       mwanachamaactor.ErrReviewerRequired,
 }
 
 type Mount struct {

@@ -81,3 +81,11 @@ var ErrInvalidPriority = errors.New("mwanachamaactor: priority must be very_high
 var ErrNotInGroup = errors.New("mwanachamaactor: the actor is not registered at this group")
 
 var ErrRemoverRequired = errors.New("mwanachamaactor: a removal names who removed the actor")
+
+var ErrInvalidLanguage = errors.New("mwanachamaactor: a language is a tag such as \"en\" or \"pt-br\"")
+
+var ErrInvalidTranslation = errors.New("mwanachamaactor: a translated name is required")
+
+var ErrTranslationNotFound = errors.New("mwanachamaactor: translation not found")
+
+var ErrReviewerRequired = errors.New("mwanachamaactor: a translation is reviewed by someone")

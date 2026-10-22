@@ -86,6 +86,12 @@
       "name": "code_format",
       "table": "code_formats",
       "description": "How the agency's member and group codes are drawn."
+    },
+    {
+      "role": "group_name_translation",
+      "name": "group_name_translation",
+      "table": "group_name_translations",
+      "description": "A group's name in another of the agency's languages."
     }
   ]
 }

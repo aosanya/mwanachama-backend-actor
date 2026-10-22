@@ -37,7 +37,11 @@
     "ErrNotGroupLeader": 403,
     "ErrInvalidCodeFormat": 400,
     "ErrJoinDecisionNotFound": 404,
-    "ErrInvalidPriority": 400
+    "ErrInvalidPriority": 400,
+    "ErrInvalidLanguage": 400,
+    "ErrInvalidTranslation": 400,
+    "ErrTranslationNotFound": 404,
+    "ErrReviewerRequired": 400
   },
   "operations": {
     "create_actor": {
@@ -1876,6 +1880,115 @@
         }
       ],
       "tool": "actor_set_code_format"
+    },
+    "list_group_name_translations": {
+      "method": "GET",
+      "path": "/groups/{group_id}/names",
+      "call": "ListGroupNameTranslations",
+      "action": "actor.group_name.list",
+      "title": "List group name translations",
+      "description": "Every translation of a group's name, reviewed or not, by language.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose name it is."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_group_name_translations"
+    },
+    "set_group_name_translation": {
+      "method": "PUT",
+      "path": "/groups/{group_id}/names/{language}",
+      "call": "SetGroupNameTranslation",
+      "action": "actor.group_name.translate",
+      "title": "Set group name translation",
+      "description": "Add or change a group's name in one language. A changed name waits for review again before members see it; the same name leaves its review alone.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose name it is."
+        },
+        {
+          "from": "path",
+          "as": "language",
+          "description": "The language, as a lowercase tag such as \"en\" or \"pt-br\"."
+        },
+        {
+          "from": "body",
+          "as": "name",
+          "description": "The group's name in that language."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_group_name_translation"
+    },
+    "review_group_name_translation": {
+      "method": "POST",
+      "path": "/groups/{group_id}/names/{language}/review",
+      "call": "ReviewGroupNameTranslation",
+      "action": "actor.group_name.review",
+      "title": "Review group name translation",
+      "description": "Mark a group's name in one language reviewed, so members reading in that language see it.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose name it is."
+        },
+        {
+          "from": "path",
+          "as": "language",
+          "description": "The language, as a lowercase tag such as \"en\" or \"pt-br\"."
+        },
+        {
+          "from": "caller",
+          "as": "reviewed_by",
+          "description": "Who reviewed it, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_review_group_name_translation"
+    },
+    "get_group_in_language": {
+      "method": "GET",
+      "path": "/groups/{group_id}/in/{language}",
+      "call": "GetGroupInLanguage",
+      "action": "actor.group.read_in_language",
+      "title": "Read group in a language",
+      "description": "Read a group with its name in one language: the reviewed translation when there is one, otherwise the name it was written with.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose name it is."
+        },
+        {
+          "from": "path",
+          "as": "language",
+          "description": "The language, as a lowercase tag such as \"en\" or \"pt-br\"."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_group_in_language"
     }
   }
 }

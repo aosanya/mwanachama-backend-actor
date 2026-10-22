@@ -26,6 +26,7 @@ var carriers = map[string]string{
 	"group_invitation":       "GroupInvitation",
 	"code_sequence":          "CodeSequence",
 	"code_format":            "CodeFormat",
+	"group_name_translation": "GroupNameTranslation",
 }
 
 var storeOwned = map[string]bool{
@@ -51,6 +52,9 @@ var storeOwned = map[string]bool{
 	"GroupJoinRequest.decided_by":      true,
 	"GroupInvitation.state":            true,
 	"GroupInvitation.invited_by":       true,
+	"GroupNameTranslation.reviewed":    true,
+	"GroupNameTranslation.reviewed_by": true,
+	"GroupNameTranslation.reviewed_at": true,
 }
 
 var editFields = map[string]dispatch.FieldDoc{

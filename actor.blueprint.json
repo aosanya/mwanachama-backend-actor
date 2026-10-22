@@ -930,6 +930,72 @@
           "description": "When the format last changed."
         }
       ]
+    },
+    {
+      "role": "group_name_translation",
+      "description": "A group's name in one more language than the one it was written in. Members are shown it only once it is reviewed; until then, and for every language without one, they see the original name.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group whose name this translates.",
+          "required": true
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "description": "The language of this name, as a lowercase tag such as \"en\" or \"pt-br\". One translation per group and language.",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "The group's name in that language.",
+          "required": true
+        },
+        {
+          "name": "reviewed",
+          "type": "bool",
+          "description": "Whether someone has reviewed this translation. Only a reviewed translation reaches members; changing the name clears it."
+        },
+        {
+          "name": "reviewed_by",
+          "type": "string",
+          "description": "Who reviewed it, as the mount names its caller. Empty until reviewed."
+        },
+        {
+          "name": "reviewed_at",
+          "type": "string",
+          "description": "When it was reviewed, RFC 3339. Empty until reviewed."
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "description": "When the translation was first added."
+        },
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "description": "When the translation last changed."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "group_language",
+          "description": "One translation per group and language, and the lookup a read in a language makes.",
+          "fields": [
+            "group_id",
+            "language"
+          ],
+          "unique": true
+        }
+      ]
     }
   ]
 }

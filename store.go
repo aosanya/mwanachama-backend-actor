@@ -27,6 +27,7 @@ const (
 	roleGroupInvitation      = "group_invitation"
 	roleCodeSequence         = "code_sequence"
 	roleCodeFormat           = "code_format"
+	roleGroupNameTranslation = "group_name_translation"
 )
 
 func carriers() map[string]any {
@@ -45,6 +46,7 @@ func carriers() map[string]any {
 		roleGroupInvitation:      models.GroupInvitation{},
 		roleCodeSequence:         models.CodeSequence{},
 		roleCodeFormat:           models.CodeFormat{},
+		roleGroupNameTranslation: models.GroupNameTranslation{},
 	}
 }
 
