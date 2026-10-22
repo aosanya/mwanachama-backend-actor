@@ -26,6 +26,26 @@ built so far and what is still open on the row.
   `Provision` adds them to tables created before ACT32. A geometry column is
   added without a default, NULL meaning no outline.
 
+## Declared operations
+
+`SetGroupOutline` and `ResolvePoint` are declared in `actor.operations.json`
+like every other address, so each is a route and an MCP tool from one entry:
+
+| Operation | Address | Action | Tool |
+| --- | --- | --- | --- |
+| `set_group_outline` | `PUT /groups/{group_id}/outline` | `actor.group.set_outline` | `actor_set_group_outline` |
+| `resolve_point` | `GET /hierarchies/{hierarchy_id}/resolve-point?lon=&lat=` | `actor.area.resolve_point` | `actor_resolve_point` |
+
+The outline is the body's `outline` field as GeoJSON; a body without one
+clears it. `ErrNotAnArea` answers 409 (the group's level is the conflict, not
+the request's shape) and `ErrInvalidOutline` 400. `resolve_point` answers
+`{group, found}`, the same two-value shape `deregister` uses, so a miss is a
+200 with `found: false` rather than a 404: a pin in no area is an answer, not
+a missing thing. An unknown hierarchy answers the same miss, since
+`ResolvePoint` lists its levels and finds none. Marking a level an area needed
+no new address: `create_level` takes the whole level, `is_area` included.
+`routes/area_test.go` walks all three through the real table.
+
 ## Why the walk is in Go
 
 `ResolvePoint` lists the hierarchy's groups and tests each outline in Go,
@@ -39,9 +59,13 @@ PostGIS, earns its place.
 - **The street list** on a group at an area level (street name, house-number
   ranges, odd/even/all), and **`ResolveAddress`**, which matches ignoring
   case, accents and common abbreviations such as "u." for "utca".
-- **Routes and MCP tools** for `SetGroupOutline` and the two resolvers; the
-  methods exist on `UserManager` but are not declared in
-  `actor.operations.json` yet.
+- **Routes and MCP tools for `ResolveAddress`**, which waits on the street
+  list.
+- **Marking an existing level an area.** A level is marked only when it is
+  created (`POST /levels` with `is_area`); `RenameLevel` touches the name
+  alone and there is no address that flips `is_area` afterwards. Whether a
+  template's level may become an area, or stop being one, after groups wear
+  it is the owner's call: un-marking would strand every outline on it.
 - `models/schema_generated_test.go` was edited by hand to take `IsArea` and
   `Outline`; the developer repo's `structure.json`, which generates it, needs
   the same two fields so a regeneration does not drop them.

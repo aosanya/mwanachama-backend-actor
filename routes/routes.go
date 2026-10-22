@@ -65,6 +65,8 @@ var sentinels = map[string]error{
 	"ErrInvalidTranslation":     mwanachamaactor.ErrInvalidTranslation,
 	"ErrTranslationNotFound":    mwanachamaactor.ErrTranslationNotFound,
 	"ErrReviewerRequired":       mwanachamaactor.ErrReviewerRequired,
+	"ErrNotAnArea":              mwanachamaactor.ErrNotAnArea,
+	"ErrInvalidOutline":         mwanachamaactor.ErrInvalidOutline,
 }
 
 type Mount struct {
