@@ -67,5 +67,17 @@ PostGIS, earns its place.
   template's level may become an area, or stop being one, after groups wear
   it is the owner's call: un-marking would strand every outline on it.
 - `models/schema_generated_test.go` was edited by hand to take `IsArea` and
-  `Outline`; the developer repo's `structure.json`, which generates it, needs
-  the same two fields so a regeneration does not drop them.
+  `Outline`. The `structure.json` its banner names is not in the developer
+  repo: `developer/tools/domain-schema`'s Makefile reads it from
+  `mwanachama-backend-api-gateway/internal/domain/structure/`, which is
+  retired. A regeneration from that file would drop both fields, so the file
+  stays hand-edited until the generator is pointed at a live source.
+
+## The municipality template
+
+`developer/documentation/4. qa/agencies/municipality/modules/council_actor.json`
+marks its Ward and Neighbourhood levels `is_area` and leaves Municipality and
+Function unmarked: the first two are places, the other two are the elected
+body and its offices. Its Ward and Neighbourhood groups are made at
+provisioning from the municipality's own boundaries, so the template names
+where each outline comes from and carries no geography itself.
