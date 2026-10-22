@@ -294,3 +294,15 @@ wakala-api WK157: grant both actions only to the Instance's owners and
 agents. Whether leaders keep deciding stays open (WK157).
 `joining-groups.md`. Verified: `go build`, `go vet`, `go test ./...` ok
 (route and tool counts now 77 with ACT27); wakala-api builds.
+
+ACT29 · Group names in several languages (decision 256) · 2026-10-22.
+6fd057f (merged as 9c2cbab). New `group_name_translation` object, unique on
+(group, language); `SetGroupNameTranslation` (a changed name clears review),
+`ReviewGroupNameTranslation` (reviewer from the caller),
+`ListGroupNameTranslations`, `GetGroupInLanguage` and `GroupNamesInLanguage`
+falling back to the original; four declared addresses
+(`actor.group_name.list`/`translate`/`review`, `actor.group.read_in_language`).
+`group-name-translations.md`. Open with the owner: limiting tags to the
+agency's languages is left to wakala-api; a group has no original-language
+field. Verified: `go build`, `go vet`, `gofmt`, `go test ./...` ok (route and
+tool counts 81); wakala-api builds.
