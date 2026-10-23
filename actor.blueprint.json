@@ -1023,6 +1023,62 @@
           "unique": true
         }
       ]
+    },
+    {
+      "role": "group_population",
+      "description": "An estimate of how many people a group serves, as of a date and from a named source. A group's members are who joined; this is the denominator a coverage figure divides by, which only somebody outside the module can supply. Each figure is kept, so a newer estimate never overwrites an older one.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "group_id",
+          "type": "string",
+          "description": "The group the figure is for.",
+          "required": true
+        },
+        {
+          "name": "population",
+          "type": "int",
+          "description": "How many people the source says the group serves. Zero or more.",
+          "required": true
+        },
+        {
+          "name": "as_of",
+          "type": "string",
+          "description": "The date the figure describes, as YYYY-MM-DD. The latest figure is the one with the latest date.",
+          "required": true
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "description": "Where the figure comes from, in the recorder's words, such as a census or a register.",
+          "required": true
+        },
+        {
+          "name": "recorded_by",
+          "type": "string",
+          "description": "Who recorded it, as the mount names its caller."
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "description": "When the figure was recorded."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "group_as_of",
+          "description": "A group's figures in date order, which both the history and the latest read walk.",
+          "fields": [
+            "group_id",
+            "as_of"
+          ]
+        }
+      ]
     }
   ]
 }

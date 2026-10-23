@@ -28,6 +28,7 @@ const (
 	roleCodeSequence         = "code_sequence"
 	roleCodeFormat           = "code_format"
 	roleGroupNameTranslation = "group_name_translation"
+	roleGroupPopulation      = "group_population"
 )
 
 func carriers() map[string]any {
@@ -47,6 +48,7 @@ func carriers() map[string]any {
 		roleCodeSequence:         models.CodeSequence{},
 		roleCodeFormat:           models.CodeFormat{},
 		roleGroupNameTranslation: models.GroupNameTranslation{},
+		roleGroupPopulation:      models.GroupPopulation{},
 	}
 }
 

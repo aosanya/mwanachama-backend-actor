@@ -44,7 +44,9 @@
     "ErrTranslationNotFound": 404,
     "ErrReviewerRequired": 400,
     "ErrNotAnArea": 409,
-    "ErrInvalidOutline": 400
+    "ErrInvalidOutline": 400,
+    "ErrInvalidPopulation": 400,
+    "ErrPopulationNotFound": 404
   },
   "operations": {
     "create_actor": {
@@ -2075,6 +2077,90 @@
         }
       ],
       "tool": "actor_get_group_in_language"
+    },
+    "record_group_population": {
+      "method": "POST",
+      "path": "/groups/{group_id}/population",
+      "call": "RecordGroupPopulation",
+      "action": "actor.group_population.record",
+      "status": 201,
+      "title": "Record group population",
+      "description": "Record how many people a group serves, as of a date and from a named source. Every figure is kept; a later date becomes the latest.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group the figure is for."
+        },
+        {
+          "from": "body",
+          "as": "population",
+          "description": "How many people the source says the group serves. Zero or more."
+        },
+        {
+          "from": "body",
+          "as": "as_of",
+          "description": "The date the figure describes, as YYYY-MM-DD."
+        },
+        {
+          "from": "body",
+          "as": "source",
+          "description": "Where the figure comes from, such as a census or a register."
+        },
+        {
+          "from": "caller",
+          "as": "recorded_by",
+          "description": "Who recorded it, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_record_group_population"
+    },
+    "get_group_population": {
+      "method": "GET",
+      "path": "/groups/{group_id}/population",
+      "call": "LatestGroupPopulation",
+      "action": "actor.group_population.read",
+      "title": "Read group population",
+      "description": "A group's latest population figure: the one with the latest date, the most recently recorded among figures of the same date.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group the figure is for."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_group_population"
+    },
+    "list_group_populations": {
+      "method": "GET",
+      "path": "/groups/{group_id}/population/history",
+      "call": "ListGroupPopulations",
+      "action": "actor.group_population.list",
+      "title": "List group population history",
+      "description": "Every population figure recorded for a group, oldest date first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group the figure is for."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_group_populations"
     }
   }
 }

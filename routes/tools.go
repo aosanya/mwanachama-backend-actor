@@ -27,6 +27,7 @@ var carriers = map[string]string{
 	"code_sequence":          "CodeSequence",
 	"code_format":            "CodeFormat",
 	"group_name_translation": "GroupNameTranslation",
+	"group_population":       "GroupPopulation",
 }
 
 var storeOwned = map[string]bool{
@@ -55,6 +56,7 @@ var storeOwned = map[string]bool{
 	"GroupNameTranslation.reviewed":    true,
 	"GroupNameTranslation.reviewed_by": true,
 	"GroupNameTranslation.reviewed_at": true,
+	"GroupPopulation.recorded_by":      true,
 }
 
 var editFields = map[string]dispatch.FieldDoc{

@@ -92,6 +92,12 @@
       "name": "group_name_translation",
       "table": "group_name_translations",
       "description": "A group's name in another of the agency's languages."
+    },
+    {
+      "role": "group_population",
+      "name": "group_population",
+      "table": "group_populations",
+      "description": "How many people each group serves, dated and sourced."
     }
   ]
 }

@@ -96,3 +96,7 @@ var ErrReviewerRequired = errors.New("mwanachamaactor: a translation is reviewed
 var ErrNotAnArea = errors.New("mwanachamaactor: the group's level is not an area")
 
 var ErrInvalidOutline = errors.New("mwanachamaactor: an outline is a polygon or a multipolygon")
+
+var ErrInvalidPopulation = errors.New("mwanachamaactor: a population figure is zero or more, dated YYYY-MM-DD and names its source")
+
+var ErrPopulationNotFound = errors.New("mwanachamaactor: no population figure recorded for the group")

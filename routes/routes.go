@@ -64,6 +64,8 @@ var sentinels = map[string]error{
 	"ErrInvalidLanguage":        mwanachamaactor.ErrInvalidLanguage,
 	"ErrInvalidTranslation":     mwanachamaactor.ErrInvalidTranslation,
 	"ErrTranslationNotFound":    mwanachamaactor.ErrTranslationNotFound,
+	"ErrInvalidPopulation":      mwanachamaactor.ErrInvalidPopulation,
+	"ErrPopulationNotFound":     mwanachamaactor.ErrPopulationNotFound,
 	"ErrReviewerRequired":       mwanachamaactor.ErrReviewerRequired,
 	"ErrNotAnArea":              mwanachamaactor.ErrNotAnArea,
 	"ErrInvalidOutline":         mwanachamaactor.ErrInvalidOutline,
