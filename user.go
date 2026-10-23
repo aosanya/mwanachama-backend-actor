@@ -18,6 +18,7 @@ type (
 	Group                = models.Group
 	MyGroup              = models.MyGroup
 	FormsPreference      = models.FormsPreference
+	AttributeCorrection  = models.AttributeCorrection
 	GroupEdit            = models.GroupEdit
 	ActorGroupAssignment = models.ActorGroupAssignment
 	RoleKind             = models.RoleKind
@@ -99,6 +100,10 @@ type UserManager interface {
 	GetMyFormsWeekSplit(ctx context.Context, actorID string) (FormsPreference, error)
 
 	SetMyFormsWeekSplit(ctx context.Context, actorID string, formsWeekSplit bool) (FormsPreference, error)
+
+	CorrectMyAttributes(ctx context.Context, actorID string, correction AttributeCorrection) (Actor, error)
+
+	SetActorAttributes(ctx context.Context, actorID, staffID string, correction AttributeCorrection) (Actor, error)
 
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
 

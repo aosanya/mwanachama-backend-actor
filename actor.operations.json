@@ -160,6 +160,63 @@
       ],
       "tool": "actor_set_my_forms_week_split"
     },
+    "correct_my_attributes": {
+      "method": "PATCH",
+      "path": "/actors/mine/attributes",
+      "call": "CorrectMyAttributes",
+      "action": "actor.actor.correct_my_attributes",
+      "title": "Correct my attributes",
+      "description": "Correct attributes on the calling actor's own record. Only declared attributes are accepted and each is validated and held unique as on create; an empty value clears one. Every attribute named is recorded as set by self, with the caller and the instant, so a self-corrected value is told apart from a staff-entered one.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "actor_id",
+          "description": "The actor correcting their own record, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The attributes to correct, by name."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_correct_my_attributes"
+    },
+    "set_actor_attributes": {
+      "method": "PATCH",
+      "path": "/actors/{actor_id}/attributes",
+      "call": "SetActorAttributes",
+      "action": "actor.actor.set_attributes",
+      "title": "Set actor attributes",
+      "description": "Set attributes on someone's record as staff. Validated and held unique exactly as a self-correction; every attribute named is recorded as set by staff, with the editor and the instant.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actor_id",
+          "description": "The actor whose record is edited."
+        },
+        {
+          "from": "caller",
+          "as": "staff_id",
+          "description": "The editor, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The attributes to set, by name."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_actor_attributes"
+    },
     "get_actors": {
       "method": "GET",
       "path": "/actors/batch",
