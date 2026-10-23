@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/mail"
 	"strings"
+	"time"
 
 	"gorm.io/datatypes"
 
@@ -34,6 +35,7 @@ func normalizeBatchRow(r InvitationBatchRow) InvitationBatchRow {
 		LastName:  strings.TrimSpace(r.LastName),
 		Email:     strings.ToLower(strings.TrimSpace(r.Email)),
 		GroupCode: normalizePublicCode(r.GroupCode),
+		ActorID:   strings.TrimSpace(r.ActorID),
 	}
 }
 
@@ -57,9 +59,13 @@ func (m *userManager) checkBatchRow(ctx context.Context, r InvitationBatchRow, s
 		return models.BatchRowDuplicate, nil
 	}
 	seen[key] = true
-	actorID, found, err := m.actorIDByEmail(ctx, r.Email)
-	if err != nil || !found {
-		return models.BatchRowReady, err
+	actorID, found := r.ActorID, r.ActorID != ""
+	if !found {
+		var err error
+		actorID, found, err = m.actorIDByEmail(ctx, r.Email)
+		if err != nil || !found {
+			return models.BatchRowReady, err
+		}
 	}
 	check.ActorID = actorID
 	_, member, err := m.findAssignment(ctx, actorID, group.ID)
@@ -96,4 +102,73 @@ func (m *userManager) actorIDByEmail(ctx context.Context, email string) (string,
 		return "", false, nil
 	}
 	return ids[0], true, nil
+}
+
+func (m *userManager) SendInvitationBatch(ctx context.Context, rows []InvitationBatchRow, invitedBy string) ([]InvitationBatchResult, error) {
+	invitedBy = strings.TrimSpace(invitedBy)
+	if invitedBy == "" {
+		return nil, fmt.Errorf("%w: whoever sends the invitations is required", ErrInvalidInvitation)
+	}
+	checks, err := m.CheckInvitationBatch(ctx, rows)
+	if err != nil {
+		return nil, fmt.Errorf("SendInvitationBatch: %w", err)
+	}
+	out := make([]InvitationBatchResult, len(checks))
+	for i, check := range checks {
+		out[i] = InvitationBatchResult{InvitationBatchCheck: check}
+		if check.Status != models.BatchRowReady {
+			continue
+		}
+		if err := m.sendBatchRow(ctx, invitedBy, &out[i]); err != nil {
+			return nil, fmt.Errorf("SendInvitationBatch: row %d: %w", check.Row, err)
+		}
+	}
+	return out, nil
+}
+
+func (m *userManager) sendBatchRow(ctx context.Context, invitedBy string, res *InvitationBatchResult) error {
+	if res.ActorID == "" {
+		res.Status = models.BatchRowNoActor
+		return nil
+	}
+	if _, err := m.GetActor(ctx, res.ActorID); err != nil {
+		if errors.Is(err, ErrActorNotFound) {
+			res.Status = models.BatchRowNoActor
+			return nil
+		}
+		return err
+	}
+	if err := m.refuseOutsider(m.db.WithContext(ctx), res.ActorID); err != nil {
+		if errors.Is(err, ErrOutsiderRole) {
+			res.Status = models.BatchRowOutsider
+			return nil
+		}
+		return err
+	}
+	existing, found, err := m.findInvitation(ctx, m.db, res.GroupID, res.ActorID)
+	if err != nil {
+		return err
+	}
+	if found && existing.State == models.InvitationPending && (existing.ExpiresAt == "" || existing.ExpiresAt > NowRFC3339()) {
+		res.Status = models.BatchRowSent
+		res.Invitation = &existing
+		return nil
+	}
+	issuedAt := time.Now().UTC()
+	now := issuedAt.Format(TimeLayout)
+	inv, err := m.issueInvitation(ctx, GroupInvitation{
+		GroupID:     res.GroupID,
+		ActorID:     res.ActorID,
+		State:       models.InvitationPending,
+		InvitedBy:   invitedBy,
+		InvitedAt:   now,
+		ExpiresAt:   issuedAt.Add(m.invitationLifetime).Format(TimeLayout),
+		LastUpdated: now,
+	}, true)
+	if err != nil {
+		return err
+	}
+	res.Status = models.BatchRowSent
+	res.Invitation = &inv
+	return nil
 }

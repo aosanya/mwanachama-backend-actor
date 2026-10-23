@@ -7,6 +7,9 @@ const (
 	BatchRowUnknownGroup  = "unknown_group"
 	BatchRowAlreadyMember = "already_member"
 	BatchRowDuplicate     = "duplicate"
+	BatchRowNoActor       = "no_actor"
+	BatchRowOutsider      = "outsider"
+	BatchRowSent          = "sent"
 )
 
 type InvitationBatchRow struct {
@@ -14,6 +17,7 @@ type InvitationBatchRow struct {
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
 	GroupCode string `json:"group_code"`
+	ActorID   string `json:"actor_id,omitempty"`
 }
 
 type InvitationBatchCheck struct {
@@ -22,4 +26,9 @@ type InvitationBatchCheck struct {
 	Status  string             `json:"status"`
 	GroupID string             `json:"group_id,omitempty"`
 	ActorID string             `json:"actor_id,omitempty"`
+}
+
+type InvitationBatchResult struct {
+	InvitationBatchCheck
+	Invitation *GroupInvitation `json:"invitation,omitempty"`
 }

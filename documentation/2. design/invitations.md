@@ -203,7 +203,43 @@ Over the wire the check is `POST /invitations/batch/check`, action
 list as `rows` in the body. Who may check is the host's gate; the module
 answers anyone the gate lets through.
 
-**Not built yet: the send.** An invitation is keyed on an actor, and a listed
-email often names nobody yet; and `InviteToGroup` requires the inviter to lead
-the group, while the bulk sender is an agency owner or agent. Both need the
-owner's answer before the send lands — see ACT26 on the board.
+A row may also carry `actor_id`, the invitee the host resolved for its email.
+When it does, the check judges `already_member` against that actor rather
+than against an `email` attribute lookup.
+
+## Sending a list of invitations (ACT26, second half)
+
+Member app decisions 379 and 380 settled the two questions the send waited
+on. **The host gives every row an actor first**: an email with no account
+goes through the single invitation's path to get one, and the host fills each
+row's `actor_id` before sending. This module never creates an account from an
+email. **Only an agency's owners and agents send**, and that is the host's
+gate, so the send skips the leader check `InviteToGroup` makes.
+
+`SendInvitationBatch(ctx, rows, invitedBy)` runs `CheckInvitationBatch` again
+over the same rows, so a list edited between preview and send is judged as it
+is now, then invites each ready row and answers one result per row, in order
+and numbered from 1. A result is the row's check plus, when sent, the
+invitation:
+
+| Status | Meaning |
+| --- | --- |
+| `sent` | the row's invitation is pending, with `invitation` set |
+| `no_actor` | the row names no actor, or an actor that does not exist |
+| `outsider` | the actor holds an outsider role and may not join groups |
+| any check status | the row was not ready, and nothing was written for it |
+
+A sent row's invitation is issued exactly as `InviteToGroup` issues one, with
+the host's invitation lifetime and `invited_by` from the session. A blank
+sender is `ErrInvalidInvitation`.
+
+**Idempotent on (email, group).** Within one send a repeated row is a
+`duplicate`. Across sends, a row whose actor already holds a pending,
+unlapsed invitation to the group answers that invitation unchanged, same id
+and same `invited_at`, rather than issuing or renewing one. An answered or
+lapsed invitation is renewed in place, as a second `InviteToGroup` would.
+
+Over the wire the send is `POST /invitations/batch`, action
+`actor.invitation.send_batch`, tool `actor_send_invitation_batch`, with the
+list as `rows` and the sender bound from the caller. wakala-api's mount and
+the gate that admits only owners and agents are WK159.

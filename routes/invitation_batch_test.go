@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -58,5 +59,53 @@ func TestOverTheWireCheckingAnInvitationListWritesNothingAndAnswersEachRow(t *te
 	}
 	if len(invitations) != 0 {
 		t.Errorf("checking wrote %d invitations, want none", len(invitations))
+	}
+}
+
+func TestOverTheWireSendingAnInvitationListTakesTheSenderFromTheCaller(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 4"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	chege, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Chege"})
+	if err != nil {
+		t.Fatalf("CreateActor: %v", err)
+	}
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{
+		Caller: func(context.Context) string { return "owner-1" },
+	}))
+	status, _ := do(t, srv, http.MethodPost, "/invitations/batch", map[string]any{
+		"rows": []map[string]any{
+			{"first_name": "Chege", "last_name": "Kamau", "email": "chege@example.org", "group_code": group.PublicCode, "actor_id": chege.ID},
+		},
+		"invited_by": "somebody-else",
+	})
+	if status != http.StatusOK {
+		t.Fatalf("POST /invitations/batch = %d, want 200", status)
+	}
+	invitations, err := mgr.ListInvitationsForGroup(ctx, group.ID, false)
+	if err != nil {
+		t.Fatalf("ListInvitationsForGroup: %v", err)
+	}
+	if len(invitations) != 1 || invitations[0].InvitedBy != "owner-1" || invitations[0].ActorID != chege.ID {
+		t.Errorf("invitations = %+v, want one of Chege sent by the caller", invitations)
+	}
+}
+
+func TestSendingAnInvitationListIsGatedOnItsOwnAction(t *testing.T) {
+	srv := newServer(t, routes.RoutesFor(newManager(t), routes.Mount{
+		Caller: func(context.Context) string { return "owner-1" },
+		Authorize: func(_ context.Context, action string) error {
+			if action == "actor.invitation.send_batch" {
+				return fmt.Errorf("refused")
+			}
+			return nil
+		},
+	}))
+	status, _ := do(t, srv, http.MethodPost, "/invitations/batch", map[string]any{"rows": []map[string]any{}})
+	if status != http.StatusForbidden {
+		t.Errorf("POST /invitations/batch = %d, want 403 when actor.invitation.send_batch is refused", status)
 	}
 }

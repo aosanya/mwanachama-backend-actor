@@ -14,28 +14,29 @@ import (
 )
 
 type (
-	Actor                = models.Actor
-	Group                = models.Group
-	MyGroup              = models.MyGroup
-	FormsPreference      = models.FormsPreference
-	AttributeCorrection  = models.AttributeCorrection
-	GroupEdit            = models.GroupEdit
-	ActorGroupAssignment = models.ActorGroupAssignment
-	RoleKind             = models.RoleKind
-	ActorRoleAssignment  = models.ActorRoleAssignment
-	Hierarchy            = models.Hierarchy
-	Level                = models.Level
-	GroupType            = models.GroupType
-	GroupJoinRequest     = models.GroupJoinRequest
-	JoinDecision         = models.JoinDecision
-	JoinOutcome          = models.JoinOutcome
-	GroupByCode          = models.GroupByCode
-	GroupInvitation      = models.GroupInvitation
-	InvitationBatchRow   = models.InvitationBatchRow
-	InvitationBatchCheck = models.InvitationBatchCheck
-	CodeFormat           = models.CodeFormat
-	DefinitionRole       = models.DefinitionRole
-	DefinitionRoleSync   = models.DefinitionRoleSync
+	Actor                 = models.Actor
+	Group                 = models.Group
+	MyGroup               = models.MyGroup
+	FormsPreference       = models.FormsPreference
+	AttributeCorrection   = models.AttributeCorrection
+	GroupEdit             = models.GroupEdit
+	ActorGroupAssignment  = models.ActorGroupAssignment
+	RoleKind              = models.RoleKind
+	ActorRoleAssignment   = models.ActorRoleAssignment
+	Hierarchy             = models.Hierarchy
+	Level                 = models.Level
+	GroupType             = models.GroupType
+	GroupJoinRequest      = models.GroupJoinRequest
+	JoinDecision          = models.JoinDecision
+	JoinOutcome           = models.JoinOutcome
+	GroupByCode           = models.GroupByCode
+	GroupInvitation       = models.GroupInvitation
+	InvitationBatchRow    = models.InvitationBatchRow
+	InvitationBatchCheck  = models.InvitationBatchCheck
+	InvitationBatchResult = models.InvitationBatchResult
+	CodeFormat            = models.CodeFormat
+	DefinitionRole        = models.DefinitionRole
+	DefinitionRoleSync    = models.DefinitionRoleSync
 )
 
 const TimeLayout = models.TimeLayout
@@ -144,6 +145,7 @@ type UserManager interface {
 	AcceptInvitation(ctx context.Context, id, actorID string) (GroupInvitation, error)
 	DeclineInvitation(ctx context.Context, id, actorID string) (GroupInvitation, error)
 	CheckInvitationBatch(ctx context.Context, rows []InvitationBatchRow) ([]InvitationBatchCheck, error)
+	SendInvitationBatch(ctx context.Context, rows []InvitationBatchRow, invitedBy string) ([]InvitationBatchResult, error)
 
 	CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error)
 	ListRoleKinds(ctx context.Context) ([]RoleKind, error)

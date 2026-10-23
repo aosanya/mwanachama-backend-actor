@@ -1166,6 +1166,32 @@
       ],
       "tool": "actor_check_invitation_batch"
     },
+    "send_invitation_batch": {
+      "method": "POST",
+      "path": "/invitations/batch",
+      "call": "SendInvitationBatch",
+      "action": "actor.invitation.send_batch",
+      "title": "Send invitation list",
+      "description": "Send a list of invitations at once, for an agency's owners and agents: every row is checked again exactly as the check does, and each ready row is invited with no leader check. Answers one result per row, in order and numbered from 1: sent with its invitation, no_actor when the row names no actor, outsider when that actor may not join groups, or the check's own reason. Sending the same row again answers the invitation already pending rather than issuing a second.",
+      "args": [
+        {
+          "from": "body",
+          "as": "rows",
+          "description": "The list to send: each row a first_name, last_name, email, group_code (a group's public code) and actor_id, the invitee the host resolved for that email."
+        },
+        {
+          "from": "caller",
+          "as": "invited_by",
+          "description": "Who sends the invitations, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_send_invitation_batch"
+    },
     "get_invitation": {
       "method": "GET",
       "path": "/invitations/{invitation_id}",
