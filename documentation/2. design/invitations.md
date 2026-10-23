@@ -198,6 +198,11 @@ duplicate is judged on `(email, group)` after normalisation, which is also the
 key the send will be idempotent on. A ready row carries the group's id and,
 when an actor already holds the email (the `email` attribute), that actor's id.
 
+Over the wire the check is `POST /invitations/batch/check`, action
+`actor.invitation.check_batch`, tool `actor_check_invitation_batch`, with the
+list as `rows` in the body. Who may check is the host's gate; the module
+answers anyone the gate lets through.
+
 **Not built yet: the send.** An invitation is keyed on an actor, and a listed
 email often names nobody yet; and `InviteToGroup` requires the inviter to lead
 the group, while the bulk sender is an agency owner or agent. Both need the

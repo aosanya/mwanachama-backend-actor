@@ -1086,6 +1086,27 @@
       ],
       "tool": "actor_list_my_invitations"
     },
+    "check_invitation_batch": {
+      "method": "POST",
+      "path": "/invitations/batch/check",
+      "call": "CheckInvitationBatch",
+      "action": "actor.invitation.check_batch",
+      "title": "Check invitation list",
+      "description": "Check a list of invitations before sending it, writing nothing. Answers one check per row, in order and numbered from 1, with the row as normalised and its status: missing_name, bad_email, unknown_group, duplicate (an earlier row names the same email for the same group), already_member, or ready. A ready row carries the group's id and, when an actor already holds the email, that actor's id.",
+      "args": [
+        {
+          "from": "body",
+          "as": "rows",
+          "description": "The list to check: each row a first_name, last_name, email and group_code (a group's public code)."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_check_invitation_batch"
+    },
     "get_invitation": {
       "method": "GET",
       "path": "/invitations/{invitation_id}",
