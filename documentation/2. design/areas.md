@@ -54,6 +54,17 @@ hundred areas, and SQLite has no spatial index to lean on in tests. A
 deployment large enough to feel this is where a bounding-box prefilter, or
 PostGIS, earns its place.
 
+## Street-name folding
+
+`models.FoldStreetName` is the decided half of address matching (decision
+303): it decomposes to NFD, drops combining marks, lower-cases, turns every
+character that is not a letter or a digit into a space and collapses runs of
+space. "Petőfi Sándor utca" and "  PETŐFI sándor UTCA " fold alike. It
+expands no abbreviation: "u." folds to "u", not "utca", because where the
+abbreviation table lives is still the owner's call, and a ligature such as
+"ß" is kept, since NFD does not decompose it. Nothing stores a folded name
+yet; whether the stored street is the template's text or this key is open.
+
 ## Still open on the row
 
 - **The street list** on a group at an area level (street name, house-number
