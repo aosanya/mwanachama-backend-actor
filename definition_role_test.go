@@ -51,7 +51,7 @@ func TestSyncRenamesAKindByItsDefinitionRole(t *testing.T) {
 	}
 }
 
-func TestSyncRetiresAKindDroppedFromTheDefinitionAndKeepsItsSeats(t *testing.T) {
+func TestSyncRetiresAKindDroppedFromTheDefinitionAndEndsItsSeatsAsRoleRemoved(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 	g, a := seedJoin(t, mgr, models.JoinConfirmed)
@@ -75,8 +75,9 @@ func TestSyncRetiresAKindDroppedFromTheDefinitionAndKeepsItsSeats(t *testing.T) 
 		t.Fatal("a kind still in the definition was retired")
 	}
 	held, err := mgr.GetRoleAssignment(ctx, seat.ID)
-	if err != nil || held.ActorID != a.ID || held.KindID != treasurer.ID {
-		t.Fatalf("seat after retirement = %+v, %v; want it kept", held, err)
+	if err != nil || held.ActorID != a.ID || held.KindID != treasurer.ID || held.Active ||
+		held.EndedReason != mwanachamaactor.EndedByRoleRemoved || held.EndedAt == "" {
+		t.Fatalf("seat after retirement = %+v, %v; want it kept as history, ended role_removed", held, err)
 	}
 }
 
@@ -104,5 +105,84 @@ func TestSyncLeavesHandMadeKindsAndIsRepeatable(t *testing.T) {
 	}
 	if _, err := mgr.SyncDefinitionRoles(ctx, []mwanachamaactor.DefinitionRole{{Name: "No id"}}, "owner"); !errors.Is(err, mwanachamaactor.ErrDefinitionRoleIDRequired) {
 		t.Fatalf("role without id: err = %v; want ErrDefinitionRoleIDRequired", err)
+	}
+}
+
+func TestADroppedLeadingRoleStopsLeadingAtOnceAndRevivesThroughUnretire(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	g, a := seedJoin(t, mgr, models.JoinConfirmed)
+	chair := publishedKind(t, mgr, "def-chair", "Chair")
+	if _, err := mgr.SetRoleKindLeadsGroup(ctx, chair.ID, true); err != nil {
+		t.Fatalf("SetRoleKindLeadsGroup: %v", err)
+	}
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: a.ID, GroupID: g.ID, KindID: chair.ID}); err != nil {
+		t.Fatalf("GrantRole: %v", err)
+	}
+	if leads, _ := mgr.IsGroupLeader(ctx, g.ID, a.ID); !leads {
+		t.Fatal("chair holder does not lead before the drop")
+	}
+	if _, err := mgr.SyncDefinitionRoles(ctx, nil, "owner"); err != nil {
+		t.Fatalf("SyncDefinitionRoles: %v", err)
+	}
+	if leads, _ := mgr.IsGroupLeader(ctx, g.ID, a.ID); leads {
+		t.Fatal("a dropped role still leads its group")
+	}
+	revived, err := mgr.UnretireRoleKind(ctx, chair.ID)
+	if err != nil || revived.Retired() || revived.Code != chair.Code {
+		t.Fatalf("UnretireRoleKind = %+v, %v; want the old kind live again", revived, err)
+	}
+	if leads, _ := mgr.IsGroupLeader(ctx, g.ID, a.ID); leads {
+		t.Fatal("reviving a kind brought back a seat the drop had ended")
+	}
+}
+
+func TestARetiredKindDoesNotLeadThroughAStillActiveSeat(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	g, a := seedJoin(t, mgr, models.JoinConfirmed)
+	chair := publishedKind(t, mgr, "def-chair", "Chair")
+	if _, err := mgr.SetRoleKindLeadsGroup(ctx, chair.ID, true); err != nil {
+		t.Fatalf("SetRoleKindLeadsGroup: %v", err)
+	}
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: a.ID, GroupID: g.ID, KindID: chair.ID}); err != nil {
+		t.Fatalf("GrantRole: %v", err)
+	}
+	if _, err := mgr.RetireRoleKind(ctx, chair.ID, "owner"); !errors.Is(err, mwanachamaactor.ErrKindHasLiveAssignments) {
+		t.Fatalf("hand retire with live seats: err = %v; want ErrKindHasLiveAssignments", err)
+	}
+	if leads, _ := mgr.IsGroupLeader(ctx, g.ID, a.ID); !leads {
+		t.Fatal("a refused hand retire stopped the seat leading")
+	}
+}
+
+func TestSyncCarriesTheStaffTickOntoTheKind(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	clerk := publishedKind(t, mgr, "def-clerk", "Clerk")
+	if clerk.Staff {
+		t.Fatal("a new kind is staff by default")
+	}
+	if _, err := mgr.SyncDefinitionRoles(ctx, []mwanachamaactor.DefinitionRole{{ID: "def-clerk", Name: "Clerk", Staff: true}}, "owner"); err != nil {
+		t.Fatalf("SyncDefinitionRoles: %v", err)
+	}
+	got, _ := mgr.GetRoleKind(ctx, clerk.ID)
+	if !got.Staff {
+		t.Fatalf("after ticking staff = %+v; want staff", got)
+	}
+	if _, err := mgr.SyncDefinitionRoles(ctx, []mwanachamaactor.DefinitionRole{{ID: "def-clerk", Name: "Clerk"}}, "owner"); err != nil {
+		t.Fatalf("SyncDefinitionRoles: %v", err)
+	}
+	got, _ = mgr.GetRoleKind(ctx, clerk.ID)
+	if got.Staff {
+		t.Fatalf("after clearing staff = %+v; want not staff", got)
+	}
+	created, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Inspector", Staff: true})
+	if err != nil || !created.Staff {
+		t.Fatalf("CreateRoleKind staff = %+v, %v", created, err)
+	}
+	read, _ := mgr.GetRoleKind(ctx, created.ID)
+	if !read.Staff {
+		t.Fatal("staff did not survive a read back")
 	}
 }

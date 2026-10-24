@@ -48,6 +48,7 @@ const (
 	EndedByResignation = models.EndedByResignation
 	EndedByEviction    = models.EndedByEviction
 	EndedByDeparture   = models.EndedByDeparture
+	EndedByRoleRemoved = models.EndedByRoleRemoved
 )
 
 func NowRFC3339() string { return models.NowRFC3339() }

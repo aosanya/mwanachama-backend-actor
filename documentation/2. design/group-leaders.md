@@ -27,13 +27,16 @@ An actor leads a group when they hold an **active** seat
 
 - A seat leads only the group it is in. Leading one ward says nothing about
   the ward beside it, or the groups above or below it.
-- A seat that ended (revoked, resigned, evicted, departed) leads nothing.
+- A seat that ended (revoked, resigned, evicted, departed, role removed)
+  leads nothing.
 - Clearing the mark on a kind ends leadership for every holder at once;
   setting it makes every current holder a leader at once. Nothing is copied
   onto the seat.
-- A retired kind still leads through the seats it already has. Retiring stops
-  a kind being granted without disturbing seats already held, and leadership
-  follows the seat.
+- A retired kind leads nothing (decision 412, ACT71). `leadingSeats` reads
+  only kinds with `retired_at` empty, so a role the definition drops stops
+  leading at once. Hand retiring still refuses a kind with live seats, so in
+  practice only a definition sync retires a kind under held seats, and that
+  sync ends them too.
 - Registration at the group is not checked. `GrantRole` has never required
   it, and the seat is the fact decision 71 names.
 

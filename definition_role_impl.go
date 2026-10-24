@@ -26,12 +26,12 @@ func (m *userManager) RoleKindForDefinitionRole(ctx context.Context, definitionR
 }
 
 func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []DefinitionRole, actorID string) (DefinitionRoleSync, error) {
-	names := make(map[string]string, len(roles))
+	defs := make(map[string]DefinitionRole, len(roles))
 	for _, r := range roles {
 		if r.ID == "" {
 			return DefinitionRoleSync{}, ErrDefinitionRoleIDRequired
 		}
-		names[r.ID] = r.Name
+		defs[r.ID] = r
 	}
 	out := DefinitionRoleSync{Renamed: []RoleKind{}, Retired: []RoleKind{}}
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -41,23 +41,32 @@ func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []Definitio
 			return err
 		}
 		for _, k := range kinds {
-			name, kept := names[k.DefinitionRoleID]
-			switch {
-			case kept && name != "" && name != k.Name:
-				k.Name = name
+			def, kept := defs[k.DefinitionRoleID]
+			if !kept {
+				if k.RetiredAt != "" {
+					continue
+				}
+				retired, err := m.retireDroppedKind(tx, k, actorID)
+				if err != nil {
+					return err
+				}
+				out.Retired = append(out.Retired, retired)
+				continue
+			}
+			if def.Staff != k.Staff {
+				k.Staff = def.Staff
 				if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
-					Updates(map[string]any{"name": name}).Error; err != nil {
+					Updates(map[string]any{"staff": def.Staff}).Error; err != nil {
+					return err
+				}
+			}
+			if def.Name != "" && def.Name != k.Name {
+				k.Name = def.Name
+				if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
+					Updates(map[string]any{"name": def.Name}).Error; err != nil {
 					return err
 				}
 				out.Renamed = append(out.Renamed, withCapabilities(k))
-			case !kept && k.RetiredAt == "":
-				k.RetiredAt = NowRFC3339()
-				k.RetiredBy = actorID
-				if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
-					Updates(map[string]any{"retired_at": k.RetiredAt, "retired_by": k.RetiredBy}).Error; err != nil {
-					return err
-				}
-				out.Retired = append(out.Retired, withCapabilities(k))
 			}
 		}
 		return nil
@@ -66,4 +75,20 @@ func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []Definitio
 		return DefinitionRoleSync{}, fmt.Errorf("SyncDefinitionRoles: %w", err)
 	}
 	return out, nil
+}
+
+func (m *userManager) retireDroppedKind(tx *gorm.DB, k RoleKind, actorID string) (RoleKind, error) {
+	now := NowRFC3339()
+	if err := tx.Table(m.table(roleActorRoleAssignment)).
+		Where("kind_id = ? AND active", k.ID).
+		Updates(map[string]any{"active": false, "ended_at": now, "ended_reason": string(EndedByRoleRemoved)}).Error; err != nil {
+		return RoleKind{}, err
+	}
+	k.RetiredAt = now
+	k.RetiredBy = actorID
+	if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
+		Updates(map[string]any{"retired_at": k.RetiredAt, "retired_by": k.RetiredBy}).Error; err != nil {
+		return RoleKind{}, err
+	}
+	return withCapabilities(k), nil
 }

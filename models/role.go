@@ -8,6 +8,7 @@ type RoleKind struct {
 	Description      string   `json:"description,omitempty"`
 	IsDelegate       bool     `json:"is_delegate,omitempty"`
 	LeadsGroup       bool     `json:"leads_group,omitempty"`
+	Staff            bool     `json:"staff,omitempty"`
 	Outsider         bool     `json:"outsider,omitempty"`
 	LevelID          string   `json:"level_id,omitempty"`
 	DefinitionRoleID string   `json:"definition_role_id,omitempty"`
@@ -29,4 +30,5 @@ const (
 	EndedByResignation EndReason = "resigned"
 	EndedByEviction    EndReason = "evicted"
 	EndedByDeparture   EndReason = "deregistered"
+	EndedByRoleRemoved EndReason = "role_removed"
 )

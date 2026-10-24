@@ -33,7 +33,9 @@ func (m *userManager) SetRoleKindLeadsGroup(ctx context.Context, kindID string, 
 }
 
 func (m *userManager) leadingSeats(tx *gorm.DB, actorID string) *gorm.DB {
-	leadingKinds := tx.Table(m.table(roleRoleKind)).Select("id").Where("leads_group = ?", true)
+	leadingKinds := tx.Table(m.table(roleRoleKind)).Select("id").
+		Where("leads_group = ?", true).
+		Where("retired_at = ''")
 	return tx.Table(m.table(roleActorRoleAssignment)).Select("group_id").
 		Where("actor_id = ? AND active", actorID).
 		Where("kind_id IN (?)", leadingKinds)
