@@ -1084,6 +1084,72 @@
           ]
         }
       ]
+    },
+    {
+      "role": "delegation",
+      "description": "One actor allowed to act for another, kept as its own record. A grant names who gave it and when; a revocation stamps the record rather than deleting it, so what was done under it keeps its authority.",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Storage key, opaque to callers and minted by the store.",
+          "primary": true
+        },
+        {
+          "name": "delegate_id",
+          "type": "string",
+          "description": "The actor allowed to act.",
+          "required": true
+        },
+        {
+          "name": "subject_id",
+          "type": "string",
+          "description": "The actor acted for.",
+          "required": true
+        },
+        {
+          "name": "granted_by",
+          "type": "string",
+          "description": "Who granted it, as the mount names its caller.",
+          "required": true
+        },
+        {
+          "name": "granted_at",
+          "type": "timestamp",
+          "description": "When it was granted."
+        },
+        {
+          "name": "ends_at",
+          "type": "timestamp",
+          "description": "When it lapses on its own; empty when it lasts until revoked."
+        },
+        {
+          "name": "revoked_by",
+          "type": "string",
+          "description": "Who revoked it, as the mount names its caller; empty while it stands."
+        },
+        {
+          "name": "revoked_at",
+          "type": "timestamp",
+          "description": "When it was revoked; empty while it stands."
+        }
+      ],
+      "indexes": [
+        {
+          "name": "delegate",
+          "description": "Finds what one actor may act for.",
+          "fields": [
+            "delegate_id"
+          ]
+        },
+        {
+          "name": "subject",
+          "description": "Finds who may act for one actor.",
+          "fields": [
+            "subject_id"
+          ]
+        }
+      ]
     }
   ]
 }

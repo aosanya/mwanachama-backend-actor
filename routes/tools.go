@@ -23,6 +23,7 @@ var carriers = map[string]string{
 	"group_join_request":     "GroupJoinRequest",
 	"join_decision":          "JoinDecision",
 	"group_removal":          "GroupRemoval",
+	"delegation":             "Delegation",
 	"group_invitation":       "GroupInvitation",
 	"code_sequence":          "CodeSequence",
 	"code_format":            "CodeFormat",

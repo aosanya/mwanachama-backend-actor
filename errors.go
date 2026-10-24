@@ -100,3 +100,9 @@ var ErrInvalidOutline = errors.New("mwanachamaactor: an outline is a polygon or 
 var ErrInvalidPopulation = errors.New("mwanachamaactor: a population figure is zero or more, dated YYYY-MM-DD and names its source")
 
 var ErrPopulationNotFound = errors.New("mwanachamaactor: no population figure recorded for the group")
+
+var ErrInvalidDelegation = errors.New("mwanachamaactor: a delegation names a grantor and two different actors")
+
+var ErrDelegationNotFound = errors.New("mwanachamaactor: delegation not found")
+
+var ErrDelegationRevoked = errors.New("mwanachamaactor: the delegation is already revoked")

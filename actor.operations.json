@@ -46,7 +46,10 @@
     "ErrNotAnArea": 409,
     "ErrInvalidOutline": 400,
     "ErrInvalidPopulation": 400,
-    "ErrPopulationNotFound": 404
+    "ErrPopulationNotFound": 404,
+    "ErrInvalidDelegation": 400,
+    "ErrDelegationNotFound": 404,
+    "ErrDelegationRevoked": 409
   },
   "operations": {
     "create_actor": {
@@ -2244,6 +2247,79 @@
         }
       ],
       "tool": "actor_list_group_populations"
+    },
+    "create_delegation": {
+      "method": "POST",
+      "path": "/delegations",
+      "call": "CreateDelegation",
+      "action": "actor.delegation.create",
+      "title": "Grant a delegation",
+      "description": "Allow one actor to act for another. Both must exist and must differ; the grantor is the caller, never the body. Who may grant one is the mount's gate on this action.",
+      "args": [
+        {
+          "from": "caller",
+          "as": "granted_by",
+          "description": "Who grants it, resolved from the session rather than the request body."
+        },
+        {
+          "from": "body",
+          "whole": true,
+          "description": "The delegate, the subject and an optional end."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_create_delegation"
+    },
+    "revoke_delegation": {
+      "method": "POST",
+      "path": "/delegations/{delegation_id}/revoke",
+      "call": "RevokeDelegation",
+      "action": "actor.delegation.revoke",
+      "title": "Revoke a delegation",
+      "description": "End a delegation now. The record stays, stamped with who revoked it and when; revoking one twice is refused.",
+      "args": [
+        {
+          "from": "path",
+          "as": "delegation_id",
+          "description": "The delegation to revoke."
+        },
+        {
+          "from": "caller",
+          "as": "revoked_by",
+          "description": "Who revokes it, resolved from the session rather than the request body."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_revoke_delegation"
+    },
+    "list_delegations": {
+      "method": "GET",
+      "path": "/actors/{actor_id}/delegations",
+      "call": "ListDelegations",
+      "action": "actor.delegation.list",
+      "title": "List an actor's delegations",
+      "description": "Every delegation naming one actor as delegate or subject, revoked and lapsed ones included, oldest first.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actor_id",
+          "description": "The actor whose delegations to list."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_delegations"
     }
   }
 }

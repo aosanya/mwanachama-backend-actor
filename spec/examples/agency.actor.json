@@ -98,6 +98,12 @@
       "name": "group_population",
       "table": "group_populations",
       "description": "How many people each group serves, dated and sourced."
+    },
+    {
+      "role": "delegation",
+      "name": "delegation",
+      "table": "delegations",
+      "description": "One member allowed to act for another, kept after it is revoked."
     }
   ]
 }

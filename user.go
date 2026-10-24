@@ -19,6 +19,8 @@ type (
 	MyGroup               = models.MyGroup
 	FormsPreference       = models.FormsPreference
 	AttributeCorrection   = models.AttributeCorrection
+	Delegation            = models.Delegation
+	DelegationGrant       = models.DelegationGrant
 	GroupEdit             = models.GroupEdit
 	ActorGroupAssignment  = models.ActorGroupAssignment
 	RoleKind              = models.RoleKind
@@ -105,6 +107,14 @@ type UserManager interface {
 	CorrectMyAttributes(ctx context.Context, actorID string, correction AttributeCorrection) (Actor, error)
 
 	SetActorAttributes(ctx context.Context, actorID, staffID string, correction AttributeCorrection) (Actor, error)
+
+	CreateDelegation(ctx context.Context, grantedBy string, grant DelegationGrant) (Delegation, error)
+
+	RevokeDelegation(ctx context.Context, delegationID, revokedBy string) (Delegation, error)
+
+	ListDelegations(ctx context.Context, actorID string) ([]Delegation, error)
+
+	ActsFor(ctx context.Context, delegateID, subjectID string) (bool, error)
 
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
 

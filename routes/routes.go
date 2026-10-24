@@ -23,6 +23,9 @@ var operations = sync.OnceValues(func() (*dispatch.Spec, error) {
 
 var sentinels = map[string]error{
 	"ErrActorNotFound":          mwanachamaactor.ErrActorNotFound,
+	"ErrInvalidDelegation":      mwanachamaactor.ErrInvalidDelegation,
+	"ErrDelegationNotFound":     mwanachamaactor.ErrDelegationNotFound,
+	"ErrDelegationRevoked":      mwanachamaactor.ErrDelegationRevoked,
 	"ErrGroupNotFound":          mwanachamaactor.ErrGroupNotFound,
 	"ErrRoleKindNotFound":       mwanachamaactor.ErrRoleKindNotFound,
 	"ErrAssignmentNotFound":     mwanachamaactor.ErrAssignmentNotFound,
