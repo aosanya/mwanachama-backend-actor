@@ -1151,5 +1151,13 @@
         }
       ]
     }
+  ],
+  "settings": [
+    {
+      "name": "code_groups",
+      "type": "int",
+      "description": "How many groups of three characters a newly minted public code for an actor or a group carries after its prefix. A code format an operator has set wins over it; codes already minted keep their length.",
+      "default": 3
+    }
   ]
 }

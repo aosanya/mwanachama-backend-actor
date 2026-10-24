@@ -58,7 +58,7 @@ func normalizePublicCode(code string) string {
 }
 
 func mintPublicCode(ctx context.Context, tx *gorm.DB, s publicCodeTables, role, prefix string) (string, error) {
-	groups, err := codeGroupsIn(ctx, tx, s.format)
+	groups, err := codeGroupsIn(ctx, tx, s)
 	if err != nil {
 		return "", err
 	}
@@ -80,12 +80,14 @@ func mintPublicCode(ctx context.Context, tx *gorm.DB, s publicCodeTables, role, 
 }
 
 type publicCodeTables struct {
+	spec   *spec.Spec
 	format string
 	byRole map[string]string
 }
 
 func (m *userManager) publicCodeTables() publicCodeTables {
 	return publicCodeTables{
+		spec:   m.store.Spec(),
 		format: m.table(roleCodeFormat),
 		byRole: map[string]string{roleActor: m.table(roleActor), roleGroup: m.table(roleGroup)},
 	}
@@ -93,26 +95,27 @@ func (m *userManager) publicCodeTables() publicCodeTables {
 
 func publicCodeTablesFor(s *spec.Spec) publicCodeTables {
 	return publicCodeTables{
+		spec:   s,
 		format: tableFor(s, roleCodeFormat),
 		byRole: map[string]string{roleActor: tableFor(s, roleActor), roleGroup: tableFor(s, roleGroup)},
 	}
 }
 
-func codeGroupsIn(ctx context.Context, tx *gorm.DB, formatTable string) (int, error) {
+func codeGroupsIn(ctx context.Context, tx *gorm.DB, s publicCodeTables) (int, error) {
 	var rows []map[string]any
-	if err := tx.WithContext(ctx).Table(formatTable).
+	if err := tx.WithContext(ctx).Table(s.format).
 		Where("id = ?", models.CodeFormatID).Limit(1).Find(&rows).Error; err != nil {
 		return 0, fmt.Errorf("read the code format: %w", err)
 	}
 	if len(rows) == 0 {
-		return models.DefaultCodeGroups, nil
+		return settledCodeGroups(tx.WithContext(ctx), s.spec)
 	}
 	n, err := asInt(rows[0]["group_count"])
 	if err != nil {
 		return 0, fmt.Errorf("read the code format: %w", err)
 	}
 	if n < 1 {
-		return models.DefaultCodeGroups, nil
+		return settledCodeGroups(tx.WithContext(ctx), s.spec)
 	}
 	return n, nil
 }
@@ -123,7 +126,11 @@ func (m *userManager) CodeFormat(ctx context.Context) (CodeFormat, error) {
 	errNoFormat := errors.New("no code format")
 	if err := m.store.Take(q, roleCodeFormat, &out, errNoFormat); err != nil {
 		if errors.Is(err, errNoFormat) {
-			return CodeFormat{ID: models.CodeFormatID, GroupCount: models.DefaultCodeGroups}, nil
+			groups, err := settledCodeGroups(m.db.WithContext(ctx), m.store.Spec())
+			if err != nil {
+				return CodeFormat{}, fmt.Errorf("CodeFormat: %w", err)
+			}
+			return CodeFormat{ID: models.CodeFormatID, GroupCount: groups}, nil
 		}
 		return CodeFormat{}, fmt.Errorf("CodeFormat: %w", err)
 	}
