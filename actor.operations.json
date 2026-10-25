@@ -513,35 +513,6 @@
       ],
       "tool": "actor_assign_group"
     },
-    "deregister": {
-      "method": "DELETE",
-      "path": "/actors/{actor_id}/assignments/{group_id}",
-      "call": "Deregister",
-      "action": "actor.assignment.delete",
-      "title": "Deregister actor from group",
-      "description": "Remove an actor's registration in a group. Removing one that is not there is not an error.",
-      "args": [
-        {
-          "from": "path",
-          "as": "actor_id",
-          "description": "The registered actor."
-        },
-        {
-          "from": "path",
-          "as": "group_id",
-          "description": "The group to remove them from."
-        }
-      ],
-      "returns": [
-        {
-          "as": "assignment"
-        },
-        {
-          "as": "found"
-        }
-      ],
-      "tool": "actor_deregister"
-    },
     "list_groups_for_actor": {
       "method": "GET",
       "path": "/actors/{actor_id}/assignments",

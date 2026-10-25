@@ -36,3 +36,18 @@ membership, and the host ends the agency standing beside it. The operation
 is not yet declared in `actor.operations.json`; the host calls the manager.
 Every active role the actor holds in the group ends with it, as an
 eviction, so a removed leader leads nothing there.
+
+## No group removal is declared (ACT76, 2026-10-25)
+
+Member app decision 459: group removal is not declared in the people module.
+`actor.operations.json` used to carry `deregister`
+(`DELETE /actors/{actor_id}/assignments/{group_id}`, action
+`actor.assignment.delete`, tool `actor_deregister`), which deleted the
+registration row with none of decision 431's rules and wrote no
+`group_removal` record. Only wakala-api's mount kept it closed. The operation
+is gone, so neither the route table nor the tool list offers it, and a host
+that forgets to close it cannot expose it.
+
+`Deregister` stays on `UserManager`: `RemoveFromGroup` calls it to delete the
+registration row before writing the removal record. A host removes a member
+through its own route over `RemoveFromGroup`, as wakala-api's WK158 does.
