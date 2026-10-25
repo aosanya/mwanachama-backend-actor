@@ -19,18 +19,27 @@ is left for the row that needs it.
 
 ## Who is an outsider
 
-An actor is an outsider while it holds **any active seat** of an outsider
-kind (`outsider_impl.go`'s `outsiderSeats`). Decision 296 says "a member
-holding a narrow outsider role", without saying what happens to someone who
-also holds an ordinary seat; this reading puts the outsider mark first, so
-such a person is left out until the outsider seat ends. Ending the seat
-(revoke, step down) brings them back with no further act.
+ACT74, from decision 494 (owner, 2026-10-25): an actor is an outsider while
+**every live seat it holds is an outsider seat** — at least one active seat
+of an outsider kind and no active seat of any other kind
+(`outsider_impl.go`'s `outsiderActors`). A member who also holds an outsider
+seat stays a member: an ordinary seat beside it keeps them listed, counted
+and able to join. When their last ordinary seat ends (revoke, step down)
+and an outsider seat is left, they are left out; ending the outsider seat
+brings them back with no further act.
+
+An outsider seat never ends a group registration. Granting one writes only
+the seat; the registration row stays, and the lists below hide it at read
+time while the actor is an outsider.
+
+This replaces ACT69's first reading, under which any active outsider seat
+made the actor an outsider.
 
 ## What it changes
 
 - `ListActorsForGroup` and `HomeCounts` leave outsiders out, so
   `GroupDashboard.MemberCount` does too. The registration row is untouched:
-  the filter is a read-time `NOT IN` over active outsider seats.
+  the filter is a read-time `NOT IN` over outsider actors.
 - `JoinGroup` (and joining by code, which shares `join`), `InviteToGroup`
   and `AcceptInvitation` refuse an outsider with `ErrOutsiderRole`, mapped to **409** in
   `actor.operations.json`. The refusal comes after the actor is found, so an

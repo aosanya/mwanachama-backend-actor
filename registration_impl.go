@@ -115,7 +115,7 @@ func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([
 
 func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error) {
 	q := m.store.Query(ctx, roleActorGroupAssignment).Where("group_id = ?", groupID).
-		Where("actor_id NOT IN (?)", m.outsiderSeats(m.db.WithContext(ctx)))
+		Where("actor_id NOT IN (?)", m.outsiderActors(m.db.WithContext(ctx)))
 	out, err := specstore.List[ActorGroupAssignment](m.store, q, roleActorGroupAssignment)
 	if err != nil {
 		return nil, fmt.Errorf("ListActorsForGroup: %w", err)
@@ -133,7 +133,7 @@ func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([
 func (m *userManager) HomeCounts(ctx context.Context) (map[string]int, error) {
 	q := m.store.Query(ctx, roleActorGroupAssignment).
 		Where(datatypes.JSONQuery("attributes").Equals(true, "is_home")).
-		Where("actor_id NOT IN (?)", m.outsiderSeats(m.db.WithContext(ctx)))
+		Where("actor_id NOT IN (?)", m.outsiderActors(m.db.WithContext(ctx)))
 	rows, err := specstore.List[ActorGroupAssignment](m.store, q, roleActorGroupAssignment)
 	if err != nil {
 		return nil, fmt.Errorf("HomeCounts: %w", err)

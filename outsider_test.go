@@ -115,3 +115,66 @@ func TestAnInvitationIssuedBeforeTheOutsiderSeatCannotBeAccepted(t *testing.T) {
 		t.Fatalf("DeclineInvitation by an outsider: %v", err)
 	}
 }
+
+func TestAMemberWhoIsAlsoAnOutsiderStaysListedAndCounted(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	g, a := seedJoin(t, mgr, models.JoinOpen)
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID}); err != nil {
+		t.Fatalf("AssignGroup: %v", err)
+	}
+	seatLeader(t, mgr, g.ID, a.ID)
+	seatOutsider(t, mgr, g.ID, a.ID)
+	members, err := mgr.ListActorsForGroup(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("ListActorsForGroup: %v", err)
+	}
+	if len(members) != 1 || members[0].ActorID != a.ID {
+		t.Fatalf("members = %+v, want %s", members, a.ID)
+	}
+	dash, err := mgr.GroupDashboard(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("GroupDashboard: %v", err)
+	}
+	if dash.MemberCount != 1 {
+		t.Fatalf("MemberCount = %d, want 1", dash.MemberCount)
+	}
+	other, _ := seedJoin(t, mgr, models.JoinOpen)
+	if _, err := mgr.JoinGroup(ctx, other.ID, a.ID, ""); err != nil {
+		t.Fatalf("JoinGroup by a member who is also an outsider: %v", err)
+	}
+}
+
+func TestAMemberWhoseLastOrdinarySeatEndsIsLeftOut(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	g, a := seedJoin(t, mgr, models.JoinOpen)
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID}); err != nil {
+		t.Fatalf("AssignGroup: %v", err)
+	}
+	lead := seatLeader(t, mgr, g.ID, a.ID)
+	seatOutsider(t, mgr, g.ID, a.ID)
+	if err := mgr.StepDownRole(ctx, lead.ID); err != nil {
+		t.Fatalf("StepDownRole: %v", err)
+	}
+	members, err := mgr.ListActorsForGroup(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("ListActorsForGroup: %v", err)
+	}
+	if len(members) != 0 {
+		t.Fatalf("members = %+v, want none once every live seat is an outsider seat", members)
+	}
+}
+
+func TestAnOutsiderSeatNeverEndsAGroupRegistration(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	g, a := seedJoin(t, mgr, models.JoinOpen)
+	if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: g.ID}); err != nil {
+		t.Fatalf("AssignGroup: %v", err)
+	}
+	seatOutsider(t, mgr, g.ID, a.ID)
+	if !registered(t, mgr, a.ID, g.ID) {
+		t.Fatal("an outsider seat ended the actor's group registration")
+	}
+}
