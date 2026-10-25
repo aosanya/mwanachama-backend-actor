@@ -134,6 +134,7 @@ type UserManager interface {
 	RecordGroupPopulation(ctx context.Context, groupID string, population int, asOf, source, recordedBy string) (models.GroupPopulation, error)
 	LatestGroupPopulation(ctx context.Context, groupID string) (models.GroupPopulation, error)
 	ListGroupPopulations(ctx context.Context, groupID string) ([]models.GroupPopulation, error)
+	WithdrawGroupPopulation(ctx context.Context, groupID, populationID, recordedBy string) (models.GroupPopulation, error)
 	GetGroupInLanguage(ctx context.Context, groupID, language string) (Group, error)
 	GroupNamesInLanguage(ctx context.Context, language string, groupIDs []string) (map[string]string, error)
 	JoinGroupByCode(ctx context.Context, code, actorID, message string) (JoinOutcome, error)

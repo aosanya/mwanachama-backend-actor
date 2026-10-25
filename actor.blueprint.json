@@ -1075,6 +1075,11 @@
           "description": "Who recorded it, as the mount names its caller."
         },
         {
+          "name": "withdraws",
+          "type": "string",
+          "description": "Set only on a withdrawn record: the id of the figure it withdraws. The latest read skips both; the history keeps both."
+        },
+        {
           "name": "created_at",
           "type": "timestamp",
           "description": "When the figure was recorded."

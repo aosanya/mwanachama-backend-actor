@@ -7,5 +7,6 @@ type GroupPopulation struct {
 	AsOf       string `json:"as_of"`
 	Source     string `json:"source"`
 	RecordedBy string `json:"recorded_by,omitempty"`
+	Withdraws  string `json:"withdraws,omitempty"`
 	CreatedAt  string `json:"created_at"`
 }

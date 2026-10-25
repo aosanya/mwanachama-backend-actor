@@ -2212,7 +2212,7 @@
       "call": "LatestGroupPopulation",
       "action": "actor.group_population.read",
       "title": "Read group population",
-      "description": "A group's latest population figure: the one with the latest date, the most recently recorded among figures of the same date.",
+      "description": "A group's latest population figure: the one with the latest date, the most recently recorded among figures of the same date, skipping withdrawn figures. A group with no figure of its own reads the sum of its inner groups' latest figures.",
       "args": [
         {
           "from": "path",
@@ -2247,6 +2247,38 @@
         }
       ],
       "tool": "actor_list_group_populations"
+    },
+    "withdraw_group_population": {
+      "method": "POST",
+      "path": "/groups/{group_id}/population/{population_id}/withdraw",
+      "call": "WithdrawGroupPopulation",
+      "action": "actor.group_population.withdraw",
+      "status": 201,
+      "title": "Withdraw group population",
+      "description": "Withdraw one population figure by appending a withdrawn record. The latest read skips the withdrawn figure; the history keeps it and the record.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group the figure is for."
+        },
+        {
+          "from": "path",
+          "as": "population_id",
+          "description": "The figure to withdraw."
+        },
+        {
+          "from": "caller",
+          "as": "recorded_by",
+          "description": "Who withdrew it, resolved from the session rather than the request."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_withdraw_group_population"
     },
     "create_delegation": {
       "method": "POST",
