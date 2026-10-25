@@ -317,3 +317,18 @@ Member app decision 269. 311a533 (merged as 776adf9): `role_kind.definition_role
 | ACT71 | 🧭 A staff role kind, and roles a definition drops (member app decisions 411, 412) | 2026-10-24 | 68d0dee (merged as f4a15c9, run 8f9944): `RoleKind.Staff` (blueprint and `DefinitionRole`, synced by `SyncDefinitionRoles`); a kind the definition drops is retired with its active seats ended `role_removed` (history kept); hand retire still refuses while seats are live; `leadingSeats` skips retired kinds; revival through `UnretireRoleKind`. definition-roles.md, group-leaders.md. go test green; wakala-api builds. Left for WK218: pass `Staff` in definition_role_kinds.go, call UnretireRoleKind on a returning role, answer is-staff. |
 | ACT74 | 🧭 A member who is also an outsider stays a member (member app decision 494, owner 2026-10-25; follows ACT69) | 2026-10-25 | a25d979 (merged as 908f52e, run d9cd5a): an actor is an outsider only while every live seat is an outsider seat (`outsiderActors`), lists, counts and join/invite follow; an outsider seat never ends a registration; outsiders.md. go build/vet/test clean, wakala-api builds. Asked: does a plain registration count as a seat? |
 | ACT73 | 🧭 A member code's screen name (member app decision 473, owner 2026-10-25) | 2026-10-25 | c2d768a (merged as bd1ffec, run d9cd5a): `ScreenNameByCode`, `GET /actors/by-code/screen-name?code=` (actor.actor.read_screen_name_by_code), display name only, unknown code 404. go build/vet/test clean, wakala-api builds. |
+
+## ACT75 — A group names its area node — 2026-10-25
+
+Member app decisions 495, 497. `group.area_node_id` (blueprint and
+`models.Group` together, replacing `outline`; `Provision` adds the column to
+older tables), set on `CreateGroup` or through `SetGroupAreaNode` and the
+declared `set_group_area_node` (`PUT /groups/{group_id}/area-node`, action
+`actor.group.set_area_node`), refused with `ErrNotAnArea` (409) unless the
+group's level `is_area`. Retired `Group.Outline`, `SetGroupOutline`,
+`ResolvePoint` and their two operations, and `models.FoldStreetName`
+(ACT32, ACT70 superseded); nothing outside actor called them. Commit e941708,
+merged as 30f6324 (run d30394). Verified: `go build ./... && go vet ./... &&
+go test ./...` all ok, `gofmt -l .` empty; wakala-api builds against it.
+Carried over to the owner: can an existing level be marked or unmarked as an
+area after it is created? See `documentation/2. design/areas.md`.
