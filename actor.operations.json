@@ -44,7 +44,6 @@
     "ErrTranslationNotFound": 404,
     "ErrReviewerRequired": 400,
     "ErrNotAnArea": 409,
-    "ErrInvalidOutline": 400,
     "ErrInvalidPopulation": 400,
     "ErrPopulationNotFound": 404,
     "ErrInvalidDelegation": 400,
@@ -747,23 +746,23 @@
       ],
       "tool": "actor_set_my_group_priority"
     },
-    "set_group_outline": {
+    "set_group_area_node": {
       "method": "PUT",
-      "path": "/groups/{group_id}/outline",
-      "call": "SetGroupOutline",
-      "action": "actor.group.set_outline",
-      "title": "Set group outline",
-      "description": "Set or clear the outline of a group at an area level: a GeoJSON Polygon or MultiPolygon. An empty outline clears it. A group whose level is not an area is refused.",
+      "path": "/groups/{group_id}/area-node",
+      "call": "SetGroupAreaNode",
+      "action": "actor.group.set_area_node",
+      "title": "Set group area node",
+      "description": "Set or clear the id of the digital twin node that is this group's area. An empty id clears it. A group whose level is not an area is refused.",
       "args": [
         {
           "from": "path",
           "as": "group_id",
-          "description": "The area group whose outline to set."
+          "description": "The area group whose area node to set."
         },
         {
           "from": "body",
-          "as": "outline",
-          "description": "The area's outline as GeoJSON, a Polygon or MultiPolygon in longitude, latitude order. Omit it to clear the outline."
+          "as": "area_node_id",
+          "description": "The id of the area's node in the digital twin. Omit it to clear the area node."
         }
       ],
       "returns": [
@@ -771,7 +770,7 @@
           "body": true
         }
       ],
-      "tool": "actor_set_group_outline"
+      "tool": "actor_set_group_area_node"
     },
     "join_group": {
       "method": "POST",
@@ -1876,42 +1875,6 @@
         }
       ],
       "tool": "actor_list_levels"
-    },
-    "resolve_point": {
-      "method": "GET",
-      "path": "/hierarchies/{hierarchy_id}/resolve-point",
-      "call": "ResolvePoint",
-      "action": "actor.area.resolve_point",
-      "title": "Resolve point to area",
-      "description": "The area group a pin falls in: among the groups at area levels whose outline contains the point, the deepest wins. found is false when no outline contains it, or the hierarchy has no area level.",
-      "args": [
-        {
-          "from": "path",
-          "as": "hierarchy_id",
-          "description": "The hierarchy whose areas to search."
-        },
-        {
-          "from": "query",
-          "as": "lon",
-          "required": true,
-          "description": "The pin's longitude."
-        },
-        {
-          "from": "query",
-          "as": "lat",
-          "required": true,
-          "description": "The pin's latitude."
-        }
-      ],
-      "returns": [
-        {
-          "as": "group"
-        },
-        {
-          "as": "found"
-        }
-      ],
-      "tool": "actor_resolve_point"
     },
     "create_group_type": {
       "method": "POST",

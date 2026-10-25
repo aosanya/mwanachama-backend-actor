@@ -207,9 +207,9 @@
           "description": "Soft delete. A deleted row is invisible to every listing."
         },
         {
-          "name": "outline",
-          "type": "geometry",
-          "description": "The place a group at an area rung covers, as a polygon or multipolygon. Empty when the group carries no outline."
+          "name": "area_node_id",
+          "type": "string",
+          "description": "The id of the node in the digital twin that is this group's area. Set only on a group at an area level; empty when the group names no area node."
         }
       ],
       "indexes": [

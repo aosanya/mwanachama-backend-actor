@@ -54,7 +54,7 @@ func TestGroupMatchesSchema(t *testing.T) {
 	assertField(t, typ, 13, "LastUpdated", "string", `json:"last_updated"`)
 	assertField(t, typ, 14, "Deleted", "bool", `json:"deleted"`)
 	assertField(t, typ, 15, "Attributes", "map[string]interface {}", `json:"attributes,omitempty"`)
-	assertField(t, typ, 16, "Outline", "geo.Geometry", `json:"outline,omitzero"`)
+	assertField(t, typ, 16, "AreaNodeID", "string", `json:"area_node_id,omitempty"`)
 }
 
 func TestGroupEditMatchesSchema(t *testing.T) {

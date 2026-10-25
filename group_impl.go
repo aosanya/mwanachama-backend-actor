@@ -24,7 +24,7 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if !models.ValidJoinMode(g.JoinMode) {
 		return Group{}, fmt.Errorf("%w: %w", ErrInvalidGroup, ErrInvalidJoinMode)
 	}
-	if err := m.checkOutline(ctx, g.LevelID, g.Outline); err != nil {
+	if err := m.checkAreaNode(ctx, g.LevelID, g.AreaNodeID); err != nil {
 		return Group{}, err
 	}
 	properties := models.DefaultGroupProperties()

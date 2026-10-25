@@ -81,8 +81,8 @@ func TestTheDeclaredTableBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if len(table) != 95 {
-		t.Errorf("the declared table has %d routes, want 95", len(table))
+	if len(table) != 94 {
+		t.Errorf("the declared table has %d routes, want 94", len(table))
 	}
 	for _, rt := range table {
 		if rt.Action == "" {
@@ -117,8 +117,8 @@ func TestEveryToolComesFromTheSameDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildTools: %v", err)
 	}
-	if len(tools) != 95 {
-		t.Errorf("the declared table publishes %d tools, want 95", len(tools))
+	if len(tools) != 94 {
+		t.Errorf("the declared table publishes %d tools, want 94", len(tools))
 	}
 	seen := map[string]bool{}
 	for _, tool := range tools {

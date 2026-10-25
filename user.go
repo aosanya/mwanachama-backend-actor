@@ -7,7 +7,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/aosanya/mwanachama-backend-shared/geo"
 	"github.com/aosanya/mwanachama-backend-shared/spec"
 
 	"github.com/aosanya/mwanachama-backend-actor/models"
@@ -54,9 +53,7 @@ const (
 func NowRFC3339() string { return models.NowRFC3339() }
 
 type UserManager interface {
-	SetGroupOutline(ctx context.Context, groupID string, outline geo.Geometry) (Group, error)
-
-	ResolvePoint(ctx context.Context, hierarchyID string, lon, lat float64) (Group, bool, error)
+	SetGroupAreaNode(ctx context.Context, groupID string, areaNodeID string) (Group, error)
 
 	CreateActor(ctx context.Context, a Actor) (Actor, error)
 

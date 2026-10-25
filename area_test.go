@@ -8,16 +8,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 
-	"github.com/aosanya/mwanachama-backend-shared/geo"
-
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 )
-
-func square(lon, lat, size float64) geo.Geometry {
-	return geo.NewPolygon(geo.Ring{
-		{lon, lat}, {lon + size, lat}, {lon + size, lat + size}, {lon, lat + size}, {lon, lat},
-	})
-}
 
 type areaFixture struct {
 	mgr       mwanachamaactor.UserManager
@@ -45,10 +37,10 @@ func newAreaFixture(t *testing.T) areaFixture {
 	return areaFixture{mgr: mgr, hierarchy: h, top: top, area: area}
 }
 
-func (f areaFixture) group(t *testing.T, level mwanachamaactor.Level, name string, outline geo.Geometry) mwanachamaactor.Group {
+func (f areaFixture) group(t *testing.T, level mwanachamaactor.Level, name string, areaNodeID string) mwanachamaactor.Group {
 	t.Helper()
 	g, err := f.mgr.CreateGroup(context.Background(), mwanachamaactor.Group{
-		HierarchyID: f.hierarchy.ID, LevelID: level.ID, Name: name, Outline: outline,
+		HierarchyID: f.hierarchy.ID, LevelID: level.ID, Name: name, AreaNodeID: areaNodeID,
 	})
 	if err != nil {
 		t.Fatalf("CreateGroup(%s): %v", name, err)
@@ -67,66 +59,47 @@ func TestALevelMarkedAnAreaKeepsTheTemplatesOwnName(t *testing.T) {
 	}
 }
 
-func TestAnOutlineRoundTripsOnAGroupAtAnAreaLevel(t *testing.T) {
+func TestAnAreaNodeRoundTripsOnAGroupAtAnAreaLevel(t *testing.T) {
 	f := newAreaFixture(t)
-	g := f.group(t, f.area, "North", square(10, 10, 1))
+	g := f.group(t, f.area, "North", "node-north")
 	got, err := f.mgr.GetGroup(context.Background(), g.ID)
 	if err != nil {
 		t.Fatalf("GetGroup: %v", err)
 	}
-	if got.Outline.Kind != "Polygon" || len(got.Outline.Polygon[0]) != 5 {
-		t.Fatalf("outline = %+v, want the stored square", got.Outline)
+	if got.AreaNodeID != "node-north" {
+		t.Fatalf("area node = %q, want node-north", got.AreaNodeID)
 	}
 }
 
-func TestAGroupOffAnAreaLevelRefusesAnOutline(t *testing.T) {
+func TestAGroupOffAnAreaLevelRefusesAnAreaNode(t *testing.T) {
 	f := newAreaFixture(t)
 	_, err := f.mgr.CreateGroup(context.Background(), mwanachamaactor.Group{
-		HierarchyID: f.hierarchy.ID, LevelID: f.top.ID, Name: "Root", Outline: square(0, 0, 1),
+		HierarchyID: f.hierarchy.ID, LevelID: f.top.ID, Name: "Root", AreaNodeID: "node-root",
 	})
 	if !errors.Is(err, mwanachamaactor.ErrNotAnArea) {
 		t.Fatalf("err = %v, want ErrNotAnArea", err)
 	}
-	root := f.group(t, f.top, "Root", geo.Geometry{})
-	if _, err := f.mgr.SetGroupOutline(context.Background(), root.ID, square(0, 0, 1)); !errors.Is(err, mwanachamaactor.ErrNotAnArea) {
-		t.Fatalf("SetGroupOutline err = %v, want ErrNotAnArea", err)
+	root := f.group(t, f.top, "Root", "")
+	if _, err := f.mgr.SetGroupAreaNode(context.Background(), root.ID, "node-root"); !errors.Is(err, mwanachamaactor.ErrNotAnArea) {
+		t.Fatalf("SetGroupAreaNode err = %v, want ErrNotAnArea", err)
 	}
 }
 
-func TestAnOutlineIsAPolygonNeverAPoint(t *testing.T) {
-	f := newAreaFixture(t)
-	g := f.group(t, f.area, "North", geo.Geometry{})
-	if _, err := f.mgr.SetGroupOutline(context.Background(), g.ID, geo.NewPoint(1, 1)); !errors.Is(err, mwanachamaactor.ErrInvalidOutline) {
-		t.Fatalf("err = %v, want ErrInvalidOutline", err)
-	}
-}
-
-func TestResolvePointAnswersTheAreaAPinFallsIn(t *testing.T) {
+func TestSettingAnAreaNodeReplacesAndClearsIt(t *testing.T) {
 	f := newAreaFixture(t)
 	ctx := context.Background()
-	f.group(t, f.area, "North", square(10, 10, 1))
-	south := f.group(t, f.area, "South", geo.Geometry{})
-	if _, err := f.mgr.SetGroupOutline(ctx, south.ID, square(10, 8, 1)); err != nil {
-		t.Fatalf("SetGroupOutline: %v", err)
+	g := f.group(t, f.area, "South", "")
+	if _, err := f.mgr.SetGroupAreaNode(ctx, g.ID, "node-south"); err != nil {
+		t.Fatalf("SetGroupAreaNode: %v", err)
 	}
-	got, ok, err := f.mgr.ResolvePoint(ctx, f.hierarchy.ID, 10.5, 8.5)
-	if err != nil || !ok || got.ID != south.ID {
-		t.Fatalf("ResolvePoint = %+v, %v, %v; want South", got, ok, err)
+	if got, _ := f.mgr.GetGroup(ctx, g.ID); got.AreaNodeID != "node-south" {
+		t.Fatalf("after set = %q, want node-south", got.AreaNodeID)
 	}
-	if _, ok, err := f.mgr.ResolvePoint(ctx, f.hierarchy.ID, 50, 50); err != nil || ok {
-		t.Fatalf("ResolvePoint(outside) = %v, %v; want none", ok, err)
+	if _, err := f.mgr.SetGroupAreaNode(ctx, g.ID, ""); err != nil {
+		t.Fatalf("clear: %v", err)
 	}
-}
-
-func TestAnAgencyWithNoAreaLevelResolvesNone(t *testing.T) {
-	ctx := context.Background()
-	mgr := newTestManager(t)
-	h, _ := mgr.CreateHierarchy(ctx, mwanachamaactor.Hierarchy{Name: "Flat"})
-	if _, err := mgr.CreateLevel(ctx, mwanachamaactor.Level{HierarchyID: h.ID, Name: "Only"}); err != nil {
-		t.Fatalf("CreateLevel: %v", err)
-	}
-	if _, ok, err := mgr.ResolvePoint(ctx, h.ID, 0, 0); err != nil || ok {
-		t.Fatalf("ResolvePoint = %v, %v; want none", ok, err)
+	if got, _ := f.mgr.GetGroup(ctx, g.ID); got.AreaNodeID != "" {
+		t.Fatalf("after clear = %q, want empty", got.AreaNodeID)
 	}
 }
 
@@ -140,7 +113,7 @@ func TestProvisionAddsTheAreaColumnsOnToExistingTables(t *testing.T) {
 		t.Fatalf("SpecFor: %v", err)
 	}
 	newTestManagerOn(t, db)
-	for role, column := range map[string]string{"group": "outline", "level": "is_area"} {
+	for role, column := range map[string]string{"group": "area_node_id", "level": "is_area"} {
 		o, _ := s.ByRole(role)
 		if err := db.Exec("alter table " + s.TableFor(o) + " drop column " + column).Error; err != nil {
 			t.Fatalf("drop %s: %v", column, err)
@@ -153,8 +126,8 @@ func TestProvisionAddsTheAreaColumnsOnToExistingTables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateLevel on the restored column: %v", err)
 	}
-	g := f.group(t, f.area, "North", square(1, 1, 1))
-	if got, ok, err := f.mgr.ResolvePoint(ctx, f.hierarchy.ID, 1.5, 1.5); err != nil || !ok || got.ID != g.ID {
-		t.Fatalf("ResolvePoint on the restored columns = %+v, %v, %v", got, ok, err)
+	g := f.group(t, f.area, "North", "node-north")
+	if got, err := f.mgr.GetGroup(ctx, g.ID); err != nil || got.AreaNodeID != "node-north" {
+		t.Fatalf("area node on the restored column = %+v, %v", got, err)
 	}
 }
