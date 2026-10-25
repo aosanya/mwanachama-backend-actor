@@ -264,6 +264,28 @@
       ],
       "tool": "actor_get_actor_by_phone"
     },
+    "get_screen_name_by_code": {
+      "method": "GET",
+      "path": "/actors/by-code/screen-name",
+      "call": "ScreenNameByCode",
+      "action": "actor.actor.read_screen_name_by_code",
+      "title": "Screen name by member code",
+      "description": "Read the screen name (display_name) of the actor holding this member code, and nothing else, so whoever invites by code sees who they are inviting before sending. An unknown code, and the internal \"AC-<n>\" number, answer as a missing actor.",
+      "args": [
+        {
+          "from": "query",
+          "as": "code",
+          "required": true,
+          "description": "The actor's member code, such as M-K7P-4QX-M2T. Case and surrounding spaces are ignored."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_screen_name_by_code"
+    },
     "set_actor_display_name": {
       "method": "PATCH",
       "path": "/actors/{actor_id}/display-name",
