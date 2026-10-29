@@ -8,6 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/aosanya/mwanachama-backend-actor/models"
 	"github.com/aosanya/mwanachama-backend-shared/specstore"
 )
 
@@ -39,6 +40,31 @@ func (m *userManager) leadingSeats(tx *gorm.DB, actorID string) *gorm.DB {
 	return tx.Table(m.table(roleActorRoleAssignment)).Select("group_id").
 		Where("actor_id = ? AND active", actorID).
 		Where("kind_id IN (?)", leadingKinds)
+}
+
+func (m *userManager) ListGroupLeaders(ctx context.Context, groupID string) ([]models.GroupLeader, error) {
+	tx := m.db.WithContext(ctx)
+	leadingKinds := tx.Table(m.table(roleRoleKind)).Select("id").
+		Where("leads_group = ?", true).
+		Where("retired_at = ''")
+	var ids []string
+	err := tx.Table(m.table(roleActorRoleAssignment)).
+		Where("group_id = ? AND active", strings.TrimSpace(groupID)).
+		Where("kind_id IN (?)", leadingKinds).
+		Distinct().
+		Pluck("actor_id", &ids).Error
+	if err != nil {
+		return nil, fmt.Errorf("ListGroupLeaders: %w", err)
+	}
+	named, err := m.GetActors(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("ListGroupLeaders: %w", err)
+	}
+	out := make([]models.GroupLeader, 0, len(named))
+	for _, a := range named {
+		out = append(out, models.GroupLeader{ActorID: a.ID, DisplayName: a.DisplayName})
+	}
+	return out, nil
 }
 
 func (m *userManager) IsGroupLeader(ctx context.Context, groupID, actorID string) (bool, error) {

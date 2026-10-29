@@ -540,7 +540,7 @@
       "call": "ListGroupRoster",
       "action": "actor.assignment.list_for_group",
       "title": "List a group's roster",
-      "description": "The actors registered in one group, ordered by actor id, 50 at a time. To get the next page, ask again with after set to the actor id of the last registration received; a page shorter than the limit is the last one.",
+      "description": "The actors registered in one group, ordered by actor id, 50 at a time, optionally only those whose name contains q. To get the next page, ask again with after set to the actor id of the last registration received; a page shorter than the limit is the last one.",
       "args": [
         {
           "from": "path",
@@ -556,6 +556,11 @@
           "from": "query",
           "as": "limit",
           "description": "How many registrations to return. Empty or zero returns 50; more than 200 returns 200."
+        },
+        {
+          "from": "query",
+          "as": "q",
+          "description": "Keep only the actors whose display, first or last name contains this text, whatever the case. Paging by after still applies."
         }
       ],
       "returns": [
@@ -674,6 +679,27 @@
         }
       ],
       "tool": "actor_list_led_groups"
+    },
+    "list_group_leaders": {
+      "method": "GET",
+      "path": "/groups/{group_id}/leaders",
+      "call": "ListGroupLeaders",
+      "action": "actor.group.list_leaders",
+      "title": "List a group's leaders",
+      "description": "The name of every actor who leads the group, through an active seat of a role kind that leads its group. Names only, ordered by actor id.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose leaders to list."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_group_leaders"
     },
     "list_my_groups": {
       "method": "GET",

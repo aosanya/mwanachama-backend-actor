@@ -116,7 +116,8 @@ type UserManager interface {
 	ActsFor(ctx context.Context, delegateID, subjectID string) (bool, error)
 
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
-	ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int) ([]ActorGroupAssignment, error)
+	ListGroupLeaders(ctx context.Context, groupID string) ([]models.GroupLeader, error)
+	ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int, search string) ([]ActorGroupAssignment, error)
 
 	HomeCounts(ctx context.Context) (map[string]int, error)
 

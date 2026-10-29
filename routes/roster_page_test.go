@@ -64,3 +64,42 @@ func TestTheRosterRouteAnswersFiftyAtATimeAndTakesTheLastKey(t *testing.T) {
 		t.Fatalf("limit=5 = %d rows, want 5", len(small))
 	}
 }
+
+func TestTheRosterRouteTakesANameSearchAndTheLeadersRouteNamesThem(t *testing.T) {
+	mgr := newManager(t)
+	ctx := context.Background()
+	group, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 1"})
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	var grace mwanachamaactor.Actor
+	for _, name := range []string{"Grace Adhiambo", "Asha Otieno", "Peter Mwangi"} {
+		a, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: name})
+		if err != nil {
+			t.Fatalf("CreateActor: %v", err)
+		}
+		if name == "Grace Adhiambo" {
+			grace = a
+		}
+		if _, err := mgr.AssignGroup(ctx, mwanachamaactor.ActorGroupAssignment{ActorID: a.ID, GroupID: group.ID}); err != nil {
+			t.Fatalf("AssignGroup: %v", err)
+		}
+	}
+	chair, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator", LeadsGroup: true})
+	if err != nil {
+		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: grace.ID, GroupID: group.ID, KindID: chair.ID}); err != nil {
+		t.Fatalf("GrantRole: %v", err)
+	}
+	srv := newServer(t, routes.RoutesFor(mgr, routes.Mount{CheckReferences: true}))
+
+	found := getRoster(t, srv.URL+"/groups/"+group.ID+"/assignments", "?q=ADHIAMBO")
+	if len(found) != 1 || found[0]["actor_id"] != grace.ID {
+		t.Fatalf("search adhiambo = %v, want Grace's registration", found)
+	}
+	leaders := getRoster(t, srv.URL+"/groups/"+group.ID+"/leaders", "")
+	if len(leaders) != 1 || leaders[0]["actor_id"] != grace.ID || leaders[0]["display_name"] != "Grace Adhiambo" {
+		t.Fatalf("leaders = %v, want Grace Adhiambo", leaders)
+	}
+}

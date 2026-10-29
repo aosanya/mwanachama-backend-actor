@@ -53,10 +53,26 @@ registrations, so a caller that sent neither parameter now receives the first
 
 ## Search
 
-Not built here. Finding a person beyond the first 50 is a name search over the
-group's actors, which the roster listing does not do: it pages by key only.
-The frontend half of HS303 needs a search that answers by name; this repo has
-none for a group's roster yet.
+HS318. `ListGroupRoster` takes a last argument, `search`, and the route a query
+parameter `q`. The text is trimmed and, when it is not empty, the page keeps
+only the registrations whose actor's display name, first name or last name
+contains it, whatever the case. The match is a `LIKE` over the group's actors
+with `%`, `_` and `\` escaped, so they read as plain text. It narrows the same
+`group_id` read the page already does, so the cursor works unchanged: a
+search finds a person beyond the first 50 and its own pages are asked for with
+`after`, 50 at a time, and a short page still means the end. The outsider
+filter applies to the matches as it does to the roster.
+
+## The group's leaders
+
+HS318. `ListGroupLeaders(ctx, groupID)` answers who leads one group as a list
+of `{actor_id, display_name}` and nothing else: the actors holding an active
+seat in that group of a role kind that leads its group
+(`group-leaders.md`), ordered by actor id. It is served at
+`GET /groups/{group_id}/leaders` under `actor.group.list_leaders`, tool
+`actor_list_group_leaders`. A group with no leaders, or an unknown group,
+answers an empty list. A screen that says who an application waits on reads
+the name here.
 
 ## Tests
 
@@ -65,3 +81,9 @@ none for a group's roster yet.
 unknown group, and statements captured from the database showing that every
 seat read of a page and of the whole-roster listing is narrowed by
 `actor_id IN`.
+
+`roster_search_test.go`, `group_leaders_list_test.go` and the last test of
+`routes/roster_page_test.go`: the name search with its case and its
+wildcards, a person beyond the first page found and the matches paged, the
+search kept inside its group, and the leaders named only for an active
+leading seat in that group.

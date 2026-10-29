@@ -45,28 +45,28 @@ func TestTheRosterComesFiftyAtATimeByTheActorKey(t *testing.T) {
 	ctx := context.Background()
 	g, ids := rosterOf(t, mgr, 120)
 
-	first, err := mgr.ListGroupRoster(ctx, g.ID, "", 0)
+	first, err := mgr.ListGroupRoster(ctx, g.ID, "", 0, "")
 	if err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
 	if got := actorIDs(first); strings.Join(got, ",") != strings.Join(ids[:50], ",") {
 		t.Fatalf("first page = %d rows, want the first 50 by key", len(got))
 	}
-	second, err := mgr.ListGroupRoster(ctx, g.ID, first[49].ActorID, 0)
+	second, err := mgr.ListGroupRoster(ctx, g.ID, first[49].ActorID, 0, "")
 	if err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
 	if got := actorIDs(second); strings.Join(got, ",") != strings.Join(ids[50:100], ",") {
 		t.Fatalf("second page = %d rows, want keys 50 to 99", len(got))
 	}
-	third, err := mgr.ListGroupRoster(ctx, g.ID, second[49].ActorID, 0)
+	third, err := mgr.ListGroupRoster(ctx, g.ID, second[49].ActorID, 0, "")
 	if err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
 	if got := actorIDs(third); strings.Join(got, ",") != strings.Join(ids[100:], ",") {
 		t.Fatalf("third page = %d rows, want the last 20", len(got))
 	}
-	none, err := mgr.ListGroupRoster(ctx, g.ID, third[19].ActorID, 0)
+	none, err := mgr.ListGroupRoster(ctx, g.ID, third[19].ActorID, 0, "")
 	if err != nil || len(none) != 0 {
 		t.Fatalf("page past the end = %d rows, %v, want none", len(none), err)
 	}
@@ -75,14 +75,14 @@ func TestTheRosterComesFiftyAtATimeByTheActorKey(t *testing.T) {
 func TestARosterPageIsCappedWhateverLimitIsAsked(t *testing.T) {
 	mgr := newTestManager(t)
 	g, _ := rosterOf(t, mgr, mwanachamaactor.MaxRosterPageSize+5)
-	page, err := mgr.ListGroupRoster(context.Background(), g.ID, "", 100000)
+	page, err := mgr.ListGroupRoster(context.Background(), g.ID, "", 100000, "")
 	if err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
 	if len(page) != mwanachamaactor.MaxRosterPageSize {
 		t.Fatalf("page = %d rows, want the cap of %d", len(page), mwanachamaactor.MaxRosterPageSize)
 	}
-	small, err := mgr.ListGroupRoster(context.Background(), g.ID, "", 7)
+	small, err := mgr.ListGroupRoster(context.Background(), g.ID, "", 7, "")
 	if err != nil || len(small) != 7 {
 		t.Fatalf("limit 7 = %d rows, %v, want 7", len(small), err)
 	}
@@ -96,14 +96,14 @@ func TestARosterPageStaysFullWhenOutsidersSitInsideIt(t *testing.T) {
 		seatOutsider(t, mgr, g.ID, id)
 	}
 	want := []string{ids[0], ids[3], ids[4], ids[6], ids[7]}
-	page, err := mgr.ListGroupRoster(ctx, g.ID, "", 5)
+	page, err := mgr.ListGroupRoster(ctx, g.ID, "", 5, "")
 	if err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
 	if strings.Join(actorIDs(page), ",") != strings.Join(want, ",") {
 		t.Fatalf("page = %v, want %v", actorIDs(page), want)
 	}
-	next, err := mgr.ListGroupRoster(ctx, g.ID, page[4].ActorID, 5)
+	next, err := mgr.ListGroupRoster(ctx, g.ID, page[4].ActorID, 5, "")
 	if err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestARosterPageStaysFullWhenOutsidersSitInsideIt(t *testing.T) {
 
 func TestARosterPageOfAnUnknownGroupIsEmpty(t *testing.T) {
 	mgr := newTestManager(t)
-	page, err := mgr.ListGroupRoster(context.Background(), "no-such-group", "", 0)
+	page, err := mgr.ListGroupRoster(context.Background(), "no-such-group", "", 0, "")
 	if err != nil || len(page) != 0 {
 		t.Fatalf("page = %v, %v, want none", page, err)
 	}
@@ -168,7 +168,7 @@ func TestTheOutsiderCheckOfARosterPageOnlyLooksAtThePagesActors(t *testing.T) {
 	log.sqls = nil
 	log.mu.Unlock()
 
-	if _, err := mgr.ListGroupRoster(ctx, g.ID, "", 5); err != nil {
+	if _, err := mgr.ListGroupRoster(ctx, g.ID, "", 5, ""); err != nil {
 		t.Fatalf("ListGroupRoster: %v", err)
 	}
 	reads := log.seatReads()

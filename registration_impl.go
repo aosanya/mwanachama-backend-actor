@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 
 	"github.com/aosanya/mwanachama-backend-shared/specstore"
 
@@ -133,8 +134,9 @@ func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([
 	return out, nil
 }
 
-func (m *userManager) ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int) ([]ActorGroupAssignment, error) {
+func (m *userManager) ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int, search string) ([]ActorGroupAssignment, error) {
 	limit = rosterPageLimit(limit)
+	search = strings.TrimSpace(search)
 	out := make([]ActorGroupAssignment, 0, limit)
 	cursor := afterActorID
 	for len(out) < limit {
@@ -145,6 +147,9 @@ func (m *userManager) ListGroupRoster(ctx context.Context, groupID, afterActorID
 			Limit(want)
 		if cursor != "" {
 			q = q.Where("actor_id > ?", cursor)
+		}
+		if search != "" {
+			q = q.Where("actor_id IN (?)", m.actorsNamedLike(m.db.WithContext(ctx), search))
 		}
 		rows, err := specstore.List[ActorGroupAssignment](m.store, q, roleActorGroupAssignment)
 		if err != nil {
@@ -163,6 +168,14 @@ func (m *userManager) ListGroupRoster(ctx context.Context, groupID, afterActorID
 	defaultPriorities(out)
 	return out, nil
 }
+
+func (m *userManager) actorsNamedLike(tx *gorm.DB, search string) *gorm.DB {
+	pattern := "%" + likeEscaper.Replace(strings.ToLower(search)) + "%"
+	return tx.Table(m.table(roleActor)).Select("id").
+		Where(`LOWER(display_name) LIKE ? ESCAPE '\' OR LOWER(first_name) LIKE ? ESCAPE '\' OR LOWER(last_name) LIKE ? ESCAPE '\'`, pattern, pattern, pattern)
+}
+
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 func rosterPageLimit(limit int) int {
 	if limit <= 0 {
