@@ -537,15 +537,25 @@
     "list_actors_for_group": {
       "method": "GET",
       "path": "/groups/{group_id}/assignments",
-      "call": "ListActorsForGroup",
+      "call": "ListGroupRoster",
       "action": "actor.assignment.list_for_group",
       "title": "List a group's roster",
-      "description": "Every actor registered in one group, oldest first.",
+      "description": "The actors registered in one group, ordered by actor id, 50 at a time. To get the next page, ask again with after set to the actor id of the last registration received; a page shorter than the limit is the last one.",
       "args": [
         {
           "from": "path",
           "as": "group_id",
           "description": "The group whose roster to list."
+        },
+        {
+          "from": "query",
+          "as": "after",
+          "description": "The actor id of the last registration already received. Empty starts at the beginning."
+        },
+        {
+          "from": "query",
+          "as": "limit",
+          "description": "How many registrations to return. Empty or zero returns 50; more than 200 returns 200."
         }
       ],
       "returns": [

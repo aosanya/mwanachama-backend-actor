@@ -114,9 +114,12 @@ func (m *userManager) ListGroupsForActor(ctx context.Context, actorID string) ([
 }
 
 func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error) {
-	q := m.store.Query(ctx, roleActorGroupAssignment).Where("group_id = ?", groupID).
-		Where("actor_id NOT IN (?)", m.outsiderActors(m.db.WithContext(ctx)))
-	out, err := specstore.List[ActorGroupAssignment](m.store, q, roleActorGroupAssignment)
+	q := m.store.Query(ctx, roleActorGroupAssignment).Where("group_id = ?", groupID)
+	rows, err := specstore.List[ActorGroupAssignment](m.store, q, roleActorGroupAssignment)
+	if err != nil {
+		return nil, fmt.Errorf("ListActorsForGroup: %w", err)
+	}
+	out, err := m.withoutOutsiders(ctx, rows)
 	if err != nil {
 		return nil, fmt.Errorf("ListActorsForGroup: %w", err)
 	}
@@ -128,6 +131,62 @@ func (m *userManager) ListActorsForGroup(ctx context.Context, groupID string) ([
 		return out[i].ActorID < out[j].ActorID
 	})
 	return out, nil
+}
+
+func (m *userManager) ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int) ([]ActorGroupAssignment, error) {
+	limit = rosterPageLimit(limit)
+	out := make([]ActorGroupAssignment, 0, limit)
+	cursor := afterActorID
+	for len(out) < limit {
+		want := limit - len(out)
+		q := m.store.Query(ctx, roleActorGroupAssignment).
+			Where("group_id = ?", groupID).
+			Order("actor_id").
+			Limit(want)
+		if cursor != "" {
+			q = q.Where("actor_id > ?", cursor)
+		}
+		rows, err := specstore.List[ActorGroupAssignment](m.store, q, roleActorGroupAssignment)
+		if err != nil {
+			return nil, fmt.Errorf("ListGroupRoster: %w", err)
+		}
+		members, err := m.withoutOutsiders(ctx, rows)
+		if err != nil {
+			return nil, fmt.Errorf("ListGroupRoster: %w", err)
+		}
+		out = append(out, members...)
+		if len(rows) < want {
+			break
+		}
+		cursor = rows[len(rows)-1].ActorID
+	}
+	defaultPriorities(out)
+	return out, nil
+}
+
+func rosterPageLimit(limit int) int {
+	if limit <= 0 {
+		return DefaultRosterPageSize
+	}
+	return min(limit, MaxRosterPageSize)
+}
+
+func (m *userManager) withoutOutsiders(ctx context.Context, rows []ActorGroupAssignment) ([]ActorGroupAssignment, error) {
+	ids := make([]string, len(rows))
+	for i, r := range rows {
+		ids[i] = r.ActorID
+	}
+	outsiders, err := m.outsidersAmong(m.db.WithContext(ctx), ids)
+	if err != nil {
+		return nil, err
+	}
+	members := make([]ActorGroupAssignment, 0, len(rows))
+	for _, r := range rows {
+		if !outsiders[r.ActorID] {
+			members = append(members, r)
+		}
+	}
+	return members, nil
 }
 
 func (m *userManager) HomeCounts(ctx context.Context) (map[string]int, error) {

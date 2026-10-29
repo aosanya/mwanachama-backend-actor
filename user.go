@@ -116,6 +116,7 @@ type UserManager interface {
 	ActsFor(ctx context.Context, delegateID, subjectID string) (bool, error)
 
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
+	ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int) ([]ActorGroupAssignment, error)
 
 	HomeCounts(ctx context.Context) (map[string]int, error)
 
@@ -207,6 +208,11 @@ type userManager struct {
 }
 
 const DefaultInvitationLifetime = 14 * 24 * time.Hour
+
+const (
+	DefaultRosterPageSize = 50
+	MaxRosterPageSize     = 200
+)
 
 type Option func(*userManager)
 

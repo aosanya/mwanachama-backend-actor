@@ -39,7 +39,8 @@ made the actor an outsider.
 
 - `ListActorsForGroup` and `HomeCounts` leave outsiders out, so
   `GroupDashboard.MemberCount` does too. The registration row is untouched:
-  the filter is a read-time `NOT IN` over outsider actors.
+  the filter is a read-time lookup of which of the listed actors are
+  outsiders (`outsidersAmong`), narrowed to those actors; `roster-paging.md`.
 - `JoinGroup` (and joining by code, which shares `join`), `InviteToGroup`
   and `AcceptInvitation` refuse an outsider with `ErrOutsiderRole`, mapped to **409** in
   `actor.operations.json`. The refusal comes after the actor is found, so an
