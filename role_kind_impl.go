@@ -22,16 +22,16 @@ func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind,
 	k.RetiredAt, k.RetiredBy = "", ""
 
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "role_kind", "RK")
+		code, err := m.nextCode(ctx, tx, "role_kind", "RK")
 		if err != nil {
 			return err
 		}
 		k.Code = code
-		row, err := encode(m.object(roleRoleKind), k)
+		row, err := m.store.Row(roleRoleKind, k)
 		if err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Table(m.table(roleRoleKind)).Create(row).Error; err != nil {
+		if err := m.from(tx.WithContext(ctx), roleRoleKind).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil
@@ -69,7 +69,7 @@ func (m *userManager) GetRoleKind(ctx context.Context, id string) (RoleKind, err
 
 func (m *userManager) roleKindIn(tx *gorm.DB, id string) (RoleKind, error) {
 	var out RoleKind
-	q := tx.Table(m.table(roleRoleKind)).Where("id = ?", id)
+	q := m.from(tx, roleRoleKind).Where("id = ?", id)
 	if err := m.store.Take(q, roleRoleKind, &out, ErrRoleKindNotFound); err != nil {
 		return RoleKind{}, err
 	}
@@ -88,7 +88,7 @@ func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string
 			return nil
 		}
 		var live int64
-		if err := tx.Table(m.table(roleActorRoleAssignment)).
+		if err := m.from(tx, roleActorRoleAssignment).
 			Where("kind_id = ? AND active", kindID).Count(&live).Error; err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (m *userManager) RetireRoleKind(ctx context.Context, kindID, actorID string
 		}
 		k.RetiredAt = NowRFC3339()
 		k.RetiredBy = actorID
-		if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", kindID).
+		if err := m.from(tx, roleRoleKind).Where("id = ?", kindID).
 			Updates(map[string]any{"retired_at": k.RetiredAt, "retired_by": k.RetiredBy}).Error; err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func (m *userManager) UnretireRoleKind(ctx context.Context, kindID string) (Role
 			return nil
 		}
 		k.RetiredAt, k.RetiredBy = "", ""
-		if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", kindID).
+		if err := m.from(tx, roleRoleKind).Where("id = ?", kindID).
 			Updates(map[string]any{"retired_at": "", "retired_by": ""}).Error; err != nil {
 			return err
 		}

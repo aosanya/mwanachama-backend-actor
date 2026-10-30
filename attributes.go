@@ -9,7 +9,7 @@ import (
 	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
-func (m *userManager) checkUniqueAttributes(ctx context.Context, table string, properties []models.Property, attrs map[string]any) error {
+func (m *userManager) checkUniqueAttributes(ctx context.Context, role string, properties []models.Property, attrs map[string]any) error {
 	for _, p := range properties {
 		if !p.Unique {
 			continue
@@ -19,7 +19,7 @@ func (m *userManager) checkUniqueAttributes(ctx context.Context, table string, p
 			continue
 		}
 		var count int64
-		err := m.db.WithContext(ctx).Table(table).
+		err := m.from(m.db.WithContext(ctx), role).
 			Where(datatypes.JSONQuery("attributes").Equals(v, p.Name)).
 			Count(&count).Error
 		if err != nil {

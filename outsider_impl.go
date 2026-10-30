@@ -5,11 +5,11 @@ import "gorm.io/gorm"
 const outsiderLookupChunk = 500
 
 func (m *userManager) outsiderKinds(tx *gorm.DB) *gorm.DB {
-	return tx.Table(m.table(roleRoleKind)).Select("id").Where("outsider = ?", true)
+	return m.from(tx, roleRoleKind).Select("id").Where("outsider = ?", true)
 }
 
 func (m *userManager) activeSeats(tx *gorm.DB) *gorm.DB {
-	return tx.Table(m.table(roleActorRoleAssignment)).Select("actor_id").Where("active")
+	return m.from(tx, roleActorRoleAssignment).Select("actor_id").Where("active")
 }
 
 func (m *userManager) outsiderActors(tx *gorm.DB) *gorm.DB {

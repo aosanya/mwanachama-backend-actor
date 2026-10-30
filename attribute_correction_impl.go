@@ -68,7 +68,7 @@ func (m *userManager) setAttributes(ctx context.Context, actorID, editorID, setB
 	held.Attributes = merged
 	held.AttributeSources = sources
 	held.LastUpdated = now
-	row, err := encode(m.object(roleActor), held)
+	row, err := m.store.Row(roleActor, held)
 	if err != nil {
 		return Actor{}, err
 	}
@@ -90,7 +90,7 @@ func (m *userManager) checkUniqueAttributesBesides(ctx context.Context, actorID 
 			continue
 		}
 		var count int64
-		err := m.db.WithContext(ctx).Table(m.table(roleActor)).
+		err := m.from(m.db.WithContext(ctx), roleActor).
 			Where(datatypes.JSONQuery("attributes").Equals(v, p.Name)).
 			Where("id <> ?", actorID).
 			Count(&count).Error

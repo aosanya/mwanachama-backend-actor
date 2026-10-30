@@ -99,14 +99,14 @@ func (m *userManager) issueInvitation(ctx context.Context, inv GroupInvitation, 
 		}
 		if !found {
 			inv.ID = newSpecID()
-			row, err := encode(m.object(roleGroupInvitation), inv)
+			row, err := m.store.Row(roleGroupInvitation, inv)
 			if err != nil {
 				return err
 			}
-			return tx.Table(m.table(roleGroupInvitation)).Create(row).Error
+			return m.from(tx, roleGroupInvitation).Create(row).Error
 		}
 		inv.ID = existing.ID
-		return tx.Table(m.table(roleGroupInvitation)).Where("id = ?", inv.ID).
+		return m.from(tx, roleGroupInvitation).Where("id = ?", inv.ID).
 			Updates(map[string]any{
 				"state":        inv.State,
 				"invited_by":   inv.InvitedBy,
@@ -127,7 +127,7 @@ func (m *userManager) issueInvitation(ctx context.Context, inv GroupInvitation, 
 
 func (m *userManager) findInvitation(ctx context.Context, tx *gorm.DB, groupID, actorID string) (GroupInvitation, bool, error) {
 	var out GroupInvitation
-	q := tx.WithContext(ctx).Table(m.table(roleGroupInvitation)).
+	q := m.from(tx.WithContext(ctx), roleGroupInvitation).
 		Where("group_id = ? AND actor_id = ?", groupID, actorID)
 	err := m.store.Take(q, roleGroupInvitation, &out, ErrInvitationNotFound)
 	if errors.Is(err, ErrInvitationNotFound) {
@@ -221,7 +221,7 @@ func (m *userManager) answerInvitation(ctx context.Context, id, actorID, state s
 		}
 	}
 	err = m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		taken := m.stillOpen(tx.Table(m.table(roleGroupInvitation)).Where("id = ?", id), now).
+		taken := m.stillOpen(m.from(tx, roleGroupInvitation).Where("id = ?", id), now).
 			Updates(map[string]any{
 				"state":        state,
 				"answered_at":  now,

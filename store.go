@@ -64,8 +64,6 @@ func newSpecID() string { return specstore.NewID() }
 
 func columnName(field string) string { return specstore.ColumnName(field) }
 
-func encode(o spec.Object, v any) (map[string]any, error) { return specstore.Encode(o, v) }
-
 func decode(o spec.Object, row map[string]any, out any) error {
 	return specstore.Decode(o, row, out)
 }
@@ -87,16 +85,30 @@ var codedRoles = []codedRole{
 	{roleGroupType, "grouptype", "GT"},
 }
 
-func nextCode(ctx context.Context, tx *gorm.DB, table, entityType, prefix string) (string, error) {
+func (m *userManager) nextCode(ctx context.Context, tx *gorm.DB, entityType, prefix string) (string, error) {
+	return nextCode(ctx, tx, m.table(roleCodeSequence), m.store.RunID(), entityType, prefix)
+}
+
+func inRun(q *gorm.DB, runID string) *gorm.DB {
+	if runID == "" {
+		return q
+	}
+	return q.Where(spec.RunIDColumn+" = ?", runID)
+}
+
+func nextCode(ctx context.Context, tx *gorm.DB, table, runID, entityType, prefix string) (string, error) {
 	for attempt := 0; attempt < codeSequenceAttempts; attempt++ {
 		var rows []map[string]any
-		if err := tx.WithContext(ctx).Table(table).
+		if err := inRun(tx.WithContext(ctx).Table(table), runID).
 			Where("entity_type = ?", entityType).Limit(1).Find(&rows).Error; err != nil {
 			return "", fmt.Errorf("nextCode: %w", err)
 		}
 
 		if len(rows) == 0 {
 			seed := map[string]any{"entity_type": entityType, "next_number": 2}
+			if runID != "" {
+				seed[spec.RunIDColumn] = runID
+			}
 			if err := tx.WithContext(ctx).Table(table).Create(seed).Error; err != nil {
 				if isUniqueViolation(err) {
 					continue
@@ -111,7 +123,7 @@ func nextCode(ctx context.Context, tx *gorm.DB, table, entityType, prefix string
 			return "", fmt.Errorf("nextCode: %s: %w", entityType, err)
 		}
 
-		claimed := tx.WithContext(ctx).Table(table).
+		claimed := inRun(tx.WithContext(ctx).Table(table), runID).
 			Where("entity_type = ? AND next_number = ?", entityType, n).
 			Update("next_number", n+1)
 		if claimed.Error != nil {

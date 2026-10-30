@@ -31,7 +31,7 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if err := models.ValidateAttributes(properties, g.Attributes); err != nil {
 		return Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)
 	}
-	if err := m.checkUniqueAttributes(ctx, m.table(roleGroup), properties, g.Attributes); err != nil {
+	if err := m.checkUniqueAttributes(ctx, roleGroup, properties, g.Attributes); err != nil {
 		return Group{}, err
 	}
 
@@ -41,7 +41,7 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	g.Deleted = false
 
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "group", "G")
+		code, err := m.nextCode(ctx, tx, "group", "G")
 		if err != nil {
 			return err
 		}
@@ -50,11 +50,11 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 		if err != nil {
 			return err
 		}
-		row, err := encode(m.object(roleGroup), g)
+		row, err := m.store.Row(roleGroup, g)
 		if err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Table(m.table(roleGroup)).Create(row).Error; err != nil {
+		if err := m.from(tx.WithContext(ctx), roleGroup).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil

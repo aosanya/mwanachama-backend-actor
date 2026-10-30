@@ -35,7 +35,7 @@ func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []Definitio
 	}
 	out := DefinitionRoleSync{Renamed: []RoleKind{}, Retired: []RoleKind{}}
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		q := tx.Table(m.table(roleRoleKind)).Where("definition_role_id <> ''").Order("id")
+		q := m.from(tx, roleRoleKind).Where("definition_role_id <> ''").Order("id")
 		kinds, err := specstore.List[RoleKind](m.store, q, roleRoleKind)
 		if err != nil {
 			return err
@@ -55,14 +55,14 @@ func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []Definitio
 			}
 			if def.Staff != k.Staff {
 				k.Staff = def.Staff
-				if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
+				if err := m.from(tx, roleRoleKind).Where("id = ?", k.ID).
 					Updates(map[string]any{"staff": def.Staff}).Error; err != nil {
 					return err
 				}
 			}
 			if def.Name != "" && def.Name != k.Name {
 				k.Name = def.Name
-				if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
+				if err := m.from(tx, roleRoleKind).Where("id = ?", k.ID).
 					Updates(map[string]any{"name": def.Name}).Error; err != nil {
 					return err
 				}
@@ -79,14 +79,14 @@ func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []Definitio
 
 func (m *userManager) retireDroppedKind(tx *gorm.DB, k RoleKind, actorID string) (RoleKind, error) {
 	now := NowRFC3339()
-	if err := tx.Table(m.table(roleActorRoleAssignment)).
+	if err := m.from(tx, roleActorRoleAssignment).
 		Where("kind_id = ? AND active", k.ID).
 		Updates(map[string]any{"active": false, "ended_at": now, "ended_reason": string(EndedByRoleRemoved)}).Error; err != nil {
 		return RoleKind{}, err
 	}
 	k.RetiredAt = now
 	k.RetiredBy = actorID
-	if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", k.ID).
+	if err := m.from(tx, roleRoleKind).Where("id = ?", k.ID).
 		Updates(map[string]any{"retired_at": k.RetiredAt, "retired_by": k.RetiredBy}).Error; err != nil {
 		return RoleKind{}, err
 	}

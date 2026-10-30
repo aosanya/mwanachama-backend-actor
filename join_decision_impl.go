@@ -24,11 +24,11 @@ func (m *userManager) recordDecision(tx *gorm.DB, req GroupJoinRequest, state st
 		DecidedAt: now,
 		Reason:    reason,
 	}
-	row, err := encode(m.object(roleJoinDecision), d)
+	row, err := m.store.Row(roleJoinDecision, d)
 	if err != nil {
 		return err
 	}
-	return tx.Table(m.table(roleJoinDecision)).Create(row).Error
+	return m.from(tx, roleJoinDecision).Create(row).Error
 }
 
 func (m *userManager) GetMyJoinDecision(ctx context.Context, decisionID, actorID string) (JoinDecision, error) {

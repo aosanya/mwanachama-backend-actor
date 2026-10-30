@@ -297,7 +297,7 @@ func backfillCodes(db *gorm.DB, s *spec.Spec) error {
 				return err
 			}
 			for _, id := range ids {
-				code, err := nextCode(context.Background(), tx, sequences, c.entityType, c.prefix)
+				code, err := nextCode(context.Background(), tx, sequences, "", c.entityType, c.prefix)
 				if err != nil {
 					return err
 				}

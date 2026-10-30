@@ -26,11 +26,11 @@ func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (Act
 		a.GrantedAt = NowRFC3339()
 		a.Active = true
 		a.EndedAt, a.EndedReason = "", ""
-		row, err := encode(m.object(roleActorRoleAssignment), a)
+		row, err := m.store.Row(roleActorRoleAssignment, a)
 		if err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Table(m.table(roleActorRoleAssignment)).Create(row).Error
+		return m.from(tx.WithContext(ctx), roleActorRoleAssignment).Create(row).Error
 	})
 	if err != nil {
 		return ActorRoleAssignment{}, fmt.Errorf("GrantRole: %w", err)

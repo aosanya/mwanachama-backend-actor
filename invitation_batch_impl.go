@@ -92,7 +92,7 @@ func plainEmail(s string) bool {
 
 func (m *userManager) actorIDByEmail(ctx context.Context, email string) (string, bool, error) {
 	var ids []string
-	err := m.db.WithContext(ctx).Table(m.table(roleActor)).
+	err := m.from(m.db.WithContext(ctx), roleActor).
 		Where(datatypes.JSONQuery("attributes").Equals(email, "email")).
 		Limit(1).Pluck("id", &ids).Error
 	if err != nil {

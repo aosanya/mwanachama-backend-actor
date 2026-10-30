@@ -44,7 +44,7 @@ func (m *userManager) setGroupColumn(ctx context.Context, groupID, column string
 }
 
 func (m *userManager) ListJoinableGroups(ctx context.Context, actorID string) ([]Group, error) {
-	registered := m.db.WithContext(ctx).Table(m.table(roleActorGroupAssignment)).
+	registered := m.from(m.db.WithContext(ctx), roleActorGroupAssignment).
 		Select("group_id").Where("actor_id = ?", actorID)
 	q := m.store.Query(ctx, roleGroup).
 		Where("deleted = ? AND hidden = ?", false, false).
@@ -118,7 +118,7 @@ func (m *userManager) joinOpen(ctx context.Context, groupID, actorID string) (Jo
 }
 
 func (m *userManager) settlePendingJoinRequest(tx *gorm.DB, groupID, actorID, now string) error {
-	return tx.Table(m.table(roleGroupJoinRequest)).
+	return m.from(tx, roleGroupJoinRequest).
 		Where("group_id = ? AND actor_id = ? AND state = ?", groupID, actorID, models.JoinRequestPending).
 		Updates(map[string]any{
 			"state":          models.JoinRequestApproved,
@@ -149,14 +149,14 @@ func (m *userManager) askToJoin(ctx context.Context, groupID, actorID, message s
 				AskedAt:     now,
 				LastUpdated: now,
 			}
-			row, err := encode(m.object(roleGroupJoinRequest), out)
+			row, err := m.store.Row(roleGroupJoinRequest, out)
 			if err != nil {
 				return err
 			}
-			return tx.Table(m.table(roleGroupJoinRequest)).Create(row).Error
+			return m.from(tx, roleGroupJoinRequest).Create(row).Error
 		}
 		out = askedAgain(existing, message, now)
-		return tx.Table(m.table(roleGroupJoinRequest)).Where("id = ?", out.ID).
+		return m.from(tx, roleGroupJoinRequest).Where("id = ?", out.ID).
 			Updates(map[string]any{
 				"state":          out.State,
 				"appeal":         out.Appeal,
@@ -200,7 +200,7 @@ func askedAgain(r GroupJoinRequest, message, now string) GroupJoinRequest {
 
 func (m *userManager) findJoinRequest(ctx context.Context, tx *gorm.DB, groupID, actorID string) (GroupJoinRequest, bool, error) {
 	var out GroupJoinRequest
-	q := tx.WithContext(ctx).Table(m.table(roleGroupJoinRequest)).
+	q := m.from(tx.WithContext(ctx), roleGroupJoinRequest).
 		Where("group_id = ? AND actor_id = ?", groupID, actorID)
 	err := m.store.Take(q, roleGroupJoinRequest, &out, ErrJoinRequestNotFound)
 	if errors.Is(err, ErrJoinRequestNotFound) {
@@ -214,17 +214,17 @@ func (m *userManager) findJoinRequest(ctx context.Context, tx *gorm.DB, groupID,
 
 func (m *userManager) register(ctx context.Context, tx *gorm.DB, actorID, groupID, now string) (ActorGroupAssignment, error) {
 	a := ActorGroupAssignment{ActorID: actorID, GroupID: groupID, CreatedAt: now, LastUpdated: now}
-	row, err := encode(m.object(roleActorGroupAssignment), a)
+	row, err := m.store.Row(roleActorGroupAssignment, a)
 	if err != nil {
 		return ActorGroupAssignment{}, err
 	}
-	err = tx.WithContext(ctx).Table(m.table(roleActorGroupAssignment)).
+	err = m.from(tx.WithContext(ctx), roleActorGroupAssignment).
 		Clauses(clause.OnConflict{DoNothing: true}).Create(row).Error
 	if err != nil {
 		return ActorGroupAssignment{}, err
 	}
 	var held ActorGroupAssignment
-	q := tx.WithContext(ctx).Table(m.table(roleActorGroupAssignment)).
+	q := m.from(tx.WithContext(ctx), roleActorGroupAssignment).
 		Where("actor_id = ? AND group_id = ?", actorID, groupID)
 	if err := m.store.Take(q, roleActorGroupAssignment, &held, errAssignmentNotHeld); err != nil {
 		return ActorGroupAssignment{}, err
@@ -318,7 +318,7 @@ func (m *userManager) decide(ctx context.Context, id, decidedBy, state string, s
 		if err := mayDecide(tx, req.GroupID, decidedBy); err != nil {
 			return err
 		}
-		taken := tx.Table(m.table(roleGroupJoinRequest)).
+		taken := m.from(tx, roleGroupJoinRequest).
 			Where("id = ? AND state = ?", id, models.JoinRequestPending).
 			Updates(map[string]any{
 				"state":          state,

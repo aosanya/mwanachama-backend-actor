@@ -14,16 +14,16 @@ import (
 func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarchy, error) {
 	h.ID = newSpecID()
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "hierarchy", "H")
+		code, err := m.nextCode(ctx, tx, "hierarchy", "H")
 		if err != nil {
 			return err
 		}
 		h.Code = code
-		row, err := encode(m.object(roleHierarchy), h)
+		row, err := m.store.Row(roleHierarchy, h)
 		if err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Table(m.table(roleHierarchy)).Create(row).Error; err != nil {
+		if err := m.from(tx.WithContext(ctx), roleHierarchy).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil
@@ -85,16 +85,16 @@ func (m *userManager) CreateLevel(ctx context.Context, l Level) (Level, error) {
 	}
 	l.ID = newSpecID()
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "level", "L")
+		code, err := m.nextCode(ctx, tx, "level", "L")
 		if err != nil {
 			return err
 		}
 		l.Code = code
-		row, err := encode(m.object(roleLevel), l)
+		row, err := m.store.Row(roleLevel, l)
 		if err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Table(m.table(roleLevel)).Create(row).Error; err != nil {
+		if err := m.from(tx.WithContext(ctx), roleLevel).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil
@@ -111,7 +111,7 @@ func (m *userManager) GetLevel(ctx context.Context, id string) (Level, error) {
 
 func (m *userManager) levelIn(tx *gorm.DB, id string) (Level, error) {
 	var out Level
-	q := tx.Table(m.table(roleLevel)).Where("id = ?", id)
+	q := m.from(tx, roleLevel).Where("id = ?", id)
 	if err := m.store.Take(q, roleLevel, &out, ErrLevelNotFound); err != nil {
 		if errors.Is(err, ErrLevelNotFound) {
 			return Level{}, ErrLevelNotFound
@@ -140,7 +140,7 @@ func (m *userManager) DeleteLevel(ctx context.Context, id string) error {
 			return err
 		}
 		var wornCount int64
-		if err := tx.Table(m.table(roleGroup)).
+		if err := m.from(tx, roleGroup).
 			Where("(level_id = ? OR anchor_level_override_id = ?) AND deleted = ?", id, id, false).
 			Count(&wornCount).Error; err != nil {
 			return fmt.Errorf("DeleteLevel: %w", err)
@@ -149,14 +149,14 @@ func (m *userManager) DeleteLevel(ctx context.Context, id string) error {
 			return ErrLevelWornByGroups
 		}
 		var kindCount int64
-		if err := tx.Table(m.table(roleRoleKind)).
+		if err := m.from(tx, roleRoleKind).
 			Where("level_id = ?", id).Count(&kindCount).Error; err != nil {
 			return fmt.Errorf("DeleteLevel: %w", err)
 		}
 		if kindCount > 0 {
 			return ErrLevelHasRoleKinds
 		}
-		if err := tx.Table(m.table(roleLevel)).Where("id = ?", id).
+		if err := m.from(tx, roleLevel).Where("id = ?", id).
 			Delete(map[string]any{}).Error; err != nil {
 			return fmt.Errorf("DeleteLevel: %w", err)
 		}
@@ -176,12 +176,12 @@ func (m *userManager) SetDefaultAnchor(ctx context.Context, hierarchyID, levelID
 		if target.IsDefaultAnchor {
 			return nil
 		}
-		if err := tx.Table(m.table(roleLevel)).
+		if err := m.from(tx, roleLevel).
 			Where("hierarchy_id = ? AND is_default_anchor", hierarchyID).
 			Update("is_default_anchor", false).Error; err != nil {
 			return fmt.Errorf("SetDefaultAnchor: %w", err)
 		}
-		if err := tx.Table(m.table(roleLevel)).Where("id = ?", levelID).
+		if err := m.from(tx, roleLevel).Where("id = ?", levelID).
 			Update("is_default_anchor", true).Error; err != nil {
 			return fmt.Errorf("SetDefaultAnchor: %w", err)
 		}

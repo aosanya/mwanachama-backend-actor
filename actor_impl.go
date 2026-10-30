@@ -21,7 +21,7 @@ func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error)
 	if err := models.ValidateAttributes(properties, act.Attributes); err != nil {
 		return Actor{}, fmt.Errorf("%w: %v", ErrInvalidActor, err)
 	}
-	if err := m.checkUniqueAttributes(ctx, m.table(roleActor), properties, act.Attributes); err != nil {
+	if err := m.checkUniqueAttributes(ctx, roleActor, properties, act.Attributes); err != nil {
 		return Actor{}, err
 	}
 
@@ -62,7 +62,7 @@ func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error)
 	act.FormsWeekSplit = true
 
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "actor", "AC")
+		code, err := m.nextCode(ctx, tx, "actor", "AC")
 		if err != nil {
 			return err
 		}
@@ -71,11 +71,11 @@ func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error)
 		if err != nil {
 			return err
 		}
-		row, err := encode(m.object(roleActor), act)
+		row, err := m.store.Row(roleActor, act)
 		if err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Table(m.table(roleActor)).Create(row).Error; err != nil {
+		if err := m.from(tx.WithContext(ctx), roleActor).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil

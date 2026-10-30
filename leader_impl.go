@@ -19,7 +19,7 @@ func (m *userManager) SetRoleKindLeadsGroup(ctx context.Context, kindID string, 
 		if err != nil {
 			return err
 		}
-		if err := tx.Table(m.table(roleRoleKind)).Where("id = ?", kindID).
+		if err := m.from(tx, roleRoleKind).Where("id = ?", kindID).
 			Updates(map[string]any{"leads_group": leads}).Error; err != nil {
 			return err
 		}
@@ -34,21 +34,21 @@ func (m *userManager) SetRoleKindLeadsGroup(ctx context.Context, kindID string, 
 }
 
 func (m *userManager) leadingSeats(tx *gorm.DB, actorID string) *gorm.DB {
-	leadingKinds := tx.Table(m.table(roleRoleKind)).Select("id").
+	leadingKinds := m.from(tx, roleRoleKind).Select("id").
 		Where("leads_group = ?", true).
 		Where("retired_at = ''")
-	return tx.Table(m.table(roleActorRoleAssignment)).Select("group_id").
+	return m.from(tx, roleActorRoleAssignment).Select("group_id").
 		Where("actor_id = ? AND active", actorID).
 		Where("kind_id IN (?)", leadingKinds)
 }
 
 func (m *userManager) ListGroupLeaders(ctx context.Context, groupID string) ([]models.GroupLeader, error) {
 	tx := m.db.WithContext(ctx)
-	leadingKinds := tx.Table(m.table(roleRoleKind)).Select("id").
+	leadingKinds := m.from(tx, roleRoleKind).Select("id").
 		Where("leads_group = ?", true).
 		Where("retired_at = ''")
 	var ids []string
-	err := tx.Table(m.table(roleActorRoleAssignment)).
+	err := m.from(tx, roleActorRoleAssignment).
 		Where("group_id = ? AND active", strings.TrimSpace(groupID)).
 		Where("kind_id IN (?)", leadingKinds).
 		Distinct().

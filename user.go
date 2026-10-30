@@ -53,6 +53,8 @@ const (
 func NowRFC3339() string { return models.NowRFC3339() }
 
 type UserManager interface {
+	ForRun(runID string) (UserManager, error)
+
 	SetGroupAreaNode(ctx context.Context, groupID string, areaNodeID string) (Group, error)
 
 	CreateActor(ctx context.Context, a Actor) (Actor, error)
@@ -237,6 +239,10 @@ func NewUserManager(db *gorm.DB, s *spec.Spec, opts ...Option) (UserManager, err
 		return nil, fmt.Errorf("NewUserManager: an invitation lifetime must be positive, got %s", m.invitationLifetime)
 	}
 	return m, nil
+}
+
+func (m *userManager) from(tx *gorm.DB, role string) *gorm.DB {
+	return inRun(tx.Table(m.table(role)), m.store.RunID())
 }
 
 func (m *userManager) table(role string) string { return m.store.Table(role) }

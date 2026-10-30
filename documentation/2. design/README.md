@@ -91,3 +91,7 @@ backdate a row or create one already marked deleted.
 
 `TestACT3_*` (shared-cache SQLite, six to eight writers per round) and
 `TestACT4_EveryCreateMintsItsOwnServerOwnedFields` pin both.
+
+## A manager for one test run
+
+See [test-run.md](test-run.md): `ForRun` gives a manager over the `_test` copy under one run id.

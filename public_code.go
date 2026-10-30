@@ -69,7 +69,7 @@ func mintPublicCode(ctx context.Context, tx *gorm.DB, s publicCodeTables, role, 
 			return "", err
 		}
 		var held int64
-		if err := tx.WithContext(ctx).Table(table).Where("public_code = ?", code).Count(&held).Error; err != nil {
+		if err := inRun(tx.WithContext(ctx).Table(table), s.runID).Where("public_code = ?", code).Count(&held).Error; err != nil {
 			return "", fmt.Errorf("mint a public code: %w", err)
 		}
 		if held == 0 {
@@ -83,6 +83,7 @@ type publicCodeTables struct {
 	spec   *spec.Spec
 	format string
 	byRole map[string]string
+	runID  string
 }
 
 func (m *userManager) publicCodeTables() publicCodeTables {
@@ -90,6 +91,7 @@ func (m *userManager) publicCodeTables() publicCodeTables {
 		spec:   m.store.Spec(),
 		format: m.table(roleCodeFormat),
 		byRole: map[string]string{roleActor: m.table(roleActor), roleGroup: m.table(roleGroup)},
+		runID:  m.store.RunID(),
 	}
 }
 
@@ -103,7 +105,7 @@ func publicCodeTablesFor(s *spec.Spec) publicCodeTables {
 
 func codeGroupsIn(ctx context.Context, tx *gorm.DB, s publicCodeTables) (int, error) {
 	var rows []map[string]any
-	if err := tx.WithContext(ctx).Table(s.format).
+	if err := inRun(tx.WithContext(ctx).Table(s.format), s.runID).
 		Where("id = ?", models.CodeFormatID).Limit(1).Find(&rows).Error; err != nil {
 		return 0, fmt.Errorf("read the code format: %w", err)
 	}
@@ -155,7 +157,7 @@ func (m *userManager) setCodeFormat(ctx context.Context, groupCount int) (CodeFo
 	}
 	format := CodeFormat{ID: models.CodeFormatID, GroupCount: groupCount, LastUpdated: NowRFC3339()}
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		updated := tx.Table(m.table(roleCodeFormat)).Where("id = ?", format.ID).
+		updated := m.from(tx, roleCodeFormat).Where("id = ?", format.ID).
 			Updates(map[string]any{"group_count": format.GroupCount, "last_updated": format.LastUpdated})
 		if updated.Error != nil {
 			return updated.Error
@@ -163,11 +165,11 @@ func (m *userManager) setCodeFormat(ctx context.Context, groupCount int) (CodeFo
 		if updated.RowsAffected > 0 {
 			return nil
 		}
-		row, err := encode(m.object(roleCodeFormat), format)
+		row, err := m.store.Row(roleCodeFormat, format)
 		if err != nil {
 			return err
 		}
-		if err := tx.Table(m.table(roleCodeFormat)).Create(row).Error; err != nil {
+		if err := m.from(tx, roleCodeFormat).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil

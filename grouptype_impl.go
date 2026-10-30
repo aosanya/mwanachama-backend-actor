@@ -32,16 +32,16 @@ func (m *userManager) CreateGroupType(ctx context.Context, g GroupType) (GroupTy
 	}
 	g.ID = newSpecID()
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		code, err := nextCode(ctx, tx, m.table(roleCodeSequence), "grouptype", "GT")
+		code, err := m.nextCode(ctx, tx, "grouptype", "GT")
 		if err != nil {
 			return err
 		}
 		g.Code = code
-		row, err := encode(m.object(roleGroupType), g)
+		row, err := m.store.Row(roleGroupType, g)
 		if err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Table(m.table(roleGroupType)).Create(row).Error; err != nil {
+		if err := m.from(tx.WithContext(ctx), roleGroupType).Create(row).Error; err != nil {
 			return classifyDuplicateID(err)
 		}
 		return nil
@@ -58,7 +58,7 @@ func (m *userManager) GetGroupType(ctx context.Context, id string) (GroupType, e
 
 func (m *userManager) groupTypeIn(tx *gorm.DB, id string) (GroupType, error) {
 	var out GroupType
-	q := tx.Table(m.table(roleGroupType)).Where("id = ?", id)
+	q := m.from(tx, roleGroupType).Where("id = ?", id)
 	if err := m.store.Take(q, roleGroupType, &out, ErrGroupTypeNotFound); err != nil {
 		if errors.Is(err, ErrGroupTypeNotFound) {
 			return GroupType{}, ErrGroupTypeNotFound
@@ -109,13 +109,13 @@ func (m *userManager) EditGroupType(ctx context.Context, id, name, singular, plu
 		"name": name, "singular": singular, "plural": plural, "level_id": levelID,
 	}
 	err = m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Table(m.table(roleGroupType)).Where("id = ?", id).Updates(cols).Error; err != nil {
+		if err := m.from(tx, roleGroupType).Where("id = ?", id).Updates(cols).Error; err != nil {
 			return err
 		}
 		if name == current.Name {
 			return nil
 		}
-		return tx.Table(m.table(roleGroup)).
+		return m.from(tx, roleGroup).
 			Where("hierarchy_id = ? AND node_type = ?", current.HierarchyID, current.Name).
 			Update("node_type", name).Error
 	})

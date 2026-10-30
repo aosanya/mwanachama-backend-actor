@@ -52,7 +52,7 @@ func (m *userManager) AssignGroup(ctx context.Context, r ActorGroupAssignment) (
 	r.Deleted = false
 
 	if found {
-		row, err := encode(m.object(roleActorGroupAssignment), r)
+		row, err := m.store.Row(roleActorGroupAssignment, r)
 		if err != nil {
 			return ActorGroupAssignment{}, fmt.Errorf("AssignGroup: %w", err)
 		}
@@ -72,7 +72,7 @@ func (m *userManager) AssignGroup(ctx context.Context, r ActorGroupAssignment) (
 	if actorExists == 0 {
 		return ActorGroupAssignment{}, ErrActorNotFound
 	}
-	if err := m.checkUniqueAttributes(ctx, m.table(roleActorGroupAssignment), properties, r.Attributes); err != nil {
+	if err := m.checkUniqueAttributes(ctx, roleActorGroupAssignment, properties, r.Attributes); err != nil {
 		return ActorGroupAssignment{}, err
 	}
 	if err := m.store.Insert(ctx, roleActorGroupAssignment, r); err != nil {
@@ -171,7 +171,7 @@ func (m *userManager) ListGroupRoster(ctx context.Context, groupID, afterActorID
 
 func (m *userManager) actorsNamedLike(tx *gorm.DB, search string) *gorm.DB {
 	pattern := "%" + likeEscaper.Replace(strings.ToLower(search)) + "%"
-	return tx.Table(m.table(roleActor)).Select("id").
+	return m.from(tx, roleActor).Select("id").
 		Where(`LOWER(display_name) LIKE ? ESCAPE '\' OR LOWER(first_name) LIKE ? ESCAPE '\' OR LOWER(last_name) LIKE ? ESCAPE '\'`, pattern, pattern, pattern)
 }
 
@@ -275,7 +275,7 @@ func (m *userManager) SetMyGroupPriority(ctx context.Context, groupID, actorID, 
 	}
 	held.Priority = priority
 	held.LastUpdated = NowRFC3339()
-	row, err := encode(m.object(roleActorGroupAssignment), held)
+	row, err := m.store.Row(roleActorGroupAssignment, held)
 	if err != nil {
 		return ActorGroupAssignment{}, fmt.Errorf("SetMyGroupPriority: %w", err)
 	}
