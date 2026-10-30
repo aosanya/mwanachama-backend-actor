@@ -333,3 +333,23 @@ merged as 30f6324 (run d30394). Verified: `go build ./... && go vet ./... &&
 go test ./...` all ok, `gofmt -l .` empty; wakala-api builds against it.
 Carried over to the owner: can an existing level be marked or unmarked as an
 area after it is created? See `documentation/2. design/areas.md`.
+
+## ACT4 — 🐞 BUG — CreateActor/CreateGroup never clear a caller-supplied id, created_at, or (for Actor) deleted before writing the row, so a caller can forge a primary key, backdate the audit timestamp, or mint an already-soft-deleted row — the same server-owned-field-injection shape mwanachama-backend-agency already found and fixed fleet-wide as AG21/WK17, but never ported back to this repo, which is the very template agency's own CLAUDE.md says to copy. — 2026-10-30
+
+Run 25. Already fixed by the declared-domain conversion: `CreateActor` and `CreateGroup` mint `id` and `created_at` and force `deleted=false`; the other four creates mint `id`, and `CreateRoleKind` clears its retirement fields. `create_server_fields_test.go` (`5d070be`) pins all six creates at manager level and the two `TestPinsACT4_*` in `routes` pass; `go vet ./... && go test -count=1 ./...` green on a clean `git archive HEAD` export.
+
+## ACT3 — 🐞 BUG — NextCode (gormstore/codesequence.go) reads the counter row then writes next_number+1 with no CAS guard and no row lock, so two ordinary concurrent Create<Type> calls (CreateActor/CreateGroup/CreateGroupType/CreateHierarchy/CreateLevel/CreateRoleKind, everyday operations — a raced call is not a contrived scenario) can fail outright with a raw, unclassified database error. This corrects a prior sweep's own note (still on this board as ACT1's trailing observation) that called this gap "unreachable today" — that description belongs only to ACT1's own finding (a Unique-attribute race with no Unique attribute yet defined to race on); NextCode itself is called directly by CreateActor/CreateGroup on every single invocation and is fully reachable now. NextCode does SELECT ... WHERE entity_type = ? (no FOR UPDATE/lock) to read n, computes n+1 in Go, then UPDATE ... SET next_number = <literal n+1> WHERE entity_type = ? — no WHERE next_number = ? precondition, so nothing detects or serializes a second concurrent reader of the same n. Demonstrated directly against UserManager.CreateActor (actor_impl.go:40 calls this same helper inside its own transaction), firing 2 goroutines concurrently per iteration across 30 iterations on a shared-cache multi-connection in-memory sqlite database (file::memory:?cache=shared, SetMaxOpenConns(4) — this repo's own single-connection :memory: test convention fully serializes each CreateActor call's whole transaction and cannot expose this race at all). Real output: — 2026-10-30
+
+Run 25. `5d070be`: `nextCode` already did a compare-and-set; it now retries five times, retries a seed insert that hits a unique violation, and a create that loses the race answers `ErrConflict` (409 in `actor.operations.json` and `routes/routes.go`) instead of a raw `database table is locked`. `concurrent_codes_test.go` (actor, hierarchy, role kind, group; `-race -count=5` green). On SQLite the lock error hides the compare-and-set itself, so the Postgres duplicate-code risk is reasoned, not demonstrated.
+
+## ACT5 — 📐 actor.blueprint.json — every object, field and index this module stores, declared. — 2026-10-30
+
+Run 25. Found already landed (`gormstore/` was deleted in `26d80ba`): `actor.blueprint.json` declares 17 objects including the nine roles the row names; `blueprint_test.go` (`TestBlueprintParses`, `TestEveryColumnTheRowStructsHeldIsDeclared`, `TestEveryCarrierAgreesWithItsObject`, `TestEveryDeclaredCodeIsUniqueAndImmutable`) green.
+
+## ACT6 — 🏷️ actor.actor.json and Provision — the declared names, and the move onto them. — 2026-10-30
+
+Run 25. Found already landed: `spec/examples/agency.actor.json`, `SpecFor` and `SpecForMount` in `blueprint.go`, `Provision` with `upToDate`, `renameLegacy`, the added-column step and the code backfills in `provision.go`. The gateway SQL mirror clause is moot: the api-gateway repo is in `dump/`.
+
+## ACT12 — 🧰 Repo-shape parity: a Makefile and a cmd/. — 2026-10-30
+
+Run 25. Found already landed in `26d80ba`: `Makefile` (`build`, `test`, `test-pg`, `vet`, `clean`, `ddl`), `cmd/ddl`, `cmd/provision`. `test-pg` runs plain `go test ./...` because actor's `postgres_integration_test.go` has no build tag; catalog gates it with `-tags=integration`.
