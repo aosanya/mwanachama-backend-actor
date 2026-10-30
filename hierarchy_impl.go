@@ -29,7 +29,7 @@ func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarc
 		return nil
 	})
 	if err != nil {
-		return Hierarchy{}, fmt.Errorf("CreateHierarchy: %w", err)
+		return Hierarchy{}, fmt.Errorf("CreateHierarchy: %w", classifyConflict(err))
 	}
 	return h, nil
 }
@@ -100,7 +100,7 @@ func (m *userManager) CreateLevel(ctx context.Context, l Level) (Level, error) {
 		return nil
 	})
 	if err != nil {
-		return Level{}, fmt.Errorf("CreateLevel: %w", err)
+		return Level{}, fmt.Errorf("CreateLevel: %w", classifyConflict(err))
 	}
 	return l, nil
 }

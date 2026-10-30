@@ -70,7 +70,7 @@ func decode(o spec.Object, row map[string]any, out any) error {
 	return specstore.Decode(o, row, out)
 }
 
-const codeSequenceAttempts = 8
+const codeSequenceAttempts = 5
 
 type codedRole struct {
 	role       string
@@ -98,6 +98,9 @@ func nextCode(ctx context.Context, tx *gorm.DB, table, entityType, prefix string
 		if len(rows) == 0 {
 			seed := map[string]any{"entity_type": entityType, "next_number": 2}
 			if err := tx.WithContext(ctx).Table(table).Create(seed).Error; err != nil {
+				if isUniqueViolation(err) {
+					continue
+				}
 				return "", fmt.Errorf("nextCode: %w", err)
 			}
 			return fmt.Sprintf("%s-%d", prefix, 1), nil
@@ -118,7 +121,7 @@ func nextCode(ctx context.Context, tx *gorm.DB, table, entityType, prefix string
 			return fmt.Sprintf("%s-%d", prefix, n), nil
 		}
 	}
-	return "", fmt.Errorf("nextCode: %s: the counter moved under %d attempts", entityType, codeSequenceAttempts)
+	return "", fmt.Errorf("nextCode: %s: the counter moved under %d attempts: %w", entityType, codeSequenceAttempts, ErrConflict)
 }
 
 func asInt(v any) (int, error) {

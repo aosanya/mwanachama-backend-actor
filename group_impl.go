@@ -60,7 +60,7 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 		return nil
 	})
 	if err != nil {
-		return Group{}, fmt.Errorf("CreateGroup: %w", err)
+		return Group{}, fmt.Errorf("CreateGroup: %w", classifyConflict(err))
 	}
 	return g, nil
 }

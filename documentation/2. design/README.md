@@ -68,3 +68,26 @@ an actor, and `AssignGroup` refuses an actor id with no actor row.
 - It runs no attribute validation, because it writes none.
 - It is not on the declared route table: a caller-chosen id is the host's
   decision, never a request's.
+
+## Concurrent creates and server-owned fields
+
+Every `Create<Type>` that mints a code (`CreateActor`, `CreateGroup`,
+`CreateGroupType`, `CreateHierarchy`, `CreateLevel`, `CreateRoleKind`) takes
+its code from the `code_sequences` counter with a compare-and-set: the
+counter is advanced only where `next_number` still holds the value that was
+read, and the read is retried up to five times when another writer moved it.
+Two creates therefore never receive the same code.
+
+A create that still loses the race, whether the counter kept moving or the
+database refused with a lock or serialization error, answers `ErrConflict`
+(HTTP 409) so the caller can retry, instead of a raw driver error. Unique
+violations keep their own answers, `ErrDuplicateID` and
+`ErrDuplicateAttribute`.
+
+`id`, `code`, `public_code`, `created_at`, `last_updated` and `deleted` (and a
+role kind's retirement fields) belong to the server on create. Whatever the
+caller sends in them is replaced, so a caller cannot pick a primary key,
+backdate a row or create one already marked deleted.
+
+`TestACT3_*` (shared-cache SQLite, six to eight writers per round) and
+`TestACT4_EveryCreateMintsItsOwnServerOwnedFields` pin both.

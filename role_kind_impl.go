@@ -37,7 +37,7 @@ func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind,
 		return nil
 	})
 	if err != nil {
-		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", err)
+		return RoleKind{}, fmt.Errorf("CreateRoleKind: %w", classifyConflict(err))
 	}
 	return withCapabilities(k), nil
 }

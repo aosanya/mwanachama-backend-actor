@@ -47,7 +47,7 @@ func (m *userManager) CreateGroupType(ctx context.Context, g GroupType) (GroupTy
 		return nil
 	})
 	if err != nil {
-		return GroupType{}, fmt.Errorf("CreateGroupType: %w", err)
+		return GroupType{}, fmt.Errorf("CreateGroupType: %w", classifyConflict(err))
 	}
 	return g, nil
 }

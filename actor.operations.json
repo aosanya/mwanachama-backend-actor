@@ -13,6 +13,7 @@
     "ErrParentNotFound": 400,
     "ErrDuplicateAttribute": 400,
     "ErrDuplicateID": 409,
+    "ErrConflict": 409,
     "ErrRootCannotMove": 409,
     "ErrParentIsSelf": 409,
     "ErrParentInSubtree": 409,

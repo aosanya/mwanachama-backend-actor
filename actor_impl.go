@@ -81,7 +81,7 @@ func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error)
 		return nil
 	})
 	if err != nil {
-		return Actor{}, fmt.Errorf("CreateActor: %w", err)
+		return Actor{}, fmt.Errorf("CreateActor: %w", classifyConflict(err))
 	}
 	return act, nil
 }
