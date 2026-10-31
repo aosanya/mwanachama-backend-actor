@@ -44,7 +44,7 @@ Clerk. `DefinitionRole.Staff` carries the tick into the sync, which writes it
 onto the kind whenever it differs, and `CreateRoleKind` accepts it on a new
 kind. Whether a person is staff (owners, agents, or a holder of a staff kind)
 is the host's answer; this module only stores the tick. Capabilities are not
-copied from the definition's powers, which the permissions module holds per
+copied from the definition's permissions, which the permissions module holds per
 kind.
 
 ## Not done here
