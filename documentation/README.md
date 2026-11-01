@@ -26,6 +26,6 @@ Extracts `mwanachama-backend-api-gateway`'s `member` domain (renamed
 logic and storage both delegated to
 [mwanachama-backend-shared](../../mwanachama-backend-shared)'s entity-graph
 store, and imported directly by
-[mwanachama-backend-api-gateway](../mwanachama-backend-api-gateway) — no
+mwanachama-backend-api-gateway — no
 gRPC, no sub-service shape. Decided in a dev-research session, 2026-09-03
 (DSN-1698/DSN-1699 on the gateway's `documentation/2. design/todo.md`).
