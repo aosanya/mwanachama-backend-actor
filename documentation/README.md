@@ -24,7 +24,7 @@ Extracts `mwanachama-backend-api-gateway`'s `member` domain (renamed
 `Actor`) and `chapter` domain (renamed `Group`) onto the
 `mwanachama-backend-taskmanager` pattern — domain
 logic and storage both delegated to
-[mwanachama-backend-shared](../mwanachama-backend-shared)'s entity-graph
+[mwanachama-backend-shared](../../mwanachama-backend-shared)'s entity-graph
 store, and imported directly by
 [mwanachama-backend-api-gateway](../mwanachama-backend-api-gateway) — no
 gRPC, no sub-service shape. Decided in a dev-research session, 2026-09-03

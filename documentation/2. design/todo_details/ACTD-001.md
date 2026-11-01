@@ -11,10 +11,10 @@ session's.
 
 Not restated here. `mwanachama-backend-shared` owns it:
 
-- [declared-domains.md](../../../mwanachama-backend-shared/documentation/2.%20design/declared-domains.md)
+- [declared-domains.md](../../../../mwanachama-backend-shared/documentation/2.%20design/declared-domains.md)
   — blueprint, domain spec, `spec.Migrate`, `specstore`, and the six-step
   "Converting a repo" order ACT5–ACT12 follow.
-- [dispatcher.md](../../../mwanachama-backend-shared/documentation/2.%20design/dispatcher.md)
+- [dispatcher.md](../../../../mwanachama-backend-shared/documentation/2.%20design/dispatcher.md)
   — declared operations to `httpwire.Route`s and MCP tools, deny-by-default
   routing and gating.
 
