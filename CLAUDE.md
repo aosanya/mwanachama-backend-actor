@@ -16,6 +16,16 @@ Q&A trail: `mwanachama-backend-api-gateway/documentation/2. design/todo.md`,
 rows DSN-1698 (decided) and DSN-1699 (four gaps the session identified but
 did not settle).
 
+**The objects are declared, not written (superseding the GORM-era notes below).**
+`actor.blueprint.json` declares the module's 17 objects and `actor.operations.json`
+its 94 operations; `SpecFor(instance)` returns a domain spec, `Provision(db, s)`
+creates the tables through `spec.Migrate`, `NewUserManager(db, s, opts...)`
+returns the manager, and `routes/` builds the REST routes and MCP tools through
+`mwanachama-backend-shared`'s `dispatch`. There are no row structs, no
+`AutoMigrate`, and no `gormstore/`, `DefaultTableNames` or `Migrate(db, tables)`:
+the notes from 2026-09-04 below describe the state before that conversion and
+are kept as the record. `mwanachama-backend-catalog` is the reference shape.
+
 **Storage moved from entitygraph to GORM, 2026-09-04.** This package
 originally stored Actor/Group/Registration through
 `mwanachama-backend-shared/entitygraph.DataManager` — a generic,
