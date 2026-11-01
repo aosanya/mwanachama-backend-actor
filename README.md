@@ -2,8 +2,9 @@
 
 Members and the groups (chapters) they belong to: who is in the network, which group they are assigned to, their roles, and the group hierarchy.
 
-A Go library backed by Postgres through GORM. It is imported directly by the
-Mwanachama API gateway; there is no separate service to run.
+A Go library whose objects are declared in `actor.blueprint.json` and stored through
+`mwanachama-backend-shared/specstore`. It is imported directly by whatever
+mounts it (`mwanachama-wakala-api`); there is no separate service to run.
 
 ## Use
 
@@ -11,9 +12,10 @@ Mwanachama API gateway; there is no separate service to run.
 go get github.com/aosanya/mwanachama-backend-actor
 ```
 
-`Migrate(db, tables)` creates the tables, and `NewUserManager(db, tables)` returns the manager
-that the rest of your code calls. The `routes/` package builds the HTTP
-handlers for the surface that needs no gateway-specific wiring.
+`SpecFor(instance)` returns the default domain for a host's instance,
+`Provision(db, s)` creates its tables, and `NewUserManager(db, s)` returns the
+manager that the rest of your code calls. The `routes/` package builds the
+REST routes and MCP tools from `actor.operations.json`.
 
 ## Test
 
