@@ -31,8 +31,31 @@ Both lists are `[]` on the wire for a person with nothing, never `null`.
   registrations and seats reads, which answer `[]`.
 - A granter that is no actor (a host's operator id, or a seat the first run
   created with no granter) leaves `granted_by_name` out and the seat listed.
-- A seat in a deleted group keeps its `group_name`; only registrations drop
-  deleted groups.
+
+## Seats that point at nothing
+
+A seat is listed whether or not the group and the kind it names still exist.
+`group_name` and `role_name` are always on the wire, so a ghost shows as `""`.
+`TestStandingKeepsLiveSeatsOfDeletedAndMissingGroupsAndUnknownKinds` pins all
+three cases:
+
+- **A live seat in a soft-deleted group** is still shown as held: no `ended_at`,
+  the deleted group's `group_name`, and `leads_group: true` when its kind leads a
+  group. Three reads disagree about that group. `seats` shows it held and
+  led, `registrations` drops it, and `ListLedGroups` (`GET /groups/led`) leaves
+  it out.
+- **A seat on a group id with no row** keeps its `group_id` and has an empty
+  `group_name`.
+- **A seat on a kind id with no row** keeps its `kind_id` and has an empty
+  `role_name`, `leads_group` and `staff` false, and no `definition_role_id`.
+
+Seats at a group with no row exist in databases from before `1d30cc0`, when
+`GrantRole` took any group id. Seats in a soft-deleted group exist there too, and
+arise whenever a group is soft-deleted after its seat was granted: nothing in
+this module ends the seats of a deleted group. `GrantRole` reads the kind first
+and this module has no call that deletes one, so a seat on an unknown kind is a
+row written outside the module. The read does not filter or flag any of the
+three.
 
 ## Who may read it
 
