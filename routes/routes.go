@@ -98,6 +98,13 @@ func (m referenceChecked) CreateGroup(ctx context.Context, g mwanachamaactor.Gro
 	return m.UserManager.CreateGroup(ctx, g)
 }
 
+func (m referenceChecked) AssignGroup(ctx context.Context, r mwanachamaactor.ActorGroupAssignment) (mwanachamaactor.ActorGroupAssignment, error) {
+	if _, err := m.UserManager.GetGroup(ctx, r.GroupID); err != nil {
+		return mwanachamaactor.ActorGroupAssignment{}, err
+	}
+	return m.UserManager.AssignGroup(ctx, r)
+}
+
 func (m referenceChecked) EditGroup(ctx context.Context, id string, e mwanachamaactor.GroupEdit) (mwanachamaactor.Group, error) {
 	e.Name = strings.TrimSpace(e.Name)
 	e.NodeType = strings.TrimSpace(e.NodeType)
