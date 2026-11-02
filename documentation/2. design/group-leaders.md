@@ -80,6 +80,7 @@ owner, recorded on WK112.
 | Method | Path | Action | Bound from the session |
 |---|---|---|---|
 | GET | `/groups/led` | `actor.group.list_led` | `actor_id` |
+| GET | `/groups/{group_id}/leaders` | `actor.group.list_leaders` | |
 | PUT | `/role-kinds/{kind_id}/leads-group` | `actor.role_kind.set_leads_group` | |
 
 ## Not here
