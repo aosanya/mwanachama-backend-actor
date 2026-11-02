@@ -473,6 +473,22 @@
           "fields": [
             "kind_id"
           ]
+        },
+        {
+          "name": "held_once",
+          "description": "One live seat of a kind per actor and group. The database half of the seat-already-held refusal, so two grants that race past the Go check still cannot both land. Ended seats are left out.",
+          "fields": [
+            "actor_id",
+            "group_id",
+            "kind_id"
+          ],
+          "unique": true,
+          "where": [
+            {
+              "field": "active",
+              "op": "is_true"
+            }
+          ]
         }
       ]
     },

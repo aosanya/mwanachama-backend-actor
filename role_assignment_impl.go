@@ -45,7 +45,13 @@ func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (Act
 		if err != nil {
 			return err
 		}
-		return m.from(tx.WithContext(ctx), roleActorRoleAssignment).Create(row).Error
+		if err := m.from(tx.WithContext(ctx), roleActorRoleAssignment).Create(row).Error; err != nil {
+			if isUniqueViolation(err) {
+				return ErrSeatAlreadyHeld
+			}
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		return ActorRoleAssignment{}, fmt.Errorf("GrantRole: %w", err)

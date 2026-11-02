@@ -31,6 +31,13 @@ live seats of that kind at that group.
   `ErrSeatAlreadyHeld` (409), so a second grant of the same seat leaves one seat. An
   ended seat does not count: the person can be granted the kind again, and the
   history keeps both rows.
+- The same rule is held by the database: `actor_role_assignment` declares the
+  unique index `held_once` on (`actor_id`, `group_id`, `kind_id`) where `active`,
+  so two grants that both pass the check cannot both land. The one that loses
+  gets the same `ErrSeatAlreadyHeld`. `Provision` creates the index with the
+  table; a database whose tables already exist is reported up to date and does
+  not get a new index, and creating it there fails while two live seats of one
+  triple are still stored.
 - `granted_by` is the caller, resolved from the session; a value in the body is
   ignored.
 - An actor or a group that does not exist, or is deleted, is
