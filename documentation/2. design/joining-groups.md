@@ -226,6 +226,10 @@ no request can join somebody else or decide in somebody else's name.
 - Invitations to hidden groups: ACT14, [invitations.md](invitations.md).
 - Withdrawing a request, and leaving a group beyond the existing
   `Deregister`.
+- A leader removing a member. `RemoveFromGroup` (`removal_impl.go`,
+  [removing-members.md](removing-members.md)) asks only for a remover and
+  checks no leading seat, and no address for it is declared; in wakala-api only
+  an Instance's owners and agents remove a member.
 - The private chat a request carries (decision 63) is comm's (CM36).
 
 ## Every decision is kept (ACT22, member app decision 184)
