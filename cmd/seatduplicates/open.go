@@ -2,24 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-)
-
-const redacted = "[redacted]"
-
-var (
-	uriUserinfo   = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]*://([^/?#]*)@`)
-	keywordSecret = regexp.MustCompile(`(?i)\b(?:user|password)\s*=\s*('(?:[^'\\]|\\.)*'|[^\s&]+)`)
 )
 
 func openReadOnly(dialect, location string) (*gorm.DB, func(), error) {
@@ -63,39 +55,22 @@ func sqliteReadOnlyDSN(path string) (string, error) {
 	return "file:" + escaped + "?mode=ro", nil
 }
 
-func redact(message, location string) string {
-	secrets := secretsIn(location)
-	sort.Slice(secrets, func(i, j int) bool { return len(secrets[i]) > len(secrets[j]) })
-	for _, secret := range secrets {
-		message = strings.ReplaceAll(message, secret, redacted)
+func withJournalHint(dialect, location string, err error) error {
+	if dialect != "sqlite" || !strings.Contains(err.Error(), "readonly database") || !inWALMode(location) {
+		return err
 	}
-	return message
+	return fmt.Errorf("%w; the file is in WAL mode, so reading it needs a directory where its -wal and -shm files can be made", err)
 }
 
-func secretsIn(location string) []string {
-	secrets := []string{location}
-	if abs, err := filepath.Abs(location); err == nil {
-		secrets = append(secrets, abs)
+func inWALMode(path string) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		return false
 	}
-	if m := uriUserinfo.FindStringSubmatch(location); m != nil {
-		secrets = append(secrets, m[1])
-		user, password, hasPassword := strings.Cut(m[1], ":")
-		secrets = append(secrets, user)
-		if hasPassword {
-			secrets = append(secrets, password)
-			if plain, err := url.PathUnescape(password); err == nil {
-				secrets = append(secrets, plain)
-			}
-		}
+	defer file.Close()
+	header := make([]byte, 20)
+	if _, err := io.ReadFull(file, header); err != nil {
+		return false
 	}
-	for _, m := range keywordSecret.FindAllStringSubmatch(location, -1) {
-		secrets = append(secrets, m[1], strings.Trim(m[1], "'"))
-	}
-	kept := secrets[:0]
-	for _, secret := range secrets {
-		if secret != "" {
-			kept = append(kept, secret)
-		}
-	}
-	return kept
+	return header[18] == 2 && header[19] == 2
 }

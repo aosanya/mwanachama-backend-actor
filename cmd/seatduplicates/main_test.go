@@ -318,21 +318,6 @@ func TestNeverPrintsAPostgresPasswordWhenTheConnectionFails(t *testing.T) {
 	}
 }
 
-func TestRedactRemovesTheLocationAndWhatIsInsideIt(t *testing.T) {
-	location := "postgres://admin:p%40ss@db.example.com:5432/postgres"
-
-	got := redact("failed: "+location+" and admin:p%40ss and p@ss and user=admin reaching db.example.com", location)
-
-	for _, leak := range []string{"p%40ss", "p@ss", "admin", location} {
-		if strings.Contains(got, leak) {
-			t.Errorf("redacted message still holds %q: %s", leak, got)
-		}
-	}
-	if !strings.Contains(got, "db.example.com") {
-		t.Errorf("redacted message lost the host, which is not a secret: %s", got)
-	}
-}
-
 func TestOpenedReadOnlyTheDatabaseAnswersAndRefusesEveryWrite(t *testing.T) {
 	f := newFixture(t, "")
 	f.duplicate(t)

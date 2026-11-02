@@ -70,7 +70,7 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 
 	duplicates, err := mwanachamaactor.FindSeatDuplicates(context.Background(), db, s, *schema)
 	if err != nil {
-		return fail(err)
+		return fail(withJournalHint(*dialect, location, err))
 	}
 
 	for _, d := range duplicates {

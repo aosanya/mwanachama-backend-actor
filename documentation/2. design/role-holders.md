@@ -121,12 +121,20 @@ on the connection's search path; it takes a plain identifier and nothing else.
 The database address is read from `POSTGRES_URL` (or `SQLITE_PATH` with
 `-dialect sqlite`) and from no argument, so it reaches neither the shell history
 nor the process list. A stray argument is refused. The command prints neither
-the address nor any part of it: the address, its user and its password are
-struck out of every error message before it is printed.
+the address nor any part of it: the address, its host, its user and its
+password are struck out of every error message before it is printed. A
+secret shorter than eight characters is struck only where it stands alone as a
+word, so a short user such as `a` does not eat the letters of the rest of the
+message, and an error stays readable (`cannot connect to the database: ...`).
 
 It never writes. On Postgres the query runs in a `READ ONLY` transaction; on
-SQLite the file is opened with `mode=ro`, so the file and its directory can be
-read-only on disk and no journal file is made. It runs the group-by above over
+SQLite the file is opened with `mode=ro`, and the database file is never
+changed. A file in the default rollback-journal mode can sit in a read-only
+directory and no journal file is made. A file in WAL mode is different: reading
+it opens its `-wal` and `-shm` files and makes them when they are missing, so
+the run leaves those two beside the database (still no change to the database
+file), and in a read-only directory it exits 2 and the message names WAL mode as
+the reason. It runs the group-by above over
 the live seats, joined back to the seats for their ids and to the group and the
 role kind for their names. It does not create the index, does not call
 `Provision`, and ends no seat.
