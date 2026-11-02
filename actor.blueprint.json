@@ -359,7 +359,7 @@
         {
           "name": "level_id",
           "type": "string",
-          "description": "The level this kind may be granted at. Empty means any level."
+          "description": "The level this kind names. Stored with the kind and never compared with a group's level when a seat is granted; the one thing that reads it is deleting a level, which is refused while a kind names it. Empty means the kind names no level."
         },
         {
           "name": "definition_role_id",
@@ -380,7 +380,7 @@
       "indexes": [
         {
           "name": "level",
-          "description": "Finds the kinds grantable at one level, which is what a grant form offers.",
+          "description": "Finds the kinds that name one level, which is what deleting a level checks.",
           "fields": [
             "level_id"
           ]
