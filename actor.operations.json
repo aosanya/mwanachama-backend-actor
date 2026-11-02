@@ -1644,6 +1644,27 @@
       ],
       "tool": "actor_list_role_assignments_for_actor"
     },
+    "get_actor_standing": {
+      "method": "GET",
+      "path": "/actors/{actor_id}/standing",
+      "call": "GetActorStanding",
+      "action": "actor.actor.standing",
+      "title": "Read a person's standing",
+      "description": "One person's registrations (group name, since) and every seat she holds or held (role name, group name, the role kind's definition role, whether it leads a group, whether it is staff, who granted it by name, and how it ended), oldest first. An unknown actor is a 404.",
+      "args": [
+        {
+          "from": "path",
+          "as": "actor_id",
+          "description": "The actor whose standing to read."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_get_actor_standing"
+    },
     "group_dashboard": {
       "method": "GET",
       "path": "/groups/{group_id}/dashboard",

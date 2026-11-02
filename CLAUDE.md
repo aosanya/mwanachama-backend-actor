@@ -18,7 +18,7 @@ did not settle).
 
 **The objects are declared, not written (superseding the GORM-era notes below).**
 `actor.blueprint.json` declares the module's 17 objects and `actor.operations.json`
-its 94 operations; `SpecFor(instance)` returns a domain spec, `Provision(db, s)`
+its 95 operations; `SpecFor(instance)` returns a domain spec, `Provision(db, s)`
 creates the tables through `spec.Migrate`, `NewUserManager(db, s, opts...)`
 returns the manager, and `routes/` builds the REST routes and MCP tools through
 `mwanachama-backend-shared`'s `dispatch`. There are no row structs, no
