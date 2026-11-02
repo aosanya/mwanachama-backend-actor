@@ -6,19 +6,22 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"gorm.io/gorm"
+
 	mwanachamaactor "github.com/aosanya/mwanachama-backend-actor"
 	"github.com/aosanya/mwanachama-backend-actor/routes"
 )
 
 type seatFixture struct {
 	mgr mwanachamaactor.UserManager
+	db  *gorm.DB
 	srv *httptest.Server
 	ids map[string]any
 }
 
 func newSeatFixture(t *testing.T, caller string) seatFixture {
 	t.Helper()
-	mgr := newManager(t)
+	mgr, db := newManagerWithDB(t)
 	ctx := context.Background()
 	actor, err := mgr.CreateActor(ctx, mwanachamaactor.Actor{DisplayName: "Grace Adhiambo"})
 	if err != nil {
@@ -37,6 +40,7 @@ func newSeatFixture(t *testing.T, caller string) seatFixture {
 	}))
 	return seatFixture{
 		mgr: mgr,
+		db:  db,
 		srv: srv,
 		ids: map[string]any{"actor_id": actor.ID, "group_id": group.ID, "kind_id": kind.ID},
 	}
@@ -160,5 +164,35 @@ func TestASeatCannotBeGrantedAtAGroupThatDoesNotExist(t *testing.T) {
 	}
 	if status, seat := f.grant(t, nil); status != http.StatusCreated {
 		t.Fatalf("grant to the real actor and group = %d %v, want 201", status, seat)
+	}
+}
+
+func TestASeatCannotBeGrantedToAnActorWhoIsDeleted(t *testing.T) {
+	f := newSeatFixture(t, "operator-1")
+	actorID, _ := f.ids["actor_id"].(string)
+	softDelete(t, f.db, "actor", actorID)
+
+	status, body := f.grant(t, nil)
+	if status != http.StatusNotFound {
+		t.Fatalf("grant to a deleted actor = %d %v, want 404", status, body)
+	}
+	seats, err := f.mgr.ListRoleAssignmentsForActor(context.Background(), actorID, false)
+	if err != nil || len(seats) != 0 {
+		t.Fatalf("seats of the deleted actor = %+v, %v, want none written", seats, err)
+	}
+}
+
+func TestASeatCannotBeGrantedAtAGroupThatIsDeleted(t *testing.T) {
+	f := newSeatFixture(t, "operator-1")
+	groupID, _ := f.ids["group_id"].(string)
+	softDelete(t, f.db, "group", groupID)
+
+	status, body := f.grant(t, nil)
+	if status != http.StatusNotFound {
+		t.Fatalf("grant at a deleted group = %d %v, want 404", status, body)
+	}
+	seats, err := f.mgr.ListRoleAssignmentsForGroup(context.Background(), groupID, false)
+	if err != nil || len(seats) != 0 {
+		t.Fatalf("seats of the deleted group = %+v, %v, want none written", seats, err)
 	}
 }

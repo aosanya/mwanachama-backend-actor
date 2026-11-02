@@ -20,6 +20,12 @@ import (
 
 func newManager(t *testing.T) mwanachamaactor.UserManager {
 	t.Helper()
+	mgr, _ := newManagerWithDB(t)
+	return mgr
+}
+
+func newManagerWithDB(t *testing.T) (mwanachamaactor.UserManager, *gorm.DB) {
+	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("gorm.Open: %v", err)
@@ -35,7 +41,22 @@ func newManager(t *testing.T) mwanachamaactor.UserManager {
 	if err != nil {
 		t.Fatalf("NewUserManager: %v", err)
 	}
-	return mgr
+	return mgr, db
+}
+
+func softDelete(t *testing.T, db *gorm.DB, role, id string) {
+	t.Helper()
+	s, err := mwanachamaactor.SpecFor("test")
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
+	}
+	o, ok := s.ByRole(role)
+	if !ok {
+		t.Fatalf("the spec fills no object for the role %s", role)
+	}
+	if err := db.Exec("update "+s.TableFor(o)+" set deleted = ? where id = ?", true, id).Error; err != nil {
+		t.Fatalf("soft-delete %s %s: %v", role, id, err)
+	}
 }
 
 func newServer(t *testing.T, table []routes.Route) *httptest.Server {
