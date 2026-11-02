@@ -149,22 +149,34 @@ func (m *userManager) getActorByCode(ctx context.Context, code string) (Actor, e
 	return out, nil
 }
 
+const actorLookupChunk = 500
+
+func distinctIDs(ids []string) []string {
+	seen := make(map[string]bool, len(ids))
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
 func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, error) {
 	out := []Actor{}
-	seen := map[string]bool{}
-	for _, id := range ids {
-		if seen[id] {
-			continue
-		}
-		seen[id] = true
-		act, err := m.GetActor(ctx, id)
+	distinct := distinctIDs(ids)
+	for start := 0; start < len(distinct); start += actorLookupChunk {
+		chunk := distinct[start:min(start+actorLookupChunk, len(distinct))]
+		q := m.store.Query(ctx, roleActor).
+			Where("id IN ?", chunk).
+			Where("deleted = ?", false).
+			Limit(len(chunk))
+		found, err := specstore.List[Actor](m.store, q, roleActor)
 		if err != nil {
-			if errors.Is(err, ErrActorNotFound) {
-				continue
-			}
 			return nil, fmt.Errorf("GetActors: %w", err)
 		}
-		out = append(out, act)
+		out = append(out, found...)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
