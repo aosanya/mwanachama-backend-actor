@@ -94,7 +94,66 @@ group by actor_id, group_id, kind_id
 having count(*) > 1;
 ```
 
-Nothing runs this query. `Provision` does not look for duplicates before it
-creates the index, and no test, tool or routine in this module or in wakala-api
-runs it. Which seat of each pair stays, how the others end, and whether an
-older database gets the index at all are the owner's decision (HS702).
+`Provision` does not look for duplicates before it creates the index, and no
+routine in this module or in wakala-api runs the query. `cmd/seatduplicates`
+runs it when someone runs the command, and only then. Which seat of each pair
+stays, how the others end, and whether an older database gets the index at all
+are the owner's decision (HS702); the command only reports.
+
+### Finding the duplicates (`cmd/seatduplicates`)
+
+```sh
+POSTGRES_URL=<url> go run ./cmd/seatduplicates -instance <instance> [-mount <mount>] [-schema <schema>]
+SQLITE_PATH=<file> go run ./cmd/seatduplicates -dialect sqlite -instance <instance> [-mount <mount>]
+```
+
+The command finds the seat table the way `cmd/provision` does, from
+`SpecForMount(instance, mount)`; the group and role kind tables it joins for
+names come from the same spec. An empty `-mount` is the default mount. In
+wakala-api `buildActorManager` calls
+`SpecForMount(inst.TableSlug, MountDirectory)`, so the instance is the agency's
+`table_slug` (a column of `agency_instances`) and the mount is `directory`.
+Every agency's tables sit in the registry's one database, told apart by the
+instance prefix, so there is one run per agency.
+`-schema` qualifies the three table names for a database whose tables are not
+on the connection's search path; it takes a plain identifier and nothing else.
+
+The database address is read from `POSTGRES_URL` (or `SQLITE_PATH` with
+`-dialect sqlite`) and from no argument, so it reaches neither the shell history
+nor the process list. A stray argument is refused. The command prints neither
+the address nor any part of it: the address, its user and its password are
+struck out of every error message before it is printed.
+
+It never writes. On Postgres the query runs in a `READ ONLY` transaction; on
+SQLite the file is opened with `mode=ro`, so the file and its directory can be
+read-only on disk and no journal file is made. It runs the group-by above over
+the live seats, joined back to the seats for their ids and to the group and the
+role kind for their names. It does not create the index, does not call
+`Provision`, and ends no seat.
+
+One line per duplicated triple, then a count:
+
+```text
+actor=<id> group=<id> group_name="<name>" kind=<id> kind_name="<name>" seats=2 ids=<older>,<newer> oldest=<granted_at> newest=<granted_at>
+duplicates: 1
+```
+
+- `ids` are the live seats of that triple, oldest `granted_at` first;
+  `oldest` and `newest` are the least and greatest `granted_at` among them, and
+  an empty one shows as `-`.
+- An empty `group_name` or `kind_name` means that row is gone from its table;
+  the triple is still listed.
+- Every line is a triple on which creating `held_once` would be refused. An
+  ended seat beside a live one, and the same actor holding the same kind in two
+  groups, are not duplicates and are not listed.
+- Exit 0: no live triple is shared, so the index could be created on this
+  database. The index is still absent unless something created it; the command
+  does not check for it. Exit 1: at least one is shared. Exit 2: it could not
+  look: a missing variable, a connection that fails, an instance, mount or
+  schema that holds no seat table, or a wrong flag. Nothing is printed on
+  standard output for an exit 2.
+
+What to do with the duplicates stays with the owner (HS702). The tests run the
+command against SQLite files; the Postgres path, the `READ ONLY` transaction
+and the connection, was not run against a Postgres server when this was
+written.
