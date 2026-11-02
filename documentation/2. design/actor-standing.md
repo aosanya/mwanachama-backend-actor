@@ -20,15 +20,17 @@ registrations reads answer `200 []` for an actor that does not exist.
   `group_name`, `kind_id`, `role_name`, `definition_role_id`, `leads_group`,
   `staff`, `granted_at`, `granted_by` (the granter's actor id as stored),
   `granted_by_name` (the granter's display name), `ended_at` and
-  `ended_reason`. The last two are absent while the seat is held. The role
-  fields come from the seat's role kind, retired or not.
+  `ended_reason`. `definition_role_id`, `granted_by`, `granted_by_name`,
+  `ended_at` and `ended_reason` are left out of the body when empty; the last
+  two are empty while the seat is held. The role fields come from the seat's
+  role kind, retired or not.
 
 Both lists are `[]` on the wire for a person with nothing, never `null`.
 
 - An unknown or soft-deleted actor is `ErrActorNotFound` (404), unlike the
   registrations and seats reads, which answer `[]`.
 - A granter that is no actor (a host's operator id, or a seat the first run
-  created with no granter) leaves `granted_by_name` empty and the seat listed.
+  created with no granter) leaves `granted_by_name` out and the seat listed.
 - A seat in a deleted group keeps its `group_name`; only registrations drop
   deleted groups.
 
