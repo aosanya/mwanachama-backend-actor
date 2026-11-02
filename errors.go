@@ -27,6 +27,8 @@ var ErrDefinitionRoleIDRequired = errors.New("mwanachamaactor: a definition role
 
 var ErrAssignmentNotFound = errors.New("mwanachamaactor: role assignment not found")
 
+var ErrSeatAlreadyHeld = errors.New("mwanachamaactor: the actor already holds this kind of seat at this group")
+
 var ErrKindHasLiveAssignments = errors.New("mwanachamaactor: role kind still has live assignments")
 
 var ErrKindRetired = errors.New("mwanachamaactor: role kind is retired — un-retire it before granting a seat")

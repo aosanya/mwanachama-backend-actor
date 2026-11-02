@@ -22,6 +22,15 @@ func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (Act
 		if kind.RetiredAt != "" {
 			return ErrKindRetired
 		}
+		var held int64
+		if err := m.from(tx, roleActorRoleAssignment).
+			Where("actor_id = ? AND group_id = ? AND kind_id = ? AND active", a.ActorID, a.GroupID, a.KindID).
+			Count(&held).Error; err != nil {
+			return err
+		}
+		if held > 0 {
+			return ErrSeatAlreadyHeld
+		}
 		a.ID = newSpecID()
 		a.GrantedAt = NowRFC3339()
 		a.Active = true

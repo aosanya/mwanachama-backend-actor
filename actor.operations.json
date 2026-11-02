@@ -19,6 +19,7 @@
     "ErrParentInSubtree": 409,
     "ErrKindHasLiveAssignments": 409,
     "ErrKindRetired": 409,
+    "ErrSeatAlreadyHeld": 409,
     "ErrLevelWornByGroups": 409,
     "ErrLevelHasRoleKinds": 409,
     "ErrGroupTypeWornByGroups": 409,
@@ -1435,12 +1436,18 @@
       "action": "actor.role_assignment.create",
       "status": 201,
       "title": "Grant a seat",
-      "description": "Give an actor a seat of some kind in a group. Refused when the kind is retired.",
+      "description": "Give an actor a seat of some kind in a group. Refused when the kind is retired, and when the actor already holds a live seat of that kind at that group. The grantor is the caller, never the body.",
       "args": [
         {
           "from": "body",
           "whole": true,
           "description": "The seat to grant: the actor, the group and the kind."
+        },
+        {
+          "from": "caller",
+          "as": "granted_by",
+          "into": "GrantedBy",
+          "description": "Who grants it, resolved from the session rather than the request body."
         }
       ],
       "returns": [
