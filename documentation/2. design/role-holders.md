@@ -33,8 +33,11 @@ live seats of that kind at that group.
   history keeps both rows.
 - `granted_by` is the caller, resolved from the session; a value in the body is
   ignored.
-- The actor and the group are not read. A grant naming a person or a group
-  that does not exist succeeds and writes the seat. What the Admin sees when
-  she picks a name that is not a member is hub question Q121.
+- An actor or a group that does not exist, or is deleted, is
+  `ErrActorNotFound` or `ErrGroupNotFound` (404) and nothing is written. The
+  kind is read first, then the actor, then the group, then the live seats. A
+  seat that already exists is not touched when its actor row is later deleted:
+  `ListRoleHolders` still lists it with an empty `display_name`. What the Admin
+  sees when she picks a name that is not a member is hub question Q121.
 - The kind's `level_id` is not compared with the group's level (see "Not here"
   in [group-leaders.md](group-leaders.md)).

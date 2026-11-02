@@ -396,6 +396,9 @@ func TestAnInvitationOverTheWireTakesIssuerAndAnswererFromTheCaller(t *testing.T
 func seatLeader(t *testing.T, mgr mwanachamaactor.UserManager, groupID, actorID string) {
 	t.Helper()
 	ctx := context.Background()
+	if _, err := mgr.EnsureActor(ctx, actorID); err != nil {
+		t.Fatalf("EnsureActor: %v", err)
+	}
 	kind, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Chair", LeadsGroup: true})
 	if err != nil {
 		t.Fatalf("CreateRoleKind: %v", err)
@@ -419,6 +422,9 @@ func TestOverTheWireOnlyALeaderDecidesAndTheLeaderReadsWhatTheyLead(t *testing.T
 	kind, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Secretary"})
 	if err != nil {
 		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	if _, err := mgr.EnsureActor(ctx, "secretary"); err != nil {
+		t.Fatalf("EnsureActor: %v", err)
 	}
 	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "secretary", GroupID: group.ID, KindID: kind.ID}); err != nil {
 		t.Fatalf("GrantRole: %v", err)

@@ -94,12 +94,23 @@ func TestCreateRoleKind_CodeIsSequentialAndImmutable(t *testing.T) {
 	}
 }
 
+func ensureActors(t *testing.T, mgr mwanachamaactor.UserManager, ids ...string) {
+	t.Helper()
+	for _, id := range ids {
+		if _, err := mgr.EnsureActor(context.Background(), id); err != nil {
+			t.Fatalf("EnsureActor %s: %v", id, err)
+		}
+	}
+}
+
 func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 	mgr := newTestManager(t)
 	ctx := context.Background()
 
 	k, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
-	a, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
+	ward := mustGroup(t, mgr, "Ward A")
+	ensureActors(t, mgr, "m-1", "m-2")
+	a, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: ward.ID, KindID: k.ID})
 	if err != nil {
 		t.Fatalf("GrantRole: %v", err)
 	}
@@ -119,7 +130,6 @@ func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 		t.Fatalf("retirement did not stamp: %+v", retired)
 	}
 
-	// Idempotent: a second retire keeps the original stamp.
 	second, err := mgr.RetireRoleKind(ctx, k.ID, "somebody-else")
 	if err != nil {
 		t.Fatalf("second retire: %v", err)
@@ -128,8 +138,7 @@ func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 		t.Fatalf("second retire overwrote the original actor: %+v", second)
 	}
 
-	// Grant onto a retired kind is refused (DEV-1201).
-	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID}); !errors.Is(err, mwanachamaactor.ErrKindRetired) {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: ward.ID, KindID: k.ID}); !errors.Is(err, mwanachamaactor.ErrKindRetired) {
 		t.Fatalf("expected ErrKindRetired, got %v", err)
 	}
 
@@ -140,7 +149,7 @@ func TestRetireRefusedWhileAssignmentsLive(t *testing.T) {
 	if back.RetiredAt != "" || back.RetiredBy != "" {
 		t.Fatalf("unretire left an ending behind: %+v", back)
 	}
-	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: ward.ID, KindID: k.ID}); err != nil {
 		t.Fatalf("grant after unretire: %v", err)
 	}
 }
@@ -150,17 +159,20 @@ func TestRoleGrantRevokeStepDownAndListing(t *testing.T) {
 	ctx := context.Background()
 
 	k, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
-	a1, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
+	ward := mustGroup(t, mgr, "Ward A")
+	other := mustGroup(t, mgr, "Ward B")
+	ensureActors(t, mgr, "m-1", "m-2", "m-3")
+	a1, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: ward.ID, KindID: k.ID})
 	if err != nil {
 		t.Fatalf("grant a1: %v", err)
 	}
 	if !a1.Active || a1.GrantedAt == "" {
 		t.Fatalf("expected grant to be active with stamped granted_at, got %+v", a1)
 	}
-	a2, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID})
-	_, _ = mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-3", GroupID: "g-other", KindID: k.ID})
+	a2, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: ward.ID, KindID: k.ID})
+	_, _ = mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-3", GroupID: other.ID, KindID: k.ID})
 
-	live, err := mgr.ListRoleAssignmentsForGroup(ctx, "g-1", true)
+	live, err := mgr.ListRoleAssignmentsForGroup(ctx, ward.ID, true)
 	if err != nil {
 		t.Fatalf("ListRoleAssignmentsForGroup: %v", err)
 	}
@@ -175,11 +187,11 @@ func TestRoleGrantRevokeStepDownAndListing(t *testing.T) {
 		t.Fatalf("step down: %v", err)
 	}
 
-	live, _ = mgr.ListRoleAssignmentsForGroup(ctx, "g-1", true)
+	live, _ = mgr.ListRoleAssignmentsForGroup(ctx, ward.ID, true)
 	if len(live) != 0 {
 		t.Fatalf("expected 0 active after revoke + step-down, got %d", len(live))
 	}
-	all, _ := mgr.ListRoleAssignmentsForGroup(ctx, "g-1", false)
+	all, _ := mgr.ListRoleAssignmentsForGroup(ctx, ward.ID, false)
 	if len(all) != 2 {
 		t.Fatalf("expected both records still present when activeOnly=false, got %d", len(all))
 	}
@@ -203,7 +215,6 @@ func TestRoleGrantRevokeStepDownAndListing(t *testing.T) {
 		t.Fatalf("expected ErrAssignmentNotFound for unknown revoke, got %v", err)
 	}
 
-	// Re-ending an already-ended seat keeps the first reason.
 	if err := mgr.RevokeRole(ctx, a2.ID); err != nil {
 		t.Fatalf("re-revoke of a stepped-down seat should be a no-op, got %v", err)
 	}
@@ -219,13 +230,16 @@ func TestRoleAssignmentsForActorAcrossGroups(t *testing.T) {
 
 	k1, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
 	k2, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Organizer"})
-	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k1.ID}); err != nil {
+	first := mustGroup(t, mgr, "Ward A")
+	second := mustGroup(t, mgr, "Ward B")
+	ensureActors(t, mgr, "m-1", "m-2")
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: first.ID, KindID: k1.ID}); err != nil {
 		t.Fatalf("grant 1: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-2", KindID: k2.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: second.ID, KindID: k2.ID}); err != nil {
 		t.Fatalf("grant 2: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k1.ID}); err != nil {
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: first.ID, KindID: k1.ID}); err != nil {
 		t.Fatalf("grant 3: %v", err)
 	}
 
@@ -243,8 +257,10 @@ func TestEndOnEvictionAndDeparture(t *testing.T) {
 	ctx := context.Background()
 
 	k, _ := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
-	a1, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: "g-1", KindID: k.ID})
-	a2, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: "g-1", KindID: k.ID})
+	ward := mustGroup(t, mgr, "Ward A")
+	ensureActors(t, mgr, "m-1", "m-2")
+	a1, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-1", GroupID: ward.ID, KindID: k.ID})
+	a2, _ := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-2", GroupID: ward.ID, KindID: k.ID})
 
 	if err := mgr.EndRoleOnEviction(ctx, a1.ID); err != nil {
 		t.Fatalf("EndRoleOnEviction: %v", err)

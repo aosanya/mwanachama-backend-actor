@@ -23,6 +23,7 @@ func leadingKind(t *testing.T, mgr mwanachamaactor.UserManager) mwanachamaactor.
 
 func seatLeader(t *testing.T, mgr mwanachamaactor.UserManager, groupID, actorID string) mwanachamaactor.ActorRoleAssignment {
 	t.Helper()
+	ensureActors(t, mgr, actorID)
 	seat, err := mgr.GrantRole(context.Background(), mwanachamaactor.ActorRoleAssignment{
 		ActorID: actorID, GroupID: groupID, KindID: leadingKind(t, mgr).ID,
 	})

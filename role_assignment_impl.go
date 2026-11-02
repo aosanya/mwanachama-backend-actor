@@ -22,6 +22,12 @@ func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (Act
 		if kind.RetiredAt != "" {
 			return ErrKindRetired
 		}
+		if err := m.requireLive(tx, roleActor, a.ActorID, ErrActorNotFound); err != nil {
+			return err
+		}
+		if err := m.requireLive(tx, roleGroup, a.GroupID, ErrGroupNotFound); err != nil {
+			return err
+		}
 		var held int64
 		if err := m.from(tx, roleActorRoleAssignment).
 			Where("actor_id = ? AND group_id = ? AND kind_id = ? AND active", a.ActorID, a.GroupID, a.KindID).
@@ -45,6 +51,17 @@ func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (Act
 		return ActorRoleAssignment{}, fmt.Errorf("GrantRole: %w", err)
 	}
 	return a, nil
+}
+
+func (m *userManager) requireLive(tx *gorm.DB, role, id string, missing error) error {
+	var found int64
+	if err := m.from(tx, role).Where("id = ? AND deleted = ?", id, false).Count(&found).Error; err != nil {
+		return err
+	}
+	if found == 0 {
+		return missing
+	}
+	return nil
 }
 
 func (m *userManager) GetRoleAssignment(ctx context.Context, id string) (ActorRoleAssignment, error) {

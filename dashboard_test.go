@@ -48,7 +48,9 @@ func TestGroupDashboardComposesRolesAndCounts(t *testing.T) {
 	if err := mgr.StepDownRole(ctx, a1.ID); err != nil {
 		t.Fatalf("stepdown: %v", err)
 	}
-	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-99", GroupID: "elsewhere-nonexistent-group", KindID: kind1.ID}); err != nil {
+	elsewhere := mustGroup(t, mgr, "Elsewhere")
+	ensureActors(t, mgr, "m-99")
+	if _, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: "m-99", GroupID: elsewhere.ID, KindID: kind1.ID}); err != nil {
 		t.Fatalf("grant elsewhere: %v", err)
 	}
 

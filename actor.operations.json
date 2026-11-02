@@ -1436,7 +1436,7 @@
       "action": "actor.role_assignment.create",
       "status": 201,
       "title": "Grant a seat",
-      "description": "Give an actor a seat of some kind in a group. Refused when the kind is retired, and when the actor already holds a live seat of that kind at that group. The grantor is the caller, never the body.",
+      "description": "Give an actor a seat of some kind in a group. Refused when the kind is retired, when the actor or the group does not exist (404), and when the actor already holds a live seat of that kind at that group. The grantor is the caller, never the body.",
       "args": [
         {
           "from": "body",

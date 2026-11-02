@@ -130,3 +130,35 @@ func TestADifferentActorGroupOrKindIsNotADuplicate(t *testing.T) {
 		}
 	}
 }
+
+func TestASeatCannotBeGrantedToAnActorWhoDoesNotExist(t *testing.T) {
+	f := newSeatFixture(t, "operator-1")
+
+	if status, seat := f.grant(t, nil); status != http.StatusCreated {
+		t.Fatalf("grant to a real actor = %d %v, want 201", status, seat)
+	}
+	status, _ := f.grant(t, map[string]any{"actor_id": "no-such-actor"})
+	if status != http.StatusNotFound {
+		t.Fatalf("grant to an actor who does not exist = %d, want 404", status)
+	}
+	seats, err := f.mgr.ListRoleAssignmentsForActor(context.Background(), "no-such-actor", false)
+	if err != nil || len(seats) != 0 {
+		t.Fatalf("seats of the missing actor = %+v, %v, want none written", seats, err)
+	}
+}
+
+func TestASeatCannotBeGrantedAtAGroupThatDoesNotExist(t *testing.T) {
+	f := newSeatFixture(t, "operator-1")
+
+	status, _ := f.grant(t, map[string]any{"group_id": "no-such-group"})
+	if status != http.StatusNotFound {
+		t.Fatalf("grant at a group that does not exist = %d, want 404", status)
+	}
+	seats, err := f.mgr.ListRoleAssignmentsForGroup(context.Background(), "no-such-group", false)
+	if err != nil || len(seats) != 0 {
+		t.Fatalf("seats of the missing group = %+v, %v, want none written", seats, err)
+	}
+	if status, seat := f.grant(t, nil); status != http.StatusCreated {
+		t.Fatalf("grant to the real actor and group = %d %v, want 201", status, seat)
+	}
+}
