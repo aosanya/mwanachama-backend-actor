@@ -90,16 +90,17 @@ func (m *userManager) GetActorStanding(ctx context.Context, actorID string) (mod
 
 func (m *userManager) groupsByID(ctx context.Context, ids []string) (map[string]Group, error) {
 	out := map[string]Group{}
-	if len(ids) == 0 {
-		return out, nil
-	}
-	q := m.store.Query(ctx, roleGroup).Where("id IN ?", ids)
-	groups, err := specstore.List[Group](m.store, q, roleGroup)
-	if err != nil {
-		return nil, err
-	}
-	for _, g := range groups {
-		out[g.ID] = g
+	distinct := distinctIDs(ids)
+	for start := 0; start < len(distinct); start += actorLookupChunk {
+		chunk := distinct[start:min(start+actorLookupChunk, len(distinct))]
+		q := m.store.Query(ctx, roleGroup).Where("id IN ?", chunk)
+		groups, err := specstore.List[Group](m.store, q, roleGroup)
+		if err != nil {
+			return nil, err
+		}
+		for _, g := range groups {
+			out[g.ID] = g
+		}
 	}
 	return out, nil
 }

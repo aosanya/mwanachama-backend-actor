@@ -31,6 +31,12 @@ Both lists are `[]` on the wire for a person with nothing, never `null`.
   registrations and seats reads, which answer `[]`.
 - A granter that is no actor (a host's operator id, or a seat the first run
   created with no granter) leaves `granted_by_name` out and the seat listed.
+  A granter who was soft-deleted afterwards is treated the same way: the seat
+  keeps `granted_by` as stored, `granted_by_name` is left out, and the seat is
+  listed. Nothing marks the granter as deleted.
+- A person with more seats and registrations than a statement can name groups
+  for is read in chunks of 500 distinct group ids, so the read does not hit
+  SQLite's variable limit.
 
 ## Seats that point at nothing
 
