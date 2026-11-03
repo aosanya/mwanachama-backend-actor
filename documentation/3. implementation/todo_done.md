@@ -356,3 +356,15 @@ Run 25. Found already landed: `spec/examples/agency.actor.json`, `SpecFor` and `
 ## ACT12 — 🧰 Repo-shape parity: a Makefile and a cmd/. — 2026-10-30
 
 Run 25. Found already landed in `26d80ba`: `Makefile` (`build`, `test`, `test-pg`, `vet`, `clean`, `ddl`), `cmd/ddl`, `cmd/provision`. `test-pg` runs plain `go test ./...` because actor's `postgres_integration_test.go` has no build tag; catalog gates it with `-tags=integration`.
+
+## ACT77 — 🐞 `nextCode` aborted the Postgres transaction on a counter-seed race — 2026-11-03
+
+Found on the Hub Steward stack (meta-hackathon-2026) at 12:50-12:51: two first-time callers of an entity type both INSERTed the counter row, the loser got a unique violation (SQLSTATE 23505), and its retry ran inside the same transaction, which Postgres had aborted (SQLSTATE 25P02), so every `Create<Type>` that minted a code rolled back. SQLite, which the race tests use, keeps the transaction usable after a failed statement, so nothing caught it.
+
+Fixed in `store.go`: `nextCode` seeds the counter with `ON CONFLICT DO NOTHING` at `next_number` 1, then claims a number with the existing compare-and-swap loop; the first caller still gets `<prefix>-1` and the counter ends at 2. `go test ./...` passes. Not proved against Postgres here: no local Postgres was started, so the next run on the hub stack is the check.
+
+## ACT78 — 🐞 A counter behind the data made every create collide — 2026-11-03
+
+On the hub "Siaya Farmers' Group" the `group` counter read 4 while `G-1` to `G-8` existed, because `G-4` to `G-8` were registered by SQL on 2026-11-01. The next group create would claim `G-4` and fail on the `code` unique index. The live counter was set from 4 to 9 with one guarded update on meta-hackathon-2026.
+
+Fixed in `code_guard.go`: `nextCode` on the manager now checks that the code it claimed is not already in the entity's table and, if it is, claims the next number, up to 200 in a row before answering `ErrConflict`. `code_guard_test.go` rewinds an actor counter under three live actors and expects `AC-4`; it fails with the check disabled. `go test ./...` passes.

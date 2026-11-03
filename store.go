@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/aosanya/mwanachama-backend-shared/spec"
 	"github.com/aosanya/mwanachama-backend-shared/specstore"
@@ -85,10 +86,6 @@ var codedRoles = []codedRole{
 	{roleGroupType, "grouptype", "GT"},
 }
 
-func (m *userManager) nextCode(ctx context.Context, tx *gorm.DB, entityType, prefix string) (string, error) {
-	return nextCode(ctx, tx, m.table(roleCodeSequence), m.store.RunID(), entityType, prefix)
-}
-
 func inRun(q *gorm.DB, runID string) *gorm.DB {
 	if runID == "" {
 		return q
@@ -97,25 +94,23 @@ func inRun(q *gorm.DB, runID string) *gorm.DB {
 }
 
 func nextCode(ctx context.Context, tx *gorm.DB, table, runID, entityType, prefix string) (string, error) {
+	seed := map[string]any{"entity_type": entityType, "next_number": 1}
+	if runID != "" {
+		seed[spec.RunIDColumn] = runID
+	}
+	if err := tx.WithContext(ctx).Table(table).
+		Clauses(clause.OnConflict{DoNothing: true}).Create(seed).Error; err != nil {
+		return "", fmt.Errorf("nextCode: seed the %s counter: %w", entityType, err)
+	}
+
 	for attempt := 0; attempt < codeSequenceAttempts; attempt++ {
 		var rows []map[string]any
 		if err := inRun(tx.WithContext(ctx).Table(table), runID).
 			Where("entity_type = ?", entityType).Limit(1).Find(&rows).Error; err != nil {
 			return "", fmt.Errorf("nextCode: %w", err)
 		}
-
 		if len(rows) == 0 {
-			seed := map[string]any{"entity_type": entityType, "next_number": 2}
-			if runID != "" {
-				seed[spec.RunIDColumn] = runID
-			}
-			if err := tx.WithContext(ctx).Table(table).Create(seed).Error; err != nil {
-				if isUniqueViolation(err) {
-					continue
-				}
-				return "", fmt.Errorf("nextCode: %w", err)
-			}
-			return fmt.Sprintf("%s-%d", prefix, 1), nil
+			return "", fmt.Errorf("nextCode: %s: the counter vanished after being seeded", entityType)
 		}
 
 		n, err := asInt(rows[0]["next_number"])
