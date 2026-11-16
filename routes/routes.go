@@ -76,6 +76,7 @@ var sentinels = map[string]error{
 	"ErrPopulationNotFound":     mwanachamaactor.ErrPopulationNotFound,
 	"ErrReviewerRequired":       mwanachamaactor.ErrReviewerRequired,
 	"ErrNotAnArea":              mwanachamaactor.ErrNotAnArea,
+	"ErrBoundaryNotAnArea":      mwanachamaactor.ErrBoundaryNotAnArea,
 }
 
 type Mount struct {

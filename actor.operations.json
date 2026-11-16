@@ -48,6 +48,7 @@
     "ErrTranslationNotFound": 404,
     "ErrReviewerRequired": 400,
     "ErrNotAnArea": 409,
+    "ErrBoundaryNotAnArea": 400,
     "ErrInvalidPopulation": 400,
     "ErrPopulationNotFound": 404,
     "ErrInvalidDelegation": 400,
@@ -808,6 +809,34 @@
         }
       ],
       "tool": "actor_set_group_boundary"
+    },
+    "groups_at_point": {
+      "method": "GET",
+      "path": "/groups/at-point",
+      "call": "GroupsAtPoint",
+      "action": "actor.group.list_at_point",
+      "title": "Groups holding a point",
+      "description": "List the groups whose boundary holds this point, in id order. A point inside no boundary gives an empty list.",
+      "args": [
+        {
+          "from": "query",
+          "as": "lon",
+          "required": true,
+          "description": "Longitude in degrees, from -180 to 180."
+        },
+        {
+          "from": "query",
+          "as": "lat",
+          "required": true,
+          "description": "Latitude in degrees, from -90 to 90."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_groups_at_point"
     },
     "join_group": {
       "method": "POST",

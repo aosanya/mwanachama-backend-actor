@@ -58,6 +58,8 @@ type UserManager interface {
 
 	SetGroupAreaNode(ctx context.Context, groupID string, areaNodeID string) (Group, error)
 	SetGroupBoundary(ctx context.Context, groupID string, boundary *geo.Geometry) (Group, error)
+	GroupWardIndex(ctx context.Context) (*geo.WardIndex, map[string]Group, error)
+	GroupsAtPoint(ctx context.Context, lon, lat float64) ([]Group, error)
 
 	CreateActor(ctx context.Context, a Actor) (Actor, error)
 
