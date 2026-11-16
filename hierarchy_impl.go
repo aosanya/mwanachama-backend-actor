@@ -12,11 +12,13 @@ import (
 )
 
 func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarchy, error) {
-	if err := checkHierarchyName(h.Name); err != nil {
+	name, err := checkHierarchyName(h.Name)
+	if err != nil {
 		return Hierarchy{}, err
 	}
+	h.Name = name
 	h.ID = newSpecID()
-	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := m.checkHierarchyNameFree(tx, h.Name, ""); err != nil {
 			return err
 		}
@@ -62,7 +64,8 @@ func (m *userManager) GetHierarchy(ctx context.Context, id string) (Hierarchy, e
 }
 
 func (m *userManager) RenameHierarchy(ctx context.Context, id, name string) (Hierarchy, error) {
-	if err := checkHierarchyName(name); err != nil {
+	name, err := checkHierarchyName(name)
+	if err != nil {
 		return Hierarchy{}, err
 	}
 	current, err := m.GetHierarchy(ctx, id)

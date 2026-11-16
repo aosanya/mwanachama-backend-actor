@@ -17,9 +17,11 @@ import (
 )
 
 func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error) {
-	if err := checkActorDisplayName(act.DisplayName); err != nil {
+	displayName, err := checkActorDisplayName(act.DisplayName)
+	if err != nil {
 		return Actor{}, err
 	}
+	act.DisplayName = displayName
 	if err := checkActorPersonNames(act.FirstName, act.LastName); err != nil {
 		return Actor{}, err
 	}
@@ -195,7 +197,8 @@ func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, err
 }
 
 func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error) {
-	if err := checkActorDisplayName(displayName); err != nil {
+	displayName, err := checkActorDisplayName(displayName)
+	if err != nil {
 		return Actor{}, err
 	}
 	current, err := m.GetActor(ctx, id)

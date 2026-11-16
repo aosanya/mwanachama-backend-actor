@@ -115,11 +115,7 @@ func (m referenceChecked) AssignGroup(ctx context.Context, r mwanachamaactor.Act
 }
 
 func (m referenceChecked) EditGroup(ctx context.Context, id string, e mwanachamaactor.GroupEdit) (mwanachamaactor.Group, error) {
-	e.Name = strings.TrimSpace(e.Name)
 	e.NodeType = strings.TrimSpace(e.NodeType)
-	if e.Name == "" {
-		return mwanachamaactor.Group{}, fmt.Errorf("%w: a name is required", mwanachamaactor.ErrInvalidGroup)
-	}
 	if e.AnchorLevelOverrideID != "" {
 		current, err := m.UserManager.GetGroup(ctx, id)
 		if err != nil {

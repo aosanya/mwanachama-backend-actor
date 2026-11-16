@@ -60,11 +60,11 @@ func nameWrites(t *testing.T, mgr mwanachamaactor.UserManager) []nameWrite {
 
 func TestNamesOverTwoHundredCharactersAreRefused(t *testing.T) {
 	tooLong := map[string]string{
-		"201 letters":      strings.Repeat("a", 201),
-		"201 accented":     strings.Repeat("é", 201),
-		"1000 letters":     strings.Repeat("a", 1000),
-		"100000 letters":   strings.Repeat("a", 100000),
-		"201 with a space": strings.Repeat("ab ", 67),
+		"201 letters":            strings.Repeat("a", 201),
+		"201 accented":           strings.Repeat("é", 201),
+		"1000 letters":           strings.Repeat("a", 1000),
+		"100000 letters":         strings.Repeat("a", 100000),
+		"201 with spaces inside": strings.Repeat("ab ", 66) + "abc",
 	}
 	for label, name := range tooLong {
 		t.Run(label, func(t *testing.T) {

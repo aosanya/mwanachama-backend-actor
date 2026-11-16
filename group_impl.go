@@ -15,9 +15,11 @@ import (
 )
 
 func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
-	if err := checkGroupName(g.Name); err != nil {
+	name, err := checkGroupName(g.Name)
+	if err != nil {
 		return Group{}, err
 	}
+	g.Name = name
 	if g.JoinMode == "" {
 		g.JoinMode = models.JoinConfirmed
 	}
@@ -47,7 +49,7 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	g.LastUpdated = g.CreatedAt
 	g.Deleted = false
 
-	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		code, err := m.nextCode(ctx, tx, "group", "G")
 		if err != nil {
 			return err
@@ -89,9 +91,11 @@ func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Gr
 	if err != nil {
 		return Group{}, err
 	}
-	if err := checkGroupName(e.Name); err != nil {
+	name, err := checkGroupEditName(e.Name)
+	if err != nil {
 		return Group{}, err
 	}
+	e.Name = name
 	if err := m.checkGroupNameFree(ctx, e.Name, id); err != nil {
 		return Group{}, err
 	}

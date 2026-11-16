@@ -16,6 +16,12 @@ Three names are required and bounded in this module: a group name, an actor disp
 
 The routes answer 400 for all three refusals because each sentinel is mapped to 400.
 
+## Padding
+
+A name is trimmed first, then counted, then stored, on all six writes: create group, edit group, create actor, rename actor, create hierarchy and rename hierarchy (hub issue ACT75). `checkRequiredName` in `name_check.go` returns the trimmed name and each write stores that value, so `"  Padded  "` is stored as `"Padded"` and a 200 character name with a space on either side is accepted. The edit route no longer trims on its own; the manager does it for every caller. White space is whatever `strings.TrimSpace` removes, which includes the no-break space and the ideographic space.
+
+The duplicate checks still fold spaces and look-alike letters (`plaintext.FoldDrawnName` for groups and hierarchies, `plaintext.FoldLookalike` for display names), so a padded copy of a taken name is refused with 409.
+
 ## Where the numbers come from
 
 200 is the limit the group edit route already enforced (`maxGroupName`, now removed from `routes/routes.go` because the manager enforces it) and the same number as the limit of an agency name, `MaxInstanceNameBytes = 200` in the hub's `internal/throttle/limits.go`. The two do not count alike: the agency name limit counts bytes (the hub's refusal reads "an agency's name may be at most 200 bytes"), while these three names count characters (runes). A name of 200 accented Hungarian letters is 200 characters and about 400 bytes, so it is kept here and would be refused as an agency name; a name of 200 characters is within 200 bytes only when every character is one byte. No new number was chosen.

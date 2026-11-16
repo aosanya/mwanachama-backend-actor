@@ -17,27 +17,36 @@ func checkName(refusal error, label, name string) error {
 
 const maxNameCharacters = 200
 
-func checkRequiredName(refusal error, label, name string) error {
-	if strings.TrimSpace(name) == "" {
-		return fmt.Errorf("%w: a %s is required", refusal, label)
-	}
-	if utf8.RuneCountInString(name) > maxNameCharacters {
-		return fmt.Errorf("%w: a %s may be at most %d characters", refusal, label, maxNameCharacters)
-	}
-	return checkName(refusal, label, name)
+func checkRequiredName(refusal error, label, name string) (string, error) {
+	return checkRequiredNameWorded(refusal, label, label, name)
 }
 
-func checkGroupName(name string) error {
+func checkRequiredNameWorded(refusal error, wording, label, name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", fmt.Errorf("%w: a %s is required", refusal, wording)
+	}
+	if utf8.RuneCountInString(name) > maxNameCharacters {
+		return "", fmt.Errorf("%w: a %s may be at most %d characters", refusal, wording, maxNameCharacters)
+	}
+	return name, checkName(refusal, label, name)
+}
+
+func checkGroupName(name string) (string, error) {
 	return checkRequiredName(ErrInvalidGroup, "group name", name)
 }
 
-func checkHierarchyName(name string) error {
+func checkGroupEditName(name string) (string, error) {
+	return checkRequiredNameWorded(ErrInvalidGroup, "name", "group name", name)
+}
+
+func checkHierarchyName(name string) (string, error) {
 	return checkRequiredName(ErrInvalidHierarchy, "hierarchy name", name)
 }
 
-func checkActorDisplayName(name string) error {
+func checkActorDisplayName(name string) (string, error) {
 	if name == "" {
-		return nil
+		return "", nil
 	}
 	return checkRequiredName(ErrInvalidActor, "display name", name)
 }
