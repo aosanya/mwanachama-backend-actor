@@ -14,8 +14,14 @@ import (
 
 const groupNameKeyColumn = "name_key"
 
+const groupNameTrailingMarks = ". "
+
 func groupNameKey(name string) string {
-	return strings.ToLower(strings.Join(strings.Fields(norm.NFC.String(name)), " "))
+	folded := strings.ToLower(strings.Join(strings.Fields(norm.NFKC.String(name)), " "))
+	if trimmed := strings.TrimRight(folded, groupNameTrailingMarks); trimmed != "" {
+		return trimmed
+	}
+	return folded
 }
 
 func (m *userManager) checkGroupNameFree(ctx context.Context, name, exceptID string) error {
