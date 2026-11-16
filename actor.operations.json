@@ -19,6 +19,7 @@
     "ErrDuplicateGroupName": 409,
     "ErrDuplicateRoleKindName": 409,
     "ErrDuplicateHierarchyName": 409,
+    "ErrDuplicateDisplayName": 409,
     "ErrConflict": 409,
     "ErrRootCannotMove": 409,
     "ErrParentIsSelf": 409,

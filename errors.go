@@ -22,6 +22,8 @@ var ErrDuplicateRoleKindName = errors.New("mwanachamaactor: a role kind already 
 
 var ErrDuplicateHierarchyName = errors.New("mwanachamaactor: a hierarchy already has this name")
 
+var ErrDuplicateDisplayName = errors.New("mwanachamaactor: another member or a role already has this name")
+
 var ErrDuplicateAttribute = errors.New("mwanachamaactor: attribute value already in use")
 
 var ErrDuplicateID = errors.New("mwanachamaactor: an actor with this id already exists")

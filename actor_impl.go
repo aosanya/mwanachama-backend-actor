@@ -199,6 +199,9 @@ func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName s
 	if err != nil {
 		return Actor{}, err
 	}
+	if err := m.checkDisplayNameFree(ctx, displayName, id); err != nil {
+		return Actor{}, err
+	}
 	now := NowRFC3339()
 	err = m.store.Query(ctx, roleActor).Where("id = ?", id).
 		Updates(map[string]any{"display_name": displayName, "last_updated": now}).Error
