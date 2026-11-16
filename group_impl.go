@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/aosanya/mwanachama-backend-shared/plaintext"
 	"github.com/aosanya/mwanachama-backend-shared/specstore"
 
 	"github.com/aosanya/mwanachama-backend-actor/models"
@@ -17,6 +18,9 @@ import (
 func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if g.Name == "" {
 		return Group{}, fmt.Errorf("%w: Group.Name is required", ErrInvalidGroup)
+	}
+	if err := plaintext.CheckLine("group name", g.Name); err != nil {
+		return Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)
 	}
 	if g.JoinMode == "" {
 		g.JoinMode = models.JoinConfirmed
@@ -84,6 +88,9 @@ func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Gr
 	current, err := m.GetGroup(ctx, id)
 	if err != nil {
 		return Group{}, err
+	}
+	if err := plaintext.CheckLine("group name", e.Name); err != nil {
+		return Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)
 	}
 	now := NowRFC3339()
 	err = m.store.Query(ctx, roleGroup).Where("id = ?", id).
