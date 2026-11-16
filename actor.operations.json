@@ -22,6 +22,7 @@
     "ErrSeatAlreadyHeld": 409,
     "ErrApprovalLimitNegative": 400,
     "ErrOverApprovalLimit": 403,
+    "ErrSeatEnded": 409,
     "ErrLevelWornByGroups": 409,
     "ErrLevelHasRoleKinds": 409,
     "ErrGroupTypeWornByGroups": 409,
@@ -1556,6 +1557,59 @@
         }
       ],
       "tool": "actor_revoke_role"
+    },
+    "set_approval_limit": {
+      "method": "PUT",
+      "path": "/role-assignments/{assignment_id}/approval-limit",
+      "call": "SetApprovalLimit",
+      "action": "actor.role_assignment.set_approval_limit",
+      "title": "Set what a seat may approve",
+      "description": "Change the most a live seat may approve in one act. A negative limit is refused (400), an ended seat is refused (409), and an absent limit removes the cap.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat to change."
+        },
+        {
+          "from": "body",
+          "as": "limit",
+          "description": "The most the seat may approve in one act. Leave it out for no limit."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_approval_limit"
+    },
+    "authorise_approval": {
+      "method": "POST",
+      "path": "/role-assignments/{assignment_id}/authorise-approval",
+      "call": "AuthoriseApproval",
+      "action": "actor.role_assignment.authorise_approval",
+      "status": 204,
+      "title": "Check a seat may approve an amount",
+      "description": "Ask whether a seat may approve an amount. Refused (403) when the amount is over the seat's limit or the seat has ended, and 404 when there is no such seat.",
+      "args": [
+        {
+          "from": "path",
+          "as": "assignment_id",
+          "description": "The seat that would approve."
+        },
+        {
+          "from": "body",
+          "as": "amount",
+          "description": "The amount to be approved, never negative."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_authorise_approval"
     },
     "step_down_role": {
       "method": "POST",
