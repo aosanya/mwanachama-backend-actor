@@ -112,3 +112,5 @@ var ErrDelegationNotFound = errors.New("mwanachamaactor: delegation not found")
 var ErrDelegationRevoked = errors.New("mwanachamaactor: the delegation is already revoked")
 
 var ErrConflict = errors.New("mwanachamaactor: another write got there first, try again")
+
+var ErrBoundaryNotAnArea = errors.New("mwanachamaactor: a group boundary must be a Polygon or MultiPolygon")

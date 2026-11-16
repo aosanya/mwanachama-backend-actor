@@ -210,6 +210,12 @@
           "name": "area_node_id",
           "type": "string",
           "description": "The id of the node in the digital twin that is this group's area. Set only on a group at an area level; empty when the group names no area node."
+        },
+        {
+          "name": "boundary",
+          "type": "geometry",
+          "description": "The ground this group covers, as a GeoJSON Polygon or MultiPolygon. Absent when the group has no territory, which is every group that is not a place.",
+          "nullable": true
         }
       ],
       "indexes": [

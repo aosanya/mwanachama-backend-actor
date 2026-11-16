@@ -1,5 +1,7 @@
 package models
 
+import "github.com/aosanya/mwanachama-backend-shared/geo"
+
 const (
 	JoinOpen      = "open"
 	JoinConfirmed = "confirmed"
@@ -26,6 +28,7 @@ type Group struct {
 
 	Attributes map[string]any `json:"attributes,omitempty"`
 	AreaNodeID string         `json:"area_node_id,omitempty"`
+	Boundary   *geo.Geometry  `json:"boundary,omitempty"`
 }
 
 func (g Group) Open() bool { return g.JoinMode == JoinOpen }

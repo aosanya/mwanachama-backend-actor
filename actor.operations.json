@@ -783,6 +783,32 @@
       ],
       "tool": "actor_set_group_area_node"
     },
+    "set_group_boundary": {
+      "method": "PUT",
+      "path": "/groups/{group_id}/boundary",
+      "call": "SetGroupBoundary",
+      "action": "actor.group.set_boundary",
+      "title": "Set group boundary",
+      "description": "Set or clear the ground a group covers, as a GeoJSON Polygon or MultiPolygon. Omit the boundary to clear it. A point, a line or an unclosed ring is refused.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose boundary to set."
+        },
+        {
+          "from": "body",
+          "as": "boundary",
+          "description": "The boundary as a GeoJSON Polygon or MultiPolygon."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_set_group_boundary"
+    },
     "join_group": {
       "method": "POST",
       "path": "/groups/{group_id}/join",

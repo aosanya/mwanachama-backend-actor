@@ -35,8 +35,8 @@ func TestLevelMatchesSchema(t *testing.T) {
 
 func TestGroupMatchesSchema(t *testing.T) {
 	typ := reflect.TypeOf(models.Group{})
-	if typ.NumField() != 17 {
-		t.Fatalf("Group: schema declares 17 field(s), struct has %d", typ.NumField())
+	if typ.NumField() != 18 {
+		t.Fatalf("Group: schema declares 18 field(s), struct has %d", typ.NumField())
 	}
 	assertField(t, typ, 0, "ID", "string", `json:"id"`)
 	assertField(t, typ, 1, "Code", "string", `json:"code"`)
@@ -55,6 +55,7 @@ func TestGroupMatchesSchema(t *testing.T) {
 	assertField(t, typ, 14, "Deleted", "bool", `json:"deleted"`)
 	assertField(t, typ, 15, "Attributes", "map[string]interface {}", `json:"attributes,omitempty"`)
 	assertField(t, typ, 16, "AreaNodeID", "string", `json:"area_node_id,omitempty"`)
+	assertField(t, typ, 17, "Boundary", "*geo.Geometry", `json:"boundary,omitempty"`)
 }
 
 func TestGroupEditMatchesSchema(t *testing.T) {

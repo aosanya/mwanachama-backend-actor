@@ -27,6 +27,9 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if err := m.checkAreaNode(ctx, g.LevelID, g.AreaNodeID); err != nil {
 		return Group{}, err
 	}
+	if err := checkBoundary(g.Boundary); err != nil {
+		return Group{}, err
+	}
 	properties := models.DefaultGroupProperties()
 	if err := models.ValidateAttributes(properties, g.Attributes); err != nil {
 		return Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)

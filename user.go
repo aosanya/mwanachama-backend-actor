@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/aosanya/mwanachama-backend-shared/geo"
 	"github.com/aosanya/mwanachama-backend-shared/spec"
 
 	"github.com/aosanya/mwanachama-backend-actor/models"
@@ -56,6 +57,7 @@ type UserManager interface {
 	ForRun(runID string) (UserManager, error)
 
 	SetGroupAreaNode(ctx context.Context, groupID string, areaNodeID string) (Group, error)
+	SetGroupBoundary(ctx context.Context, groupID string, boundary *geo.Geometry) (Group, error)
 
 	CreateActor(ctx context.Context, a Actor) (Actor, error)
 

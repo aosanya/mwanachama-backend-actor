@@ -134,6 +134,8 @@ func TestEveryCarrierAgreesWithItsObject(t *testing.T) {
 	}
 }
 
+var columnsBeyondRowStructs = map[string][]string{roleGroup: {"boundary"}}
+
 func TestEveryColumnTheRowStructsHeldIsDeclared(t *testing.T) {
 	held := map[string][]string{
 		roleActor:                {"id", "code", "display_name", "is_agentic", "attributes", "created_at", "last_updated", "deleted"},
@@ -168,7 +170,7 @@ func TestEveryColumnTheRowStructsHeldIsDeclared(t *testing.T) {
 				t.Errorf("%s stored %q and the blueprint declares no field for it", role, c)
 			}
 		}
-		total += len(o.Fields) - len(columnsDeclaredSince[role])
+		total += len(o.Fields) - len(columnsDeclaredSince[role]) - len(columnsBeyondRowStructs[role])
 	}
 	if total != 63 {
 		t.Errorf("the blueprint declares %d fields, and the row structs carried 63", total)
