@@ -11,7 +11,7 @@ type GroupInvitation struct {
 	GroupID     string `json:"group_id"`
 	ActorID     string `json:"actor_id"`
 	State       string `json:"state"`
-	InvitedBy   string `json:"invited_by"`
+	InvitedBy   string `json:"invited_by,omitempty"`
 	InvitedAt   string `json:"invited_at"`
 	ExpiresAt   string `json:"expires_at,omitempty"`
 	AnsweredAt  string `json:"answered_at,omitempty"`
