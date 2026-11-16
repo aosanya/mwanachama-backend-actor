@@ -18,7 +18,7 @@ The routes answer 400 for all three refusals because each sentinel is mapped to 
 
 ## Where the numbers come from
 
-200 is the limit the group edit route already enforced (`maxGroupName`, now removed from `routes/routes.go` because the manager enforces it) and the limit of an agency name (`throttle.MaxInstanceNameBytes` in the hub). No new number was chosen.
+200 is the limit the group edit route already enforced (`maxGroupName`, now removed from `routes/routes.go` because the manager enforces it) and the same number as the limit of an agency name, `MaxInstanceNameBytes = 200` in the hub's `internal/throttle/limits.go`. The two do not count alike: the agency name limit counts bytes (the hub's refusal reads "an agency's name may be at most 200 bytes"), while these three names count characters (runes). A name of 200 accented Hungarian letters is 200 characters and about 400 bytes, so it is kept here and would be refused as an agency name; a name of 200 characters is within 200 bytes only when every character is one byte. No new number was chosen.
 
 ## One exception
 

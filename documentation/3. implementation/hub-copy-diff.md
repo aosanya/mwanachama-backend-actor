@@ -1,6 +1,6 @@
 # Hub copy diff
 
-`mwanachama-backend-actor` is the custodian of the actor module. The hub (`projects/hub-steward/code/wakala-api/modules/actor`) holds a copy made on 2026-11-04 (hub commit a7d64d10) and changed it afterwards. Every committed change made in that copy exists here, so the two differ by the import path only (hub issue ACT73, part of ISS-105).
+`mwanachama-backend-actor` is the custodian of the actor module. The hub (`projects/hub-steward/code/wakala-api/modules/actor`) holds a copy made on 2026-11-04 (hub commit a7d64d10) and changed it afterwards. Every committed change made in that copy exists here (hub issue ACT73, part of ISS-105). The backend is ahead of the hub copy by the MUN678 files until the hub copy carries them: `name_check.go`, `actor_impl.go`, `group_impl.go`, `hierarchy_impl.go` and `routes/routes.go` (backend commit 17cf2b1). Until then the script prints a difference for each of those five files.
 
 ## Command
 
@@ -19,11 +19,23 @@ The default path is `../projects/hub-steward/code/wakala-api/modules/actor`, rel
 
 ## Result of 2026-11-16
 
-Against the committed hub (dev at 169958ee) every non-test Go file and the three JSON files are identical after the rewrite. Nothing in the output is `diff` or `Only in hub`. What remains is 77 `Only in backend` lines, all of them test files:
+Against the committed hub (dev at 169958ee), run on a `git archive` export of this repository at 17cf2b1 and of the hub's `modules/actor` folder, the script prints a `diff` for five Go files and 79 `Only in backend` lines, and nothing `Only in hub`. The three JSON files and every other non-test Go file are identical after the rewrite.
+
+The five `diff` files are the MUN678 name rules (see `name-rules.md`), which the hub copy does not have yet:
+
+| File | Difference |
+|---|---|
+| `name_check.go` | the backend adds `maxNameCharacters`, a required check and a length check on top of the plaintext check, and `checkActorDisplayName`, `checkActorPersonNames`, `checkGroupName` and `checkHierarchyName`; the hub file holds `checkName` and `checkActorNames` with the plaintext check only |
+| `actor_impl.go` | the backend calls `checkActorDisplayName` and `checkActorPersonNames`; the hub calls `checkActorNames` |
+| `group_impl.go` | `CreateGroup` and `EditGroup` call `checkGroupName` in the backend; the hub checks for an empty name and calls `plaintext.CheckLine` |
+| `hierarchy_impl.go` | `CreateHierarchy` and `RenameHierarchy` call `checkHierarchyName` in the backend; the hub calls `checkName` |
+| `routes/routes.go` | the hub keeps `maxGroupName` and the length check in the route wrapper of the group edit; the backend removed both because the manager enforces the limit |
+
+The 79 `Only in backend` lines are all test files:
 
 | Difference | Reason |
 |---|---|
-| Only here: the tests of the root package, `models` and `routes` that are not hub files, among them `testdb_test.go`, `postgres_integration_test.go`, `removal_test.go`, `name_check_test.go`, `display_name_free_test.go` and `routes/routes_test.go` | The hub copy of 2026-11-04 was made without them, or the hub commit carried no actor test and the test was written here before the code (red first). They test code that is identical in both. |
+| Only here: the tests of the root package, `models` and `routes` that are not hub files, among them `testdb_test.go`, `postgres_integration_test.go`, `removal_test.go`, `name_check_test.go`, `display_name_free_test.go`, `routes/routes_test.go` and, for MUN678, `name_length_test.go` and `routes/name_length_test.go` | The hub copy of 2026-11-04 was made without them, or the hub commit carried no actor test and the test was written here before the code (red first). They test code that is identical in both, except the two MUN678 files, which test the five files above. |
 | `routes/routes_test.go` counts 99 routes and tools | It lists the route table; it moved with the routes the hub added. |
 | `leader_test.go` and `outsider_test.go` reuse one role kind of a name | A role kind name is unique since hub ebf32240, so the helpers that seated several leaders or outsiders no longer create a second kind of the same name. |
 | `models/schema_generated_test.go` gained `Boundary` and `NameKey` | It is generated-style and has no hub counterpart; it was updated by hand with the two columns. |
