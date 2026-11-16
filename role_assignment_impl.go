@@ -14,6 +14,9 @@ import (
 )
 
 func (m *userManager) GrantRole(ctx context.Context, a ActorRoleAssignment) (ActorRoleAssignment, error) {
+	if a.ApprovalLimit != nil && *a.ApprovalLimit < 0 {
+		return ActorRoleAssignment{}, fmt.Errorf("GrantRole: %w", ErrApprovalLimitNegative)
+	}
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		kind, err := m.roleKindIn(tx, a.KindID)
 		if err != nil {

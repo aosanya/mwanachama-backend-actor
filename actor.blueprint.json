@@ -450,6 +450,12 @@
             "deregistered",
             "role_removed"
           ]
+        },
+        {
+          "name": "approval_limit",
+          "type": "int",
+          "description": "The most this seat may approve in one act, in whole units of the agency's currency. Absent means the seat carries no limit, which is not the same as a limit of zero, a seat that may approve nothing.",
+          "nullable": true
         }
       ],
       "indexes": [

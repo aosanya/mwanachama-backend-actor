@@ -448,6 +448,7 @@ var columnsDeclaredSince = map[string][]string{
 	roleRoleKind:             {"leads_group", "definition_role_id", "outsider", "staff"},
 	roleGroupJoinRequest:     {"asked_at", "decline_reason"},
 	roleActorGroupAssignment: {"priority"},
+	roleActorRoleAssignment:  {"approval_limit"},
 }
 
 func columnsDeclaredSinceMissing(db *gorm.DB, s *spec.Spec) (bool, error) {
@@ -508,6 +509,8 @@ func addedColumnDefinition(o spec.Object, column, dialect string) (string, error
 			return fmt.Sprintf("%s boolean default %s", f.Name, value), nil
 		case spec.TypeString, spec.TypeText, spec.TypeEnum, spec.TypeTimestamp:
 			return fmt.Sprintf("%s text default '%s'", f.Name, strings.ReplaceAll(f.Default, "'", "''")), nil
+		case spec.TypeInt:
+			return fmt.Sprintf("%s bigint", f.Name), nil
 		case spec.TypeGeometry:
 			if dialect == "postgres" {
 				return fmt.Sprintf("%s jsonb", f.Name), nil

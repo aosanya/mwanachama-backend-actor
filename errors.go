@@ -31,6 +31,10 @@ var ErrSeatAlreadyHeld = errors.New("mwanachamaactor: the actor already holds th
 
 var ErrKindHasLiveAssignments = errors.New("mwanachamaactor: role kind still has live assignments")
 
+var ErrApprovalLimitNegative = errors.New("mwanachamaactor: a seat's approval limit cannot be negative")
+
+var ErrOverApprovalLimit = errors.New("mwanachamaactor: the amount is over what this seat may approve")
+
 var ErrKindRetired = errors.New("mwanachamaactor: role kind is retired — un-retire it before granting a seat")
 
 var ErrHierarchyNotFound = errors.New("mwanachamaactor: hierarchy not found")

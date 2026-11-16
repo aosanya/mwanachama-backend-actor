@@ -10,4 +10,6 @@ type ActorRoleAssignment struct {
 	GrantedBy   string    `json:"granted_by,omitempty"`
 	EndedAt     string    `json:"ended_at,omitempty"`
 	EndedReason EndReason `json:"ended_reason,omitempty"`
+
+	ApprovalLimit *int `json:"approval_limit,omitempty"`
 }
