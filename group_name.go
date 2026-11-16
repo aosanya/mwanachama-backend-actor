@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"golang.org/x/text/unicode/norm"
 	"gorm.io/gorm"
 
 	"github.com/aosanya/mwanachama-backend-shared/spec"
@@ -14,7 +15,7 @@ import (
 const groupNameKeyColumn = "name_key"
 
 func groupNameKey(name string) string {
-	return strings.ToLower(strings.Join(strings.Fields(name), " "))
+	return strings.ToLower(strings.Join(strings.Fields(norm.NFC.String(name)), " "))
 }
 
 func (m *userManager) checkGroupNameFree(ctx context.Context, name, exceptID string) error {
@@ -57,23 +58,43 @@ func groupNameIndexExists(db *gorm.DB, table string) (bool, error) {
 
 func backfillGroupNameKeys(db *gorm.DB, s *spec.Spec) error {
 	table := tableFor(s, roleGroup)
-	type named struct {
-		ID   string
-		Name string
+	stale, err := groupsKeyedOffRule(db, table)
+	if err != nil {
+		return err
 	}
-	var rows []named
-	if err := db.Table(table).Select("id, name").
-		Where(groupNameKeyColumn + " = '' OR " + groupNameKeyColumn + " IS NULL").
-		Find(&rows).Error; err != nil {
-		return fmt.Errorf("actor: read the group names in %s: %w", table, err)
+	if len(stale) == 0 {
+		return nil
 	}
-	for _, r := range rows {
+	if err := db.Exec("drop index if exists " + groupNameIndexName(table)).Error; err != nil {
+		return fmt.Errorf("actor: drop the group-name index of %s: %w", table, err)
+	}
+	for _, r := range stale {
 		err := db.Table(table).Where("id = ?", r.ID).Update(groupNameKeyColumn, groupNameKey(r.Name)).Error
 		if err != nil {
 			return fmt.Errorf("actor: set the name key of group %s: %w", r.ID, err)
 		}
 	}
 	return nil
+}
+
+type namedGroupRow struct {
+	ID      string
+	Name    string
+	NameKey string
+}
+
+func groupsKeyedOffRule(db *gorm.DB, table string) ([]namedGroupRow, error) {
+	var rows []namedGroupRow
+	if err := db.Table(table).Select("id, name, name_key").Find(&rows).Error; err != nil {
+		return nil, fmt.Errorf("actor: read the group names in %s: %w", table, err)
+	}
+	stale := rows[:0]
+	for _, r := range rows {
+		if r.NameKey != groupNameKey(r.Name) {
+			stale = append(stale, r)
+		}
+	}
+	return stale, nil
 }
 
 func syncGroupNameIndex(db *gorm.DB, s *spec.Spec) error {
@@ -116,13 +137,9 @@ func syncGroupNameIndex(db *gorm.DB, s *spec.Spec) error {
 }
 
 func groupsWithoutNameKey(db *gorm.DB, s *spec.Spec) (bool, error) {
-	table := tableFor(s, roleGroup)
-	var unkeyed int64
-	err := db.Table(table).
-		Where(groupNameKeyColumn + " = '' OR " + groupNameKeyColumn + " IS NULL").
-		Count(&unkeyed).Error
+	stale, err := groupsKeyedOffRule(db, tableFor(s, roleGroup))
 	if err != nil {
-		return false, fmt.Errorf("actor: read the group name keys in %s: %w", table, err)
+		return false, err
 	}
-	return unkeyed > 0, nil
+	return len(stale) > 0, nil
 }
