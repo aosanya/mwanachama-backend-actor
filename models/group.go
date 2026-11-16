@@ -17,6 +17,7 @@ type Group struct {
 	LevelID               string `json:"level_id"`
 	ParentID              string `json:"parent_id,omitempty"`
 	Name                  string `json:"name"`
+	NameKey               string `json:"name_key"`
 	Discoverable          bool   `json:"discoverable"`
 	JoinMode              string `json:"join_mode"`
 	Hidden                bool   `json:"hidden"`

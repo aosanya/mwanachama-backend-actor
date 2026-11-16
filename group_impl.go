@@ -41,8 +41,12 @@ func (m *userManager) CreateGroup(ctx context.Context, g Group) (Group, error) {
 	if err := m.checkUniqueAttributes(ctx, roleGroup, properties, g.Attributes); err != nil {
 		return Group{}, err
 	}
+	if err := m.checkGroupNameFree(ctx, g.Name, ""); err != nil {
+		return Group{}, err
+	}
 
 	g.ID = newSpecID()
+	g.NameKey = groupNameKey(g.Name)
 	g.CreatedAt = NowRFC3339()
 	g.LastUpdated = g.CreatedAt
 	g.Deleted = false
@@ -92,18 +96,23 @@ func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Gr
 	if err := plaintext.CheckLine("group name", e.Name); err != nil {
 		return Group{}, fmt.Errorf("%w: %v", ErrInvalidGroup, err)
 	}
+	if err := m.checkGroupNameFree(ctx, e.Name, id); err != nil {
+		return Group{}, err
+	}
 	now := NowRFC3339()
 	err = m.store.Query(ctx, roleGroup).Where("id = ?", id).
 		Updates(map[string]any{
 			"name":                     e.Name,
+			groupNameKeyColumn:         groupNameKey(e.Name),
 			"node_type":                e.NodeType,
 			"anchor_level_override_id": e.AnchorLevelOverrideID,
 			"last_updated":             now,
 		}).Error
 	if err != nil {
-		return Group{}, fmt.Errorf("EditGroup: %w", err)
+		return Group{}, fmt.Errorf("EditGroup: %w", classifyDuplicateID(err))
 	}
 	current.Name = e.Name
+	current.NameKey = groupNameKey(e.Name)
 	current.NodeType = e.NodeType
 	current.AnchorLevelOverrideID = e.AnchorLevelOverrideID
 	current.LastUpdated = now

@@ -10,6 +10,8 @@ var ErrInvalidActor = errors.New("mwanachamaactor: invalid actor")
 
 var ErrInvalidGroup = errors.New("mwanachamaactor: invalid group")
 
+var ErrDuplicateGroupName = errors.New("mwanachamaactor: a group already has this name")
+
 var ErrDuplicateAttribute = errors.New("mwanachamaactor: attribute value already in use")
 
 var ErrDuplicateID = errors.New("mwanachamaactor: an actor with this id already exists")

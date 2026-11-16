@@ -3,6 +3,7 @@ package mwanachamaactor_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -34,7 +35,7 @@ func TestANewActorAndGroupDrawRandomCodesOfThreeGroups(t *testing.T) {
 		if !strings.HasPrefix(a.Code, "AC-") {
 			t.Errorf("internal code = %q, want AC-<n> kept", a.Code)
 		}
-		g, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward"})
+		g, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: fmt.Sprintf("Ward %d", i)})
 		if err != nil {
 			t.Fatalf("CreateGroup: %v", err)
 		}
@@ -125,7 +126,7 @@ func TestProvisionGivesEveryExistingActorAndGroupAPublicCode(t *testing.T) {
 			t.Fatalf("CreateActor: %v", err)
 		}
 		actors = append(actors, a)
-		g, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward", Hidden: i%2 == 0})
+		g, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: fmt.Sprintf("Ward %d", i), Hidden: i%2 == 0})
 		if err != nil {
 			t.Fatalf("CreateGroup: %v", err)
 		}

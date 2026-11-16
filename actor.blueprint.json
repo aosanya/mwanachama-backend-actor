@@ -157,6 +157,11 @@
           "description": "The group's human-readable name, shown wherever the structure is drawn."
         },
         {
+          "name": "name_key",
+          "type": "string",
+          "description": "The name trimmed, lower-cased and with runs of spaces made one, kept so two groups of one agency cannot share a name. Written with the name and ignored when sent in."
+        },
+        {
           "name": "discoverable",
           "type": "bool",
           "description": "True when an actor who is not already registered may find this group and ask to join."

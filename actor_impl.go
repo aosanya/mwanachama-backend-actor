@@ -89,12 +89,18 @@ func (m *userManager) insertActor(ctx context.Context, act Actor) (Actor, error)
 func classifyDuplicateID(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if isGroupNameIndex(pgErr.ConstraintName) {
+			return ErrDuplicateGroupName
+		}
 		if isAttributeIndex(pgErr.ConstraintName) {
 			return ErrDuplicateAttribute
 		}
 		return ErrDuplicateID
 	}
 	if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		if isGroupNameIndex(err.Error()) {
+			return ErrDuplicateGroupName
+		}
 		if isAttributeIndex(err.Error()) {
 			return ErrDuplicateAttribute
 		}

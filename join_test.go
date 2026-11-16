@@ -3,7 +3,9 @@ package mwanachamaactor_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -13,10 +15,12 @@ import (
 	"github.com/aosanya/mwanachama-backend-actor/models"
 )
 
+var seededGroups atomic.Int64
+
 func seedJoin(t *testing.T, mgr mwanachamaactor.UserManager, mode string) (mwanachamaactor.Group, mwanachamaactor.Actor) {
 	t.Helper()
 	ctx := context.Background()
-	g, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: "Ward 4", JoinMode: mode})
+	g, err := mgr.CreateGroup(ctx, mwanachamaactor.Group{Name: fmt.Sprintf("Ward 4-%d", seededGroups.Add(1)), JoinMode: mode})
 	if err != nil {
 		t.Fatalf("CreateGroup: %v", err)
 	}

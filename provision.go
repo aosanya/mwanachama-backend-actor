@@ -30,7 +30,13 @@ func Provision(db *gorm.DB, s *spec.Spec) error {
 	if err := syncDefaultAnchorIndex(db, s); err != nil {
 		return err
 	}
-	return seed(db, s)
+	if err := seed(db, s); err != nil {
+		return err
+	}
+	if err := backfillGroupNameKeys(db, s); err != nil {
+		return err
+	}
+	return syncGroupNameIndex(db, s)
 }
 
 func upToDate(db *gorm.DB, s *spec.Spec) (bool, error) {
@@ -87,7 +93,18 @@ func upToDate(db *gorm.DB, s *spec.Spec) (bool, error) {
 			return false, nil
 		}
 	}
-	return true, nil
+	unkeyed, err := groupsWithoutNameKey(db, s)
+	if err != nil {
+		return false, err
+	}
+	if unkeyed {
+		return false, nil
+	}
+	indexed, err := groupNameIndexExists(db, tableFor(s, roleGroup))
+	if err != nil {
+		return false, err
+	}
+	return indexed, nil
 }
 
 func tablesNamed(db *gorm.DB, names []string) (map[string]bool, error) {
@@ -443,7 +460,7 @@ func declaresColumn(o spec.Object, column string) bool {
 
 var columnsDeclaredSince = map[string][]string{
 	roleActor:                {"first_name", "last_name", "public_code", "forms_week_split", "attribute_sources"},
-	roleGroup:                {"join_mode", "hidden", "public_code", "area_node_id"},
+	roleGroup:                {"join_mode", "hidden", "public_code", "area_node_id", groupNameKeyColumn},
 	roleLevel:                {"is_area"},
 	roleRoleKind:             {"leads_group", "definition_role_id", "outsider", "staff"},
 	roleGroupJoinRequest:     {"asked_at", "decline_reason"},

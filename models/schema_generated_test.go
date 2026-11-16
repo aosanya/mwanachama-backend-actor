@@ -35,8 +35,8 @@ func TestLevelMatchesSchema(t *testing.T) {
 
 func TestGroupMatchesSchema(t *testing.T) {
 	typ := reflect.TypeOf(models.Group{})
-	if typ.NumField() != 18 {
-		t.Fatalf("Group: schema declares 18 field(s), struct has %d", typ.NumField())
+	if typ.NumField() != 19 {
+		t.Fatalf("Group: schema declares 19 field(s), struct has %d", typ.NumField())
 	}
 	assertField(t, typ, 0, "ID", "string", `json:"id"`)
 	assertField(t, typ, 1, "Code", "string", `json:"code"`)
@@ -45,17 +45,18 @@ func TestGroupMatchesSchema(t *testing.T) {
 	assertField(t, typ, 4, "LevelID", "string", `json:"level_id"`)
 	assertField(t, typ, 5, "ParentID", "string", `json:"parent_id,omitempty"`)
 	assertField(t, typ, 6, "Name", "string", `json:"name"`)
-	assertField(t, typ, 7, "Discoverable", "bool", `json:"discoverable"`)
-	assertField(t, typ, 8, "JoinMode", "string", `json:"join_mode"`)
-	assertField(t, typ, 9, "Hidden", "bool", `json:"hidden"`)
-	assertField(t, typ, 10, "AnchorLevelOverrideID", "string", `json:"anchor_level_override,omitempty"`)
-	assertField(t, typ, 11, "NodeType", "string", `json:"node_type,omitempty"`)
-	assertField(t, typ, 12, "CreatedAt", "string", `json:"created_at"`)
-	assertField(t, typ, 13, "LastUpdated", "string", `json:"last_updated"`)
-	assertField(t, typ, 14, "Deleted", "bool", `json:"deleted"`)
-	assertField(t, typ, 15, "Attributes", "map[string]interface {}", `json:"attributes,omitempty"`)
-	assertField(t, typ, 16, "AreaNodeID", "string", `json:"area_node_id,omitempty"`)
-	assertField(t, typ, 17, "Boundary", "*geo.Geometry", `json:"boundary,omitempty"`)
+	assertField(t, typ, 7, "NameKey", "string", `json:"name_key"`)
+	assertField(t, typ, 8, "Discoverable", "bool", `json:"discoverable"`)
+	assertField(t, typ, 9, "JoinMode", "string", `json:"join_mode"`)
+	assertField(t, typ, 10, "Hidden", "bool", `json:"hidden"`)
+	assertField(t, typ, 11, "AnchorLevelOverrideID", "string", `json:"anchor_level_override,omitempty"`)
+	assertField(t, typ, 12, "NodeType", "string", `json:"node_type,omitempty"`)
+	assertField(t, typ, 13, "CreatedAt", "string", `json:"created_at"`)
+	assertField(t, typ, 14, "LastUpdated", "string", `json:"last_updated"`)
+	assertField(t, typ, 15, "Deleted", "bool", `json:"deleted"`)
+	assertField(t, typ, 16, "Attributes", "map[string]interface {}", `json:"attributes,omitempty"`)
+	assertField(t, typ, 17, "AreaNodeID", "string", `json:"area_node_id,omitempty"`)
+	assertField(t, typ, 18, "Boundary", "*geo.Geometry", `json:"boundary,omitempty"`)
 }
 
 func TestGroupEditMatchesSchema(t *testing.T) {
