@@ -6,22 +6,16 @@ import (
 	"log/slog"
 	"strings"
 
-	"golang.org/x/text/unicode/norm"
 	"gorm.io/gorm"
 
+	"github.com/aosanya/mwanachama-backend-shared/plaintext"
 	"github.com/aosanya/mwanachama-backend-shared/spec"
 )
 
 const groupNameKeyColumn = "name_key"
 
-const groupNameTrailingMarks = ". "
-
 func groupNameKey(name string) string {
-	folded := strings.ToLower(strings.Join(strings.Fields(norm.NFKC.String(name)), " "))
-	if trimmed := strings.TrimRight(folded, groupNameTrailingMarks); trimmed != "" {
-		return trimmed
-	}
-	return folded
+	return plaintext.FoldDrawnName(name)
 }
 
 func (m *userManager) checkGroupNameFree(ctx context.Context, name, exceptID string) error {
