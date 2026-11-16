@@ -17,6 +17,9 @@ func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarc
 	}
 	h.ID = newSpecID()
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := m.checkHierarchyNameFree(tx, h.Name, ""); err != nil {
+			return err
+		}
 		code, err := m.nextCode(ctx, tx, "hierarchy", "H")
 		if err != nil {
 			return err
@@ -64,6 +67,9 @@ func (m *userManager) RenameHierarchy(ctx context.Context, id, name string) (Hie
 	}
 	current, err := m.GetHierarchy(ctx, id)
 	if err != nil {
+		return Hierarchy{}, err
+	}
+	if err := m.checkHierarchyNameFree(m.db.WithContext(ctx), name, id); err != nil {
 		return Hierarchy{}, err
 	}
 	if err := m.store.Query(ctx, roleHierarchy).Where("id = ?", id).

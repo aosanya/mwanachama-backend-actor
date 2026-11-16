@@ -14,7 +14,22 @@ import (
 
 func leadingKind(t *testing.T, mgr mwanachamaactor.UserManager) mwanachamaactor.RoleKind {
 	t.Helper()
-	k, err := mgr.CreateRoleKind(context.Background(), mwanachamaactor.RoleKind{Name: "Chair", LeadsGroup: true})
+	return kindNamed(t, mgr, mwanachamaactor.RoleKind{Name: "Chair", LeadsGroup: true})
+}
+
+func kindNamed(t *testing.T, mgr mwanachamaactor.UserManager, want mwanachamaactor.RoleKind) mwanachamaactor.RoleKind {
+	t.Helper()
+	ctx := context.Background()
+	kinds, err := mgr.ListRoleKinds(ctx)
+	if err != nil {
+		t.Fatalf("ListRoleKinds: %v", err)
+	}
+	for _, k := range kinds {
+		if k.Name == want.Name && k.RetiredAt == "" {
+			return k
+		}
+	}
+	k, err := mgr.CreateRoleKind(ctx, want)
 	if err != nil {
 		t.Fatalf("CreateRoleKind: %v", err)
 	}

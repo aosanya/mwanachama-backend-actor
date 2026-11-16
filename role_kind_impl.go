@@ -25,6 +25,9 @@ func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind,
 	k.RetiredAt, k.RetiredBy = "", ""
 
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := m.checkRoleKindNameFree(tx, k.Name, ""); err != nil {
+			return err
+		}
 		code, err := m.nextCode(ctx, tx, "role_kind", "RK")
 		if err != nil {
 			return err
@@ -123,6 +126,9 @@ func (m *userManager) UnretireRoleKind(ctx context.Context, kindID string) (Role
 		if k.RetiredAt == "" {
 			out = k
 			return nil
+		}
+		if err := m.checkRoleKindNameFree(tx, k.Name, kindID); err != nil {
+			return err
 		}
 		k.RetiredAt, k.RetiredBy = "", ""
 		if err := m.from(tx, roleRoleKind).Where("id = ?", kindID).

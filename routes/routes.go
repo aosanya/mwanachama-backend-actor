@@ -42,6 +42,8 @@ var sentinels = map[string]error{
 	"ErrDuplicateAttribute":     mwanachamaactor.ErrDuplicateAttribute,
 	"ErrDuplicateID":            mwanachamaactor.ErrDuplicateID,
 	"ErrDuplicateGroupName":     mwanachamaactor.ErrDuplicateGroupName,
+	"ErrDuplicateRoleKindName":  mwanachamaactor.ErrDuplicateRoleKindName,
+	"ErrDuplicateHierarchyName": mwanachamaactor.ErrDuplicateHierarchyName,
 	"ErrConflict":               mwanachamaactor.ErrConflict,
 	"ErrRootCannotMove":         mwanachamaactor.ErrRootCannotMove,
 	"ErrParentIsSelf":           mwanachamaactor.ErrParentIsSelf,

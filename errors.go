@@ -18,6 +18,10 @@ var ErrInvalidRoleKind = errors.New("mwanachamaactor: invalid role kind")
 
 var ErrDuplicateGroupName = errors.New("mwanachamaactor: a group already has this name")
 
+var ErrDuplicateRoleKindName = errors.New("mwanachamaactor: a role kind already has this name")
+
+var ErrDuplicateHierarchyName = errors.New("mwanachamaactor: a hierarchy already has this name")
+
 var ErrDuplicateAttribute = errors.New("mwanachamaactor: attribute value already in use")
 
 var ErrDuplicateID = errors.New("mwanachamaactor: an actor with this id already exists")

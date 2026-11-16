@@ -12,10 +12,7 @@ import (
 func seatOutsider(t *testing.T, mgr mwanachamaactor.UserManager, groupID, actorID string) {
 	t.Helper()
 	ctx := context.Background()
-	client, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Client", Outsider: true})
-	if err != nil {
-		t.Fatalf("CreateRoleKind: %v", err)
-	}
+	client := kindNamed(t, mgr, mwanachamaactor.RoleKind{Name: "Client", Outsider: true})
 	if !client.Outsider {
 		t.Fatal("an outsider kind read back without its mark")
 	}
