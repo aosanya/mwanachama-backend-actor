@@ -101,3 +101,12 @@ func TestBoundaryRouteAnswers400ForAPoint(t *testing.T) {
 		t.Fatalf("a point as a boundary = %d %s, want 400", status, body)
 	}
 }
+
+func TestAtPointAnswers400WhenARequiredQueryArgIsMissing(t *testing.T) {
+	srv := boundaryServer(t)
+	for _, q := range []string{"", "?lon=1", "?lat=1"} {
+		if status, body := send(t, http.MethodGet, srv.URL+"/groups/at-point"+q, nil); status != http.StatusBadRequest {
+			t.Fatalf("at-point%s = %d %s, want 400", q, status, body)
+		}
+	}
+}
