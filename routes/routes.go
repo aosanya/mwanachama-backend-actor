@@ -15,8 +15,6 @@ import (
 
 type Route = httpwire.Route
 
-const maxGroupName = 200
-
 var operations = sync.OnceValues(func() (*dispatch.Spec, error) {
 	return dispatch.Parse(mwanachamaactor.Operations())
 })
@@ -121,9 +119,6 @@ func (m referenceChecked) EditGroup(ctx context.Context, id string, e mwanachama
 	e.NodeType = strings.TrimSpace(e.NodeType)
 	if e.Name == "" {
 		return mwanachamaactor.Group{}, fmt.Errorf("%w: a name is required", mwanachamaactor.ErrInvalidGroup)
-	}
-	if len([]rune(e.Name)) > maxGroupName {
-		return mwanachamaactor.Group{}, fmt.Errorf("%w: a name may be at most %d characters", mwanachamaactor.ErrInvalidGroup, maxGroupName)
 	}
 	if e.AnchorLevelOverrideID != "" {
 		current, err := m.UserManager.GetGroup(ctx, id)

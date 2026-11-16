@@ -12,7 +12,7 @@ import (
 )
 
 func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarchy, error) {
-	if err := checkName(ErrInvalidHierarchy, "hierarchy name", h.Name); err != nil {
+	if err := checkHierarchyName(h.Name); err != nil {
 		return Hierarchy{}, err
 	}
 	h.ID = newSpecID()
@@ -62,7 +62,7 @@ func (m *userManager) GetHierarchy(ctx context.Context, id string) (Hierarchy, e
 }
 
 func (m *userManager) RenameHierarchy(ctx context.Context, id, name string) (Hierarchy, error) {
-	if err := checkName(ErrInvalidHierarchy, "hierarchy name", name); err != nil {
+	if err := checkHierarchyName(name); err != nil {
 		return Hierarchy{}, err
 	}
 	current, err := m.GetHierarchy(ctx, id)
