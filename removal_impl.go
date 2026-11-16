@@ -2,6 +2,7 @@ package mwanachamaactor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -57,7 +58,27 @@ func (m *userManager) RemoveFromAllGroups(ctx context.Context, actorID, removedB
 		}
 		out = append(out, removal)
 	}
+	if err := m.endPendingJoinRequests(ctx, actorID, removedBy); err != nil {
+		return out, fmt.Errorf("RemoveFromAllGroups: %w", err)
+	}
 	return out, nil
+}
+
+func (m *userManager) endPendingJoinRequests(ctx context.Context, actorID, endedBy string) error {
+	asked, err := m.ListJoinRequestsForActor(ctx, actorID)
+	if err != nil {
+		return err
+	}
+	for _, req := range asked {
+		if !req.Pending() {
+			continue
+		}
+		_, err := m.decide(ctx, req.ID, endedBy, models.JoinRequestDeclined, true, "", vouchedByHost)
+		if err != nil && !errors.Is(err, ErrJoinRequestDecided) {
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *userManager) ListRemovals(ctx context.Context, actorID string) ([]models.GroupRemoval, error) {
