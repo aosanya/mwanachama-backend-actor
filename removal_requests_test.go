@@ -36,3 +36,30 @@ func TestRemovingAnActorEndsTheirPendingJoinRequestsSoALaterOperatorApprovalIsRe
 		t.Error("a removed actor was seated by a late approval")
 	}
 }
+
+func TestRemovingAnActorEndsEverySeatTheyHoldIncludingOnesOutsideAnyRoster(t *testing.T) {
+	mgr := newTestManager(t)
+	ctx := context.Background()
+	g := mustGroup(t, mgr, "Ward A")
+	a := mustActor(t, mgr, "Baraka")
+	kind, err := mgr.CreateRoleKind(ctx, mwanachamaactor.RoleKind{Name: "Coordinator"})
+	if err != nil {
+		t.Fatalf("CreateRoleKind: %v", err)
+	}
+	seat, err := mgr.GrantRole(ctx, mwanachamaactor.ActorRoleAssignment{ActorID: a.ID, GroupID: g.ID, KindID: kind.ID})
+	if err != nil {
+		t.Fatalf("GrantRole: %v", err)
+	}
+
+	if _, err := mgr.RemoveFromAllGroups(ctx, a.ID, "operator-1"); err != nil {
+		t.Fatalf("RemoveFromAllGroups: %v", err)
+	}
+
+	got, err := mgr.GetRoleAssignment(ctx, seat.ID)
+	if err != nil {
+		t.Fatalf("GetRoleAssignment: %v", err)
+	}
+	if got.Active || got.EndedReason != models.EndedByEviction {
+		t.Errorf("seat = %+v, want ended by eviction", got)
+	}
+}

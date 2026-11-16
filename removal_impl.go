@@ -58,10 +58,19 @@ func (m *userManager) RemoveFromAllGroups(ctx context.Context, actorID, removedB
 		}
 		out = append(out, removal)
 	}
+	if err := m.endAllRoleAssignments(ctx, actorID, EndedByEviction); err != nil {
+		return out, fmt.Errorf("RemoveFromAllGroups: %w", err)
+	}
 	if err := m.endPendingJoinRequests(ctx, actorID, removedBy); err != nil {
 		return out, fmt.Errorf("RemoveFromAllGroups: %w", err)
 	}
 	return out, nil
+}
+
+func (m *userManager) endAllRoleAssignments(ctx context.Context, actorID string, reason models.EndReason) error {
+	return m.store.Query(ctx, roleActorRoleAssignment).
+		Where("actor_id = ? AND active", actorID).
+		Updates(map[string]any{"active": false, "ended_at": NowRFC3339(), "ended_reason": string(reason)}).Error
 }
 
 func (m *userManager) endPendingJoinRequests(ctx context.Context, actorID, endedBy string) error {
