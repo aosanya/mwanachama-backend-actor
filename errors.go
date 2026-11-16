@@ -35,6 +35,8 @@ var ErrApprovalLimitNegative = errors.New("mwanachamaactor: a seat's approval li
 
 var ErrOverApprovalLimit = errors.New("mwanachamaactor: the amount is over what this seat may approve")
 
+var ErrSeatEnded = errors.New("mwanachamaactor: the seat has ended, so its limit cannot be changed")
+
 var ErrKindRetired = errors.New("mwanachamaactor: role kind is retired — un-retire it before granting a seat")
 
 var ErrHierarchyNotFound = errors.New("mwanachamaactor: hierarchy not found")

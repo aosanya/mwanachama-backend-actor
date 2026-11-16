@@ -47,6 +47,7 @@ var sentinels = map[string]error{
 	"ErrSeatAlreadyHeld":        mwanachamaactor.ErrSeatAlreadyHeld,
 	"ErrApprovalLimitNegative":  mwanachamaactor.ErrApprovalLimitNegative,
 	"ErrOverApprovalLimit":      mwanachamaactor.ErrOverApprovalLimit,
+	"ErrSeatEnded":              mwanachamaactor.ErrSeatEnded,
 	"ErrLevelWornByGroups":      mwanachamaactor.ErrLevelWornByGroups,
 	"ErrLevelHasRoleKinds":      mwanachamaactor.ErrLevelHasRoleKinds,
 	"ErrGroupTypeWornByGroups":  mwanachamaactor.ErrGroupTypeWornByGroups,

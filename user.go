@@ -174,6 +174,8 @@ type UserManager interface {
 
 	GrantRole(ctx context.Context, a ActorRoleAssignment) (ActorRoleAssignment, error)
 	GetRoleAssignment(ctx context.Context, id string) (ActorRoleAssignment, error)
+	SetApprovalLimit(ctx context.Context, assignmentID string, limit *int) (ActorRoleAssignment, error)
+	AuthoriseApproval(ctx context.Context, assignmentID string, amount int) error
 	RevokeRole(ctx context.Context, assignmentID string) error
 	StepDownRole(ctx context.Context, assignmentID string) error
 	EndRoleOnEviction(ctx context.Context, assignmentID string) error
