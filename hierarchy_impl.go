@@ -12,6 +12,9 @@ import (
 )
 
 func (m *userManager) CreateHierarchy(ctx context.Context, h Hierarchy) (Hierarchy, error) {
+	if err := checkName(ErrInvalidHierarchy, "hierarchy name", h.Name); err != nil {
+		return Hierarchy{}, err
+	}
 	h.ID = newSpecID()
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		code, err := m.nextCode(ctx, tx, "hierarchy", "H")
@@ -56,6 +59,9 @@ func (m *userManager) GetHierarchy(ctx context.Context, id string) (Hierarchy, e
 }
 
 func (m *userManager) RenameHierarchy(ctx context.Context, id, name string) (Hierarchy, error) {
+	if err := checkName(ErrInvalidHierarchy, "hierarchy name", name); err != nil {
+		return Hierarchy{}, err
+	}
 	current, err := m.GetHierarchy(ctx, id)
 	if err != nil {
 		return Hierarchy{}, err
@@ -69,6 +75,9 @@ func (m *userManager) RenameHierarchy(ctx context.Context, id, name string) (Hie
 }
 
 func (m *userManager) CreateLevel(ctx context.Context, l Level) (Level, error) {
+	if err := checkName(ErrInvalidLevel, "level name", l.Name); err != nil {
+		return Level{}, err
+	}
 	if _, err := m.GetHierarchy(ctx, l.HierarchyID); err != nil {
 		return Level{}, err
 	}
@@ -122,6 +131,9 @@ func (m *userManager) levelIn(tx *gorm.DB, id string) (Level, error) {
 }
 
 func (m *userManager) RenameLevel(ctx context.Context, id, name string) (Level, error) {
+	if err := checkName(ErrInvalidLevel, "level name", name); err != nil {
+		return Level{}, err
+	}
 	current, err := m.GetLevel(ctx, id)
 	if err != nil {
 		return Level{}, err

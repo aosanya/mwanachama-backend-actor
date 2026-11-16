@@ -41,6 +41,9 @@ func (m *userManager) SetGroupNameTranslation(ctx context.Context, groupID, lang
 	if name == "" {
 		return models.GroupNameTranslation{}, ErrInvalidTranslation
 	}
+	if err := checkName(ErrInvalidTranslation, "translated group name", name); err != nil {
+		return models.GroupNameTranslation{}, err
+	}
 	if _, err := m.GetGroup(ctx, groupID); err != nil {
 		return models.GroupNameTranslation{}, err
 	}

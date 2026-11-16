@@ -16,6 +16,9 @@ func (m *userManager) CreateGroupType(ctx context.Context, g GroupType) (GroupTy
 	if strings.TrimSpace(g.Name) == "" {
 		return GroupType{}, ErrInvalidGroupType
 	}
+	if err := checkGroupTypeNames(g.Name, g.Singular, g.Plural); err != nil {
+		return GroupType{}, err
+	}
 	if _, err := m.GetHierarchy(ctx, g.HierarchyID); err != nil {
 		return GroupType{}, err
 	}
@@ -93,6 +96,9 @@ func (m *userManager) EditGroupType(ctx context.Context, id, name, singular, plu
 	}
 	if strings.TrimSpace(name) == "" {
 		return GroupType{}, ErrInvalidGroupType
+	}
+	if err := checkGroupTypeNames(name, singular, plural); err != nil {
+		return GroupType{}, err
 	}
 	if levelID != "" {
 		if _, err := m.GetLevel(ctx, levelID); err != nil {

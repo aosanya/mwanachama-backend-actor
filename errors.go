@@ -10,6 +10,12 @@ var ErrInvalidActor = errors.New("mwanachamaactor: invalid actor")
 
 var ErrInvalidGroup = errors.New("mwanachamaactor: invalid group")
 
+var ErrInvalidHierarchy = errors.New("mwanachamaactor: invalid hierarchy")
+
+var ErrInvalidLevel = errors.New("mwanachamaactor: invalid level")
+
+var ErrInvalidRoleKind = errors.New("mwanachamaactor: invalid role kind")
+
 var ErrDuplicateGroupName = errors.New("mwanachamaactor: a group already has this name")
 
 var ErrDuplicateAttribute = errors.New("mwanachamaactor: attribute value already in use")

@@ -17,6 +17,9 @@ import (
 )
 
 func (m *userManager) CreateActor(ctx context.Context, act Actor) (Actor, error) {
+	if err := checkActorNames(act.DisplayName, act.FirstName, act.LastName); err != nil {
+		return Actor{}, err
+	}
 	properties := models.DefaultActorProperties()
 	if err := models.ValidateAttributes(properties, act.Attributes); err != nil {
 		return Actor{}, fmt.Errorf("%w: %v", ErrInvalidActor, err)
@@ -189,6 +192,9 @@ func (m *userManager) GetActors(ctx context.Context, ids []string) ([]Actor, err
 }
 
 func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error) {
+	if err := checkActorNames(displayName, "", ""); err != nil {
+		return Actor{}, err
+	}
 	current, err := m.GetActor(ctx, id)
 	if err != nil {
 		return Actor{}, err
@@ -205,6 +211,9 @@ func (m *userManager) SetActorDisplayName(ctx context.Context, id, displayName s
 }
 
 func (m *userManager) SetActorName(ctx context.Context, id, firstName, lastName string) (Actor, error) {
+	if err := checkActorNames("", firstName, lastName); err != nil {
+		return Actor{}, err
+	}
 	current, err := m.GetActor(ctx, id)
 	if err != nil {
 		return Actor{}, err

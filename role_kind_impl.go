@@ -18,6 +18,9 @@ func withCapabilities(k RoleKind) RoleKind {
 }
 
 func (m *userManager) CreateRoleKind(ctx context.Context, k RoleKind) (RoleKind, error) {
+	if err := checkName(ErrInvalidRoleKind, "role kind name", k.Name); err != nil {
+		return RoleKind{}, err
+	}
 	k.ID = newSpecID()
 	k.RetiredAt, k.RetiredBy = "", ""
 
