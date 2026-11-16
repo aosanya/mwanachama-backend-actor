@@ -3,9 +3,9 @@ package mwanachamaactor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"github.com/aosanya/mwanachama-backend-shared/spec"
 	"github.com/aosanya/mwanachama-backend-shared/specstore"
@@ -69,8 +69,6 @@ func decode(o spec.Object, row map[string]any, out any) error {
 	return specstore.Decode(o, row, out)
 }
 
-const codeSequenceAttempts = 5
-
 type codedRole struct {
 	role       string
 	entityType string
@@ -94,41 +92,24 @@ func inRun(q *gorm.DB, runID string) *gorm.DB {
 }
 
 func nextCode(ctx context.Context, tx *gorm.DB, table, runID, entityType, prefix string) (string, error) {
-	seed := map[string]any{"entity_type": entityType, "next_number": 1}
+	columns := []string{"entity_type", "next_number"}
+	values := []any{entityType, 2}
+	conflict := []string{"entity_type"}
 	if runID != "" {
-		seed[spec.RunIDColumn] = runID
+		columns = append(columns, spec.RunIDColumn)
+		values = append(values, runID)
+		conflict = []string{spec.RunIDColumn, "entity_type"}
 	}
-	if err := tx.WithContext(ctx).Table(table).
-		Clauses(clause.OnConflict{DoNothing: true}).Create(seed).Error; err != nil {
-		return "", fmt.Errorf("nextCode: seed the %s counter: %w", entityType, err)
+	quoted := tx.Statement.Quote(table)
+	statement := fmt.Sprintf(
+		"INSERT INTO %s AS counter (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET next_number = counter.next_number + 1 RETURNING next_number",
+		quoted, strings.Join(columns, ", "), strings.TrimSuffix(strings.Repeat("?, ", len(values)), ", "), strings.Join(conflict, ", "))
+
+	var advanced int
+	if err := tx.WithContext(ctx).Raw(statement, values...).Scan(&advanced).Error; err != nil {
+		return "", fmt.Errorf("nextCode: %s: %w", entityType, err)
 	}
-
-	for attempt := 0; attempt < codeSequenceAttempts; attempt++ {
-		var rows []map[string]any
-		if err := inRun(tx.WithContext(ctx).Table(table), runID).
-			Where("entity_type = ?", entityType).Limit(1).Find(&rows).Error; err != nil {
-			return "", fmt.Errorf("nextCode: %w", err)
-		}
-		if len(rows) == 0 {
-			return "", fmt.Errorf("nextCode: %s: the counter vanished after being seeded", entityType)
-		}
-
-		n, err := asInt(rows[0]["next_number"])
-		if err != nil {
-			return "", fmt.Errorf("nextCode: %s: %w", entityType, err)
-		}
-
-		claimed := inRun(tx.WithContext(ctx).Table(table), runID).
-			Where("entity_type = ? AND next_number = ?", entityType, n).
-			Update("next_number", n+1)
-		if claimed.Error != nil {
-			return "", fmt.Errorf("nextCode: %w", claimed.Error)
-		}
-		if claimed.RowsAffected == 1 {
-			return fmt.Sprintf("%s-%d", prefix, n), nil
-		}
-	}
-	return "", fmt.Errorf("nextCode: %s: the counter moved under %d attempts: %w", entityType, codeSequenceAttempts, ErrConflict)
+	return fmt.Sprintf("%s-%d", prefix, advanced-1), nil
 }
 
 func asInt(v any) (int, error) {

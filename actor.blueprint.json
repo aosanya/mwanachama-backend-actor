@@ -959,7 +959,7 @@
     },
     {
       "role": "code_sequence",
-      "description": "One counter per coded type, holding the next number its code will take. Written by a compare-and-set so two concurrent creates cannot mint the same code.",
+      "description": "One counter per coded type, holding the next number its code will take. Advanced by one atomic upsert that returns the number it took, so concurrent creates never queue on retries and cannot mint the same code.",
       "fields": [
         {
           "name": "entity_type",
@@ -970,7 +970,7 @@
         {
           "name": "next_number",
           "type": "int",
-          "description": "The number the next code of this type takes. Read and advanced in one conditional write."
+          "description": "The number the next code of this type takes. Advanced and read back in the same statement."
         }
       ]
     },
