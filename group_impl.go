@@ -87,15 +87,15 @@ func (m *userManager) GetGroup(ctx context.Context, id string) (Group, error) {
 }
 
 func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Group, error) {
-	current, err := m.GetGroup(ctx, id)
-	if err != nil {
-		return Group{}, err
-	}
 	name, err := checkGroupEditName(e.Name)
 	if err != nil {
 		return Group{}, err
 	}
 	e.Name = name
+	current, err := m.GetGroup(ctx, id)
+	if err != nil {
+		return Group{}, err
+	}
 	if err := m.checkGroupNameFree(ctx, e.Name, id); err != nil {
 		return Group{}, err
 	}

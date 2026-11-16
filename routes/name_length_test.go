@@ -1,6 +1,8 @@
 package routes_test
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -52,5 +54,27 @@ func TestEditingAGroupTrimsBeforeCountingAndStoring(t *testing.T) {
 		if status != http.StatusOK || body["name"] != c.stored {
 			t.Errorf("%s: PATCH = %d name %.40v, want 200 and %.40q", label, status, body["name"], c.stored)
 		}
+	}
+}
+
+func TestAnOverlongGroupNameIsRefusedBeforeTheGroupIsLookedUp(t *testing.T) {
+	overlong := strings.Repeat("a", 201)
+	for label, name := range map[string]string{
+		"plain":  overlong,
+		"padded": " " + overlong + " ",
+	} {
+		srv := newServer(t, routes.Routes(newManager(t)))
+		status, answer := do(t, srv, http.MethodPatch, "/groups/nowhere", map[string]any{"name": name})
+		if status != http.StatusBadRequest || !strings.Contains(fmt.Sprint(answer), "a name may be at most 200 characters") {
+			t.Errorf("%s: PATCH /groups/nowhere = %d %v, want 400 and \"a name may be at most 200 characters\"", label, status, answer)
+		}
+	}
+}
+
+func TestAnOverlongGroupNameIsRefusedBeforeTheGroupIsLookedUpWithReferencesChecked(t *testing.T) {
+	srv := serverFor(t, managerOnMemory(t), routes.Mount{CheckReferences: true, Caller: func(context.Context) string { return "u-1" }})
+	status, answer := send(t, http.MethodPatch, srv.URL+"/groups/nowhere", map[string]any{"name": strings.Repeat("a", 201)})
+	if status != http.StatusBadRequest || !strings.Contains(string(answer), "a name may be at most 200 characters") {
+		t.Errorf("PATCH /groups/nowhere = %d %s, want 400 and \"a name may be at most 200 characters\"", status, answer)
 	}
 }

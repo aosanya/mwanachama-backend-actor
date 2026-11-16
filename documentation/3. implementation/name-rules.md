@@ -16,6 +16,10 @@ Three names are required and bounded in this module: a group name, an actor disp
 
 The routes answer 400 for all three refusals because each sentinel is mapped to 400.
 
+## Order on the group edit
+
+`EditGroup` checks the name before it looks the group up (hub issue ACT74), so `PATCH /groups/{id}` with a name of more than 200 characters answers 400 even when the id is unknown, and only a good name reaches the 404. This is the order the route wrapper had before the check moved into the manager. The edit keeps its original wording, "a name is required" and "a name may be at most 200 characters"; create group says "a group name ...".
+
 ## Padding
 
 A name is trimmed first, then counted, then stored, on all six writes: create group, edit group, create actor, rename actor, create hierarchy and rename hierarchy (hub issue ACT75). `checkRequiredName` in `name_check.go` returns the trimmed name and each write stores that value, so `"  Padded  "` is stored as `"Padded"` and a 200 character name with a space on either side is accepted. The edit route no longer trims on its own; the manager does it for every caller. White space is whatever `strings.TrimSpace` removes, which includes the no-break space and the ideographic space.
