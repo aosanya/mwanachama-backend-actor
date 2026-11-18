@@ -71,7 +71,10 @@ The action is `actor.assignment.unassign`, not the old `actor.assignment.delete`
 so a host that closed the old action by name (wakala-api does) does not close
 this one by accident.
 
-Who may call it is the mount's permission on the action, as for
-`actor_assign_group`. The wakala-api rules of WK158 (an agent removes
+Who may call it is the mount's `Authorize` hook, asked about the action
+`actor.assignment.unassign`; the library holds no list of permissions. A host
+that gates by permission names the action in one: wakala-api carries it under
+`member.remove`, beside the two seat-ending actions, so a caller holding only
+another permission is refused. The wakala-api rules of WK158 (an agent removes
 residents only, the last owner stays) belong to its own route and are not part
 of this tool.
