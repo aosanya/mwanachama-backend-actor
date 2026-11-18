@@ -532,7 +532,7 @@
       "method": "DELETE",
       "path": "/actors/{actor_id}/assignments/{group_id}",
       "call": "RemoveFromGroup",
-      "action": "actor.assignment.delete",
+      "action": "actor.assignment.unassign",
       "title": "End an actor's registration in a group",
       "description": "End one actor's registration in one group: they leave the group's list, every seat they hold in that group ends as an eviction, and a removal is recorded against the caller with the time. Their other groups and their record are kept. An actor not registered in the group is refused (404). The remover is the caller, never the body.",
       "args": [

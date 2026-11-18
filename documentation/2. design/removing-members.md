@@ -58,7 +58,7 @@ A committee page that lists its members from `actor_list_actors_for_group`
 needs a tool that takes one person off that list, and revoking the seat leaves
 them registered. `actor.operations.json` declares `unassign_group` again:
 `DELETE /actors/{actor_id}/assignments/{group_id}`, action
-`actor.assignment.delete`, tool `actor_unassign_group`. It differs from the
+`actor.assignment.unassign`, tool `actor_unassign_group`. It differs from the
 operation decision 459 removed in what it calls. It is `RemoveFromGroup`, not
 `Deregister`, so the registration row goes, every active seat the person holds
 in that group ends as an eviction, and a `group_removal` is recorded against
@@ -66,6 +66,10 @@ the caller, who is never taken from the body. A person not registered in the
 group is 404 (`ErrNotInGroup`); a call with no caller is 400
 (`ErrRemoverRequired`) and removes nothing. The person's other groups and
 their actor record are untouched.
+
+The action is `actor.assignment.unassign`, not the old `actor.assignment.delete`,
+so a host that closed the old action by name (wakala-api does) does not close
+this one by accident.
 
 Who may call it is the mount's permission on the action, as for
 `actor_assign_group`. The wakala-api rules of WK158 (an agent removes
