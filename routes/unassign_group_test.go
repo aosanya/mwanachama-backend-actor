@@ -318,6 +318,21 @@ func TestEndingARegistrationWithNoCallerIsRefusedAndWritesNothing(t *testing.T) 
 	}
 }
 
+func declaredUnassignAction(t *testing.T) string {
+	t.Helper()
+	tools, err := routes.BuildTools(newManager(t))
+	if err != nil {
+		t.Fatalf("BuildTools: %v", err)
+	}
+	for _, tool := range tools {
+		if tool.Name == "actor_unassign_group" {
+			return tool.Action
+		}
+	}
+	t.Fatalf("no tool named actor_unassign_group is published")
+	return ""
+}
+
 func TestEndingARegistrationIsRefusedWhenTheMountRefusesTheAction(t *testing.T) {
 	f, _ := newUnassignFixture(t)
 	var asked []string
@@ -334,8 +349,9 @@ func TestEndingARegistrationIsRefusedWhenTheMountRefusesTheAction(t *testing.T) 
 	if status != http.StatusForbidden {
 		t.Errorf("DELETE with a refusing mount = %d %q, want 403", status, body)
 	}
-	if len(asked) != 1 || asked[0] != "actor.assignment.unassign" {
-		t.Errorf("the mount was asked about %v, want actor.assignment.unassign once", asked)
+	declared := declaredUnassignAction(t)
+	if len(asked) != 1 || asked[0] != declared {
+		t.Errorf("the mount was asked about %v, want %s once", asked, declared)
 	}
 	if n := f.removals(t, f.amina.ID); n != 0 || !f.registered(t, f.amina.ID, f.ward.ID) || !f.seat(t, f.aminaSeat.ID).Active {
 		t.Errorf("a refused call changed Amina's registration, seat or history")
