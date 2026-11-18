@@ -616,6 +616,42 @@
       ],
       "tool": "actor_list_actors_for_group"
     },
+    "list_group_members": {
+      "method": "GET",
+      "path": "/groups/{group_id}/members",
+      "call": "ListGroupMembers",
+      "action": "actor.assignment.list_members",
+      "title": "List a group's members by name",
+      "description": "The actors registered in one group with their names, in name order, with how many the group holds. Ask for the first few with limit; to go further set offset to how many you already have. q keeps only the members whose display, first or last name contains it, and total then counts only those.",
+      "args": [
+        {
+          "from": "path",
+          "as": "group_id",
+          "description": "The group whose members to list."
+        },
+        {
+          "from": "query",
+          "as": "offset",
+          "description": "How many members to skip, in name order. Empty or zero starts at the beginning."
+        },
+        {
+          "from": "query",
+          "as": "limit",
+          "description": "How many members to return. Empty or zero returns 50; more than 200 returns 200."
+        },
+        {
+          "from": "query",
+          "as": "q",
+          "description": "Keep only the members whose display, first or last name contains this text, whatever the case."
+        }
+      ],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_group_members"
+    },
     "home_counts": {
       "method": "GET",
       "path": "/assignments/home-counts",

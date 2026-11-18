@@ -125,6 +125,7 @@ type UserManager interface {
 	ListActorsForGroup(ctx context.Context, groupID string) ([]ActorGroupAssignment, error)
 	ListGroupLeaders(ctx context.Context, groupID string) ([]models.GroupLeader, error)
 	ListGroupRoster(ctx context.Context, groupID, afterActorID string, limit int, search string) ([]ActorGroupAssignment, error)
+	ListGroupMembers(ctx context.Context, groupID string, offset, limit int, search string) (models.GroupMemberPage, error)
 
 	HomeCounts(ctx context.Context) (map[string]int, error)
 

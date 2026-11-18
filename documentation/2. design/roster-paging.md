@@ -87,3 +87,18 @@ seat read of a page and of the whole-roster listing is narrowed by
 wildcards, a person beyond the first page found and the matches paged, the
 search kept inside its group, and the leaders named only for an active
 leading seat in that group.
+
+## Members by name
+
+`GET /groups/{group_id}/members` (`actor.assignment.list_members`, tool
+`actor_list_group_members`) calls `ListGroupMembers(groupID, offset, limit,
+search)` and answers `{"items": [{"actor_id", "display_name"}], "total"}`: the
+group's members in name order (display name, then first and last name, then
+actor id), without outsiders, `limit` 50 by default and 200 at most, `offset`
+to go further, and `q` to keep the members whose name holds the text, in which
+case `total` counts only those. It exists so a screen can show the first few
+names of a group of thousands and its size in one call; the cursor route above
+stays for walking a whole roster by key. The action has its own name because
+every operation carries a unique one; the permission catalogue of the agency
+repo and of the hub must list it beside `actor.assignment.list_for_group` under
+`member.view`, so no new permission is created.
