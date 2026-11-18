@@ -61,6 +61,10 @@ var storeOwned = map[string]bool{
 }
 
 var editFields = map[string]dispatch.FieldDoc{
+	"ActorGroupAssignment.group_id": {
+		Description: "The group the actor is registered in.",
+		Required:    true,
+	},
 	"GroupEdit.Name": {
 		Description: "The group's new name. Required, and at most 200 characters.",
 		Required:    true,
