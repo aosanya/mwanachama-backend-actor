@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"github.com/aosanya/mwanachama-backend-shared/specstore"
 
 	"github.com/aosanya/mwanachama-backend-actor/models"
@@ -16,19 +18,6 @@ func (m *userManager) RemoveFromGroup(ctx context.Context, actorID, groupID, rem
 	if strings.TrimSpace(removedBy) == "" {
 		return models.GroupRemoval{}, ErrRemoverRequired
 	}
-	_, found, err := m.Deregister(ctx, actorID, groupID)
-	if err != nil {
-		return models.GroupRemoval{}, fmt.Errorf("RemoveFromGroup: %w", err)
-	}
-	if !found {
-		return models.GroupRemoval{}, ErrNotInGroup
-	}
-	err = m.store.Query(ctx, roleActorRoleAssignment).
-		Where("actor_id = ? AND group_id = ? AND active", actorID, groupID).
-		Updates(map[string]any{"active": false, "ended_at": NowRFC3339(), "ended_reason": string(EndedByEviction)}).Error
-	if err != nil {
-		return models.GroupRemoval{}, fmt.Errorf("RemoveFromGroup: %w", err)
-	}
 	removal := models.GroupRemoval{
 		ID:        newSpecID(),
 		ActorID:   actorID,
@@ -36,7 +25,29 @@ func (m *userManager) RemoveFromGroup(ctx context.Context, actorID, groupID, rem
 		RemovedBy: removedBy,
 		RemovedAt: NowRFC3339(),
 	}
-	if err := m.store.Insert(ctx, roleGroupRemoval, removal); err != nil {
+	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		registration := m.from(tx, roleActorGroupAssignment).
+			Where("actor_id = ? AND group_id = ?", actorID, groupID).
+			Delete(map[string]any{})
+		if registration.Error != nil {
+			return registration.Error
+		}
+		seats := m.from(tx, roleActorRoleAssignment).
+			Where("actor_id = ? AND group_id = ? AND active", actorID, groupID).
+			Updates(map[string]any{"active": false, "ended_at": removal.RemovedAt, "ended_reason": string(EndedByEviction)})
+		if seats.Error != nil {
+			return seats.Error
+		}
+		if registration.RowsAffected == 0 && seats.RowsAffected == 0 {
+			return ErrNotInGroup
+		}
+		row, err := m.store.Row(roleGroupRemoval, removal)
+		if err != nil {
+			return err
+		}
+		return m.from(tx, roleGroupRemoval).Create(row).Error
+	})
+	if err != nil {
 		return models.GroupRemoval{}, fmt.Errorf("RemoveFromGroup: %w", err)
 	}
 	return removal, nil
