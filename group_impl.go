@@ -96,6 +96,9 @@ func (m *userManager) EditGroup(ctx context.Context, id string, e GroupEdit) (Gr
 	if err != nil {
 		return Group{}, err
 	}
+	if err := checkGroupVersion(current, e); err != nil {
+		return Group{}, err
+	}
 	if err := m.checkGroupNameFree(ctx, e.Name, id); err != nil {
 		return Group{}, err
 	}

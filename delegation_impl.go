@@ -23,7 +23,7 @@ func (m *userManager) CreateDelegation(ctx context.Context, grantedBy string, gr
 	if strings.TrimSpace(grant.EndsAt) != "" {
 		at, err := time.Parse(time.RFC3339Nano, grant.EndsAt)
 		if err != nil {
-			return models.Delegation{}, ErrInvalidDelegation
+			return models.Delegation{}, fmt.Errorf("%w: ends_at %q is not an RFC 3339 time", ErrInvalidDelegation, grant.EndsAt)
 		}
 		endsAt = at.UTC().Format(models.TimeLayout)
 	}

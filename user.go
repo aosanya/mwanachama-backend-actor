@@ -71,6 +71,7 @@ type UserManager interface {
 
 	GetActorByPhone(ctx context.Context, phone string) (Actor, error)
 	ScreenNameByCode(ctx context.Context, code string) (models.ScreenName, error)
+	AttributeProperties(ctx context.Context) ([]models.Property, error)
 
 	SetActorDisplayName(ctx context.Context, id, displayName string) (Actor, error)
 

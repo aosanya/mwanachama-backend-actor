@@ -462,7 +462,7 @@ var columnsDeclaredSince = map[string][]string{
 	roleActor:                {"first_name", "last_name", "public_code", "forms_week_split", "attribute_sources"},
 	roleGroup:                {"join_mode", "hidden", "public_code", "area_node_id", groupNameKeyColumn},
 	roleLevel:                {"is_area"},
-	roleRoleKind:             {"leads_group", "definition_role_id", "outsider", "staff"},
+	roleRoleKind:             {"leads_group", "definition_role_id", "outsider", "staff", "approves_above_limit"},
 	roleGroupJoinRequest:     {"asked_at", "decline_reason"},
 	roleActorGroupAssignment: {"priority"},
 	roleActorRoleAssignment:  {"approval_limit"},

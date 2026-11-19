@@ -363,6 +363,11 @@
           "description": "True when the definition ticks this kind as a staff seat, so a holder counts as staff alongside the agency's owners and agents. Carried from the definition; off by default."
         },
         {
+          "name": "approves_above_limit",
+          "type": "bool",
+          "description": "True when a holder of a seat of this kind may approve an amount above the limit written to the seat, the approval being flagged for the council. Off by default, and then an amount above the limit is refused. Carried from the definition."
+        },
+        {
           "name": "outsider",
           "type": "bool",
           "description": "True when the seat is a narrow outsider one — a client, a guardian, a bidder — whose holder sees only what is linked to them. An actor holding an active seat of such a kind is left out of member lists and counts, and cannot join or be invited to a group. Set by the agency at creation; off by default."

@@ -52,3 +52,17 @@ func (m *userManager) checkHierarchyNameFree(tx *gorm.DB, name, exceptID string)
 	}
 	return nil
 }
+
+func (m *userManager) checkGroupTypeNameFree(tx *gorm.DB, hierarchyID, name string) error {
+	var rows []namedRow
+	if err := m.from(tx, roleGroupType).Select("id, name").Where("hierarchy_id = ?", hierarchyID).Find(&rows).Error; err != nil {
+		return fmt.Errorf("checkGroupTypeNameFree: %w", err)
+	}
+	key := plaintext.FoldDrawnName(name)
+	for _, r := range rows {
+		if plaintext.FoldDrawnName(r.Name) == key {
+			return fmt.Errorf("%w: %q", ErrDuplicateGroupTypeName, name)
+		}
+	}
+	return nil
+}

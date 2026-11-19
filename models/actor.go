@@ -16,19 +16,10 @@ type Actor struct {
 	AttributeSources map[string]AttributeSource `json:"attribute_sources,omitempty"`
 }
 
-// DefaultActorProperties is the built-in property catalog validated against
-// Actor.Attributes on every CreateActor.
-//
-// Neither phone nor email is Required: the gateway's registerDevice mints a
-// member row before any phone number is given, and an agentic actor is
-// forbidden a phone outright (migration 000058's
-// member_agentic_has_no_phone) — this catalog does not reintroduce a
-// requirement the gateway deliberately dropped. Both are Unique: two actors
-// sharing a phone or email is exactly what the old plain-string columns
-// never caught, and is this catalog's reason to exist.
 func DefaultActorProperties() []Property {
 	return []Property{
 		{Name: "phone", Label: "Phone", Range: RangeText, Unique: true},
 		{Name: "email", Label: "Email", Range: RangeText, Unique: true},
+		{Name: "date_of_birth", Label: "Date of birth", Range: RangeDate, NotFuture: true},
 	}
 }

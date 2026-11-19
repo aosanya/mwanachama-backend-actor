@@ -35,6 +35,9 @@ func (m *userManager) CreateGroupType(ctx context.Context, g GroupType) (GroupTy
 	}
 	g.ID = newSpecID()
 	err := m.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := m.checkGroupTypeNameFree(tx, g.HierarchyID, g.Name); err != nil {
+			return err
+		}
 		code, err := m.nextCode(ctx, tx, "grouptype", "GT")
 		if err != nil {
 			return err

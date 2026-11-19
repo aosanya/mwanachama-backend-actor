@@ -38,6 +38,7 @@ type GroupEdit struct {
 	Name                  string
 	NodeType              string
 	AnchorLevelOverrideID string
+	Version               string `json:"version,omitempty"`
 }
 
 func DefaultGroupProperties() []Property {

@@ -61,10 +61,11 @@ func TestGroupMatchesSchema(t *testing.T) {
 
 func TestGroupEditMatchesSchema(t *testing.T) {
 	typ := reflect.TypeOf(models.GroupEdit{})
-	if typ.NumField() != 3 {
-		t.Fatalf("GroupEdit: schema declares 3 field(s), struct has %d", typ.NumField())
+	if typ.NumField() != 4 {
+		t.Fatalf("GroupEdit: schema declares 4 field(s), struct has %d", typ.NumField())
 	}
 	assertField(t, typ, 0, "Name", "string", ``)
 	assertField(t, typ, 1, "NodeType", "string", ``)
 	assertField(t, typ, 2, "AnchorLevelOverrideID", "string", ``)
+	assertField(t, typ, 3, "Version", "string", `json:"version,omitempty"`)
 }

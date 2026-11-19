@@ -60,6 +60,13 @@ func (m *userManager) SyncDefinitionRoles(ctx context.Context, roles []Definitio
 					return err
 				}
 			}
+			if def.ApprovesAboveLimit != k.ApprovesAboveLimit {
+				k.ApprovesAboveLimit = def.ApprovesAboveLimit
+				if err := m.from(tx, roleRoleKind).Where("id = ?", k.ID).
+					Updates(map[string]any{"approves_above_limit": def.ApprovesAboveLimit}).Error; err != nil {
+					return err
+				}
+			}
 			if def.Name != "" && def.Name != k.Name {
 				k.Name = def.Name
 				if err := m.from(tx, roleRoleKind).Where("id = ?", k.ID).

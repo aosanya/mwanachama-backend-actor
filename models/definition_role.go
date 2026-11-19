@@ -1,9 +1,10 @@
 package models
 
 type DefinitionRole struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Staff bool   `json:"staff,omitempty"`
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	Staff              bool   `json:"staff,omitempty"`
+	ApprovesAboveLimit bool   `json:"approves_above_limit,omitempty"`
 }
 
 type DefinitionRoleSync struct {

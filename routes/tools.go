@@ -75,6 +75,9 @@ var editFields = map[string]dispatch.FieldDoc{
 	"GroupEdit.AnchorLevelOverrideID": {
 		Description: "The level that anchors this group's subtree, where it differs from the hierarchy's default. Empty clears it.",
 	},
+	"GroupEdit.version": {
+		Description: "The group's last_updated as the read tool returned it. When the group has changed since, the save is refused instead of overwriting the newer edit. Leave out to save regardless.",
+	},
 }
 
 func Fields() (map[string]dispatch.FieldDoc, error) {

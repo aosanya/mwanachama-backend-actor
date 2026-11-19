@@ -1,12 +1,10 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-// PropertyRange is the OWL-style datatype an Attributes entry may hold.
-// Mirrors the range vocabulary mwanachama-backend-api-gateway's
-// member_data_property table declares (DSN-1664: text/number/boolean/
-// enumeration) — this package does not persist a Range anywhere; it exists
-// purely so ValidateAttributes has something to check a value against.
 type PropertyRange string
 
 const (
@@ -14,36 +12,21 @@ const (
 	RangeNumber      PropertyRange = "number"
 	RangeBoolean     PropertyRange = "boolean"
 	RangeEnumeration PropertyRange = "enumeration"
+	RangeDate        PropertyRange = "date"
 )
 
-// Property declares one entry an Actor's or Group's Attributes map may
-// carry — the T-Box, not a value. Name is the key that appears in
-// Attributes, mirroring member_data_property's convention of no separate
-// id. Built-in properties are returned by DefaultActorProperties and
-// DefaultGroupProperties; nothing here stops a caller from validating
-// against a longer, organization-declared list instead.
+const dayLayout = "2006-01-02"
+
 type Property struct {
-	Name  string        `json:"name"`
-	Label string        `json:"label"`
-	Range PropertyRange `json:"range"`
-	// Options are the permitted values, for RangeEnumeration only.
-	Options []string `json:"options,omitempty"`
-	// Required rejects a write whose Attributes omits this property or sets
-	// it to the empty string / nil.
-	Required bool `json:"required"`
-	// Unique rejects a write whose Attributes value for this property
-	// already appears on another row of the same model. ValidateAttributes
-	// does NOT check this — it needs a database lookup, which the root
-	// package's checkUniqueAttributes does before every Create, backed by
-	// the partial unique index gormstore.Migrate creates for the same
-	// property set.
-	Unique bool `json:"unique"`
+	Name      string        `json:"name"`
+	Label     string        `json:"label"`
+	Range     PropertyRange `json:"range"`
+	Options   []string      `json:"options,omitempty"`
+	Required  bool          `json:"required"`
+	Unique    bool          `json:"unique"`
+	NotFuture bool          `json:"not_future,omitempty"`
 }
 
-// ValidateAttributes checks attrs against every Required and Range/Options
-// constraint in properties. A property absent from properties entirely is
-// left alone — this is not a closed-schema check, only a validation of the
-// properties the caller declared.
 func ValidateAttributes(properties []Property, attrs map[string]any) error {
 	for _, p := range properties {
 		v, present := attrs[p.Name]
@@ -60,10 +43,6 @@ func ValidateAttributes(properties []Property, attrs map[string]any) error {
 	return nil
 }
 
-// isBlank reports whether v counts as "not set" for a Required check — nil
-// or the empty string. An explicit numeric or boolean zero value (0, false)
-// is a real value, not an absence, matching this repo's usual omitempty
-// convention.
 func isBlank(v any) bool {
 	if v == nil {
 		return true
@@ -99,6 +78,23 @@ func checkRange(p Property, v any) error {
 			}
 		}
 		return fmt.Errorf("%q is not one of %v", s, p.Options)
+	case RangeDate:
+		return checkDay(p, v)
+	}
+	return nil
+}
+
+func checkDay(p Property, v any) error {
+	s, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("must be a day written YYYY-MM-DD, got %T", v)
+	}
+	day, err := time.Parse(dayLayout, s)
+	if err != nil {
+		return fmt.Errorf("%q is not a day written YYYY-MM-DD", s)
+	}
+	if p.NotFuture && day.After(time.Now().UTC()) {
+		return fmt.Errorf("%q is a day that has not come yet", s)
 	}
 	return nil
 }

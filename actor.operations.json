@@ -19,8 +19,10 @@
     "ErrDuplicateGroupName": 409,
     "ErrDuplicateRoleKindName": 409,
     "ErrDuplicateHierarchyName": 409,
+    "ErrDuplicateGroupTypeName": 409,
     "ErrDuplicateDisplayName": 409,
     "ErrConflict": 409,
+    "ErrStaleVersion": 409,
     "ErrRootCannotMove": 409,
     "ErrParentIsSelf": 409,
     "ErrParentInSubtree": 409,
@@ -299,6 +301,21 @@
         }
       ],
       "tool": "actor_get_screen_name_by_code"
+    },
+    "list_attribute_properties": {
+      "method": "GET",
+      "path": "/actors/attribute-properties",
+      "call": "AttributeProperties",
+      "action": "actor.actor.list_attribute_properties",
+      "title": "List attribute properties",
+      "description": "List the attribute names a person's record accepts, each with its name, label, range, unique and required, so a form can offer them even before any has a value.",
+      "args": [],
+      "returns": [
+        {
+          "body": true
+        }
+      ],
+      "tool": "actor_list_attribute_properties"
     },
     "set_actor_display_name": {
       "method": "PATCH",
